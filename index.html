@@ -279,8 +279,8 @@
         const basicNotes = naturalNotes.slice(naturalNotes.indexOf('E/4'), naturalNotes.indexOf('E/5') + 1); 
         // 'Medio' range is from E3 to A5
         const mediumNotes = naturalNotes.slice(naturalNotes.indexOf('E/3'), naturalNotes.indexOf('A/5') + 1);
-        const advancedNotes = allNotes;
-
+        // 'Avanzado' range is from E3 to E6, but now only with natural notes as requested.
+        const advancedNotes = naturalNotes;
 
         const noteToIndex = Object.fromEntries(allNotes.map((note, index) => [note, index]));
         const indexToNote = allNotes;
@@ -316,7 +316,9 @@
                 text: `El rango de notas para cada nivel es: <br>
                     <span class="font-bold text-emerald-400">Básico:</span> De E4 a E5 <br>
                     <span class="font-bold text-emerald-400">Medio:</span> De E3 a A5 <br>
-                    <span class="font-bold text-emerald-400">Avanzado:</span> De E3 a E6, incluyendo alteraciones.`
+                    <span class="font-bold text-emerald-400">Avanzado:</span> De E3 a E6, solo notas naturales. <br>
+                    <br>
+                    <span class="text-sm italic">Sugerencia: Se puede sugerir un trabajo de armadura, pensando que se está en la tonalidad que se desee y tocando las alteraciones correspondientes.</span>`
             },
             {
                 targetId: 'measures-control',
@@ -971,5 +973,4 @@
     </script>
 </body>
 </html>
-
 
