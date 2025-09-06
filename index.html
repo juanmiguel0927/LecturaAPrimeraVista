@@ -883,15 +883,15 @@
             let currentX = xOffset + 20;
             const clef = document.createElementNS("http://www.w3.org/2000/svg", "text");
             clef.setAttribute('x', currentX); clef.setAttribute('y', clefInfo.symbolY);
-            clef.setAttribute('font-size', '50px'); clef.textContent = clefInfo.symbol;
-            group.appendChild(clef); currentX += 40;
+            clef.setAttribute('font-size', '40px'); clef.textContent = clefInfo.symbol;
+            group.appendChild(clef); currentX += 30;
 
             const keyInfo = notesData.keySignatures[state.keySignature];
             const currentClef = ui.clefSelect.value;
             if (keyInfo && keyInfo.count > 0 && !ui.keySigContainer.classList.contains('hidden')) {
                 const positions = keyInfo.type === 'sharp' ? notesData.sharpPositions[currentClef] : notesData.flatPositions[currentClef];
                 const symbol = keyInfo.type === 'sharp' ? '♯' : '♭';
-                const fontSize = '28px';
+                const fontSize = keyInfo.type === 'sharp' ? '22px' : '24px';
                 for (let i = 0; i < keyInfo.count; i++) {
                     const accidental = document.createElementNS("http://www.w3.org/2000/svg", "text");
                     accidental.setAttribute('x', currentX);
@@ -900,19 +900,19 @@
                     accidental.setAttribute('dominant-baseline', 'middle');
                     accidental.textContent = symbol;
                     group.appendChild(accidental);
-                    currentX += 10;
+                    currentX += (keyInfo.type === 'sharp' ? 8 : 9);
                 }
                 currentX += 15; 
             }
 
             const timeSigParts = ui.timeSigSelect.value.split('/');
             const timeSigTop = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            timeSigTop.setAttribute('x', currentX); timeSigTop.setAttribute('y', 55);
-            timeSigTop.setAttribute('font-size', '28px'); timeSigTop.textContent = timeSigParts[0];
+            timeSigTop.setAttribute('x', currentX); timeSigTop.setAttribute('y', 60);
+            timeSigTop.setAttribute('font-size', '18px'); timeSigTop.textContent = timeSigParts[0];
             group.appendChild(timeSigTop);
             const timeSigBottom = document.createElementNS("http://www.w3.org/2000/svg", "text");
             timeSigBottom.setAttribute('x', currentX); timeSigBottom.setAttribute('y', 75);
-            timeSigBottom.setAttribute('font-size', '28px'); timeSigBottom.textContent = timeSigParts[1];
+            timeSigBottom.setAttribute('font-size', '18px'); timeSigBottom.textContent = timeSigParts[1];
             group.appendChild(timeSigBottom); currentX += 30;
             if(!content || content.length === 0) return;
             const noteSpacing = (measureWidth - (currentX - xOffset) - 20) / content.length;
@@ -935,7 +935,7 @@
                                 nameText.textContent = intervalInfo.name;
                                 nameText.setAttribute('x', itemX);
                                 nameText.setAttribute('y', 145);
-                                nameText.setAttribute('font-size', '16px');
+                                nameText.setAttribute('font-size', '14px');
                                 nameText.setAttribute('fill', 'black');
                                 nameText.setAttribute('text-anchor', 'middle');
                                 group.appendChild(nameText);
@@ -948,7 +948,7 @@
                                 nameText.textContent = chordInfo.name;
                                 nameText.setAttribute('x', itemX);
                                 nameText.setAttribute('y', -5);
-                                nameText.setAttribute('font-size', '18px');
+                                nameText.setAttribute('font-size', '14px');
                                 nameText.setAttribute('fill', 'black');
                                 nameText.setAttribute('text-anchor', 'middle');
                                 group.appendChild(nameText);
@@ -968,8 +968,8 @@
                                         const textElem = document.createElementNS("http://www.w3.org/2000/svg", "text");
                                         textElem.textContent = part;
                                         textElem.setAttribute('x', itemX);
-                                        textElem.setAttribute('y', 138 + i * 15);
-                                        textElem.setAttribute('font-size', '16px');
+                                        textElem.setAttribute('y', 138 + i * 13);
+                                        textElem.setAttribute('font-size', '12px');
                                         textElem.setAttribute('fill', 'black');
                                         textElem.setAttribute('text-anchor', 'middle');
                                         group.appendChild(textElem);
@@ -979,7 +979,7 @@
                                     bottomLabel.textContent = bottomText;
                                     bottomLabel.setAttribute('x', itemX);
                                     bottomLabel.setAttribute('y', 145);
-                                    bottomLabel.setAttribute('font-size', '16px');
+                                    bottomLabel.setAttribute('font-size', '14px');
                                     bottomLabel.setAttribute('fill', 'black');
                                     bottomLabel.setAttribute('text-anchor', 'middle');
                                     group.appendChild(bottomLabel);
@@ -1003,7 +1003,7 @@
                             nameText.textContent = latinName;
                             nameText.setAttribute('x', itemX);
                             nameText.setAttribute('y', 145); // Below the staff
-                            nameText.setAttribute('font-size', '16px');
+                            nameText.setAttribute('font-size', '14px');
                             nameText.setAttribute('fill', 'black');
                             nameText.setAttribute('text-anchor', 'middle');
                             group.appendChild(nameText);
@@ -1024,7 +1024,7 @@
                             accidentalText.textContent = accidentalSymbol;
                             accidentalText.setAttribute('x', headX - 25);
                             accidentalText.setAttribute('y', y);
-                            accidentalText.setAttribute('font-size', '28px');
+                            accidentalText.setAttribute('font-size', '20px');
                             accidentalText.setAttribute('dominant-baseline', 'middle');
                             group.appendChild(accidentalText);
                         }
