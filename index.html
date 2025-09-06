@@ -20,6 +20,10 @@
         .tutorial-step.active { color: #34d399; font-weight: bold; }
         .radio-label { display: inline-block; background-color: #4b5563; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s ease-in-out; border: 2px solid transparent; }
         input[type="radio"]:checked + .radio-label { background-color: #374151; color: #34d399; border-color: #34d399; }
+        .control-item { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+        @media (min-width: 640px) {
+            .control-item { flex-direction: row; align-items: center; justify-content: space-between; width: 100%;}
+        }
     </style>
 </head>
 <body class="bg-zinc-900 text-white flex flex-col items-center p-4 min-h-screen">
@@ -39,24 +43,24 @@
                 <label for="type-armonia" class="radio-label">Armonía</label>
             </div>
         </div>
-        <div id="controls-container" class="flex flex-wrap items-center justify-center gap-4 mb-8">
-            <div id="harmony-options-container" class="hidden flex items-center space-x-2">
-                <label for="notes-per-chord" class="text-zinc-300">Notas:</label>
-                <select id="notes-per-chord" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <div id="controls-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 mb-8">
+            <div id="harmony-options-container" class="control-item hidden">
+                <label for="notes-per-chord" class="text-zinc-300 whitespace-nowrap">Notas:</label>
+                <select id="notes-per-chord" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="2">2</option><option value="3" selected>3</option><option value="4">4</option>
                 </select>
             </div>
-            <div id="interval-options-container" class="hidden flex items-center space-x-2">
-                <label for="interval-select" class="text-zinc-300">Intervalo:</label>
-                <select id="interval-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <div id="interval-options-container" class="control-item hidden">
+                <label for="interval-select" class="text-zinc-300 whitespace-nowrap">Intervalo:</label>
+                <select id="interval-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="0" selected>Todos</option>
                     <option value="1">2da</option><option value="2">3ra</option><option value="3">4ta</option>
                     <option value="4">5ta</option><option value="5">6ta</option><option value="6">7ma</option><option value="7">8va</option>
                 </select>
             </div>
-            <div id="triad-options-container" class="hidden flex items-center space-x-2">
-                <label for="triad-select" class="text-zinc-300">Tipo de Acorde:</label>
-                <select id="triad-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <div id="triad-options-container" class="control-item hidden">
+                <label for="triad-select" class="text-zinc-300 whitespace-nowrap">Tipo de Acorde:</label>
+                <select id="triad-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="all" selected>Todos</option>
                     <option value="triad_fundamental">Tríada Fundamental</option>
                     <option value="triad_inv1">Tríada 1ra Inv.</option>
@@ -65,27 +69,25 @@
                     <option value="sus4_all">Acordes Sus4</option>
                 </select>
             </div>
-             <div id="quad-options-container" class="hidden flex flex-wrap items-center justify-center gap-4">
-                <div id="quad-voicing-container" class="flex items-center space-x-2">
-                    <label for="quad-voicing-select" class="text-zinc-300">Voicing:</label>
-                    <select id="quad-voicing-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <!-- Options will be populated by JS -->
-                    </select>
-                </div>
+             <div id="quad-options-container" class="control-item hidden">
+                <label for="quad-voicing-select" class="text-zinc-300 whitespace-nowrap">Voicing:</label>
+                <select id="quad-voicing-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <!-- Options will be populated by JS -->
+                </select>
             </div>
-            <div class="flex items-center space-x-2">
-                <label for="tempo" class="text-zinc-300">Tempo (BPM):</label>
-                <input type="number" id="tempo" value="60" min="1" class="w-20 p-2 text-center rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"/>
+            <div class="control-item">
+                <label for="tempo" class="text-zinc-300 whitespace-nowrap">Tempo (BPM):</label>
+                <input type="number" id="tempo" value="60" min="1" class="w-full p-2 text-center rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"/>
             </div>
-            <div class="flex items-center space-x-2">
-                <label for="clef-select" class="text-zinc-300">Clave:</label>
-                <select id="clef-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <div class="control-item">
+                <label for="clef-select" class="text-zinc-300 whitespace-nowrap">Clave:</label>
+                <select id="clef-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="G" selected>Sol</option><option value="F">Fa</option><option value="C">Do</option>
                 </select>
             </div>
-             <div id="key-signature-container" class="flex items-center space-x-2">
-                <label for="key-signature-select" class="text-zinc-300">Armadura:</label>
-                <select id="key-signature-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+             <div id="key-signature-container" class="control-item">
+                <label for="key-signature-select" class="text-zinc-300 whitespace-nowrap">Armadura:</label>
+                <select id="key-signature-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="C">Do M / La m (0)</option>
                     <optgroup label="Sostenidos">
                         <option value="G">Sol M / Mi m (1♯)</option>
@@ -107,46 +109,48 @@
                     </optgroup>
                 </select>
             </div>
-            <div class="flex items-center space-x-2">
-                <label for="time-signature-select" class="text-zinc-300">Compás:</label>
-                <select id="time-signature-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <div class="control-item">
+                <label for="time-signature-select" class="text-zinc-300 whitespace-nowrap">Compás:</label>
+                <select id="time-signature-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option>
                 </select>
             </div>
-            <div class="flex items-center space-x-2">
-                <label for="difficulty-select" class="text-zinc-300">Nivel:</label>
-                <select id="difficulty-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <div class="control-item">
+                <label for="difficulty-select" class="text-zinc-300 whitespace-nowrap">Nivel:</label>
+                <select id="difficulty-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="basico">Básico</option><option value="medium">Medio</option><option value="advanced">Avanzado</option>
                 </select>
             </div>
-            <div class="flex items-center space-x-2">
-                <label for="measures-select" class="text-zinc-300">Compases:</label>
-                <select id="measures-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <div class="control-item">
+                <label for="measures-select" class="text-zinc-300 whitespace-nowrap">Compases:</label>
+                <select id="measures-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="5">5</option><option value="10" selected>10</option><option value="15">15</option><option value="20">20</option><option value="custom">Personalizado</option>
                 </select>
             </div>
-             <div id="custom-measures-input-container" class="hidden flex items-center space-x-2">
-                <label for="custom-measures-input" class="text-zinc-300">Nº:</label>
-                <input type="number" id="custom-measures-input" value="10" placeholder="Nº" min="1" class="w-20 p-2 text-center rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"/>
+             <div id="custom-measures-input-container" class="control-item hidden">
+                <label for="custom-measures-input" class="text-zinc-300 whitespace-nowrap">Nº:</label>
+                <input type="number" id="custom-measures-input" value="10" placeholder="Nº" min="1" class="w-full p-2 text-center rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"/>
             </div>
-            <div class="flex items-center space-x-2">
-                <label for="show-note-names" class="text-zinc-300">Nombres:</label>
-                <input type="checkbox" id="show-note-names" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+            <div class="control-item flex-row sm:justify-start gap-4">
+                <div class="flex items-center gap-2">
+                    <label for="show-note-names" class="text-zinc-300 whitespace-nowrap">Nombres:</label>
+                    <input type="checkbox" id="show-note-names" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="show-guide" class="text-zinc-300 whitespace-nowrap">Guía:</label>
+                    <input type="checkbox" id="show-guide" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                </div>
             </div>
-            <div class="flex items-center space-x-2">
-                <label for="show-guide" class="text-zinc-300">Guía:</label>
-                <input type="checkbox" id="show-guide" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
-            </div>
-            <div id="melody-note-name-options-container" class="hidden flex items-center space-x-2">
-                <label for="melody-note-name-style-select" class="text-zinc-300">Alteración:</label>
-                <select id="melody-note-name-style-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <div id="melody-note-name-options-container" class="control-item hidden">
+                <label for="melody-note-name-style-select" class="text-zinc-300 whitespace-nowrap">Alteración:</label>
+                <select id="melody-note-name-style-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="con-alteracion" selected>Con Alteración</option>
                     <option value="sin-alteracion">Sin Alteración</option>
                 </select>
             </div>
-             <div id="cipher-type-container" class="hidden flex items-center space-x-2">
-                <label for="cipher-type-select" class="text-zinc-300">Cifrado:</label>
-                <select id="cipher-type-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+             <div id="cipher-type-container" class="control-item hidden">
+                <label for="cipher-type-select" class="text-zinc-300 whitespace-nowrap">Cifrado:</label>
+                <select id="cipher-type-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="todos" selected>Todos</option>
                     <option value="americano">Americano</option>
                     <option value="drops">Drops</option>
@@ -242,7 +246,7 @@
                 letterToDiatonic: {'C':0,'D':1,'E':2,'F':3,'G':4,'A':5,'B':6}, clefs: {},
                 triadFormulas: { 'all': ["2-4", "2-5", "3-5", "1-4", "3-6", "3-4"], 'triad_fundamental': ["2-4"], 'triad_inv1': ["2-5"], 'triad_inv2': ["3-5"], 'sus2_all': ["1-4", "3-6"], 'sus4_all': ["3-4", "1-4"] },
                 chordFormulas: { 'maj7': [0, 4, 7, 11], 'm7': [0, 3, 7, 10], 'dom7': [0, 4, 7, 10], 'm7b5': [0, 3, 6, 10], 'dim7': [0, 3, 6, 9] },
-                voicingsByDifficulty: { medium: { 'drop2': 'Drops 2', 'drop3': 'Drops 3' }, advanced: { 'all': 'Todos', 'drop2': 'Drops 2', 'drop3': 'Drops 3', 'drop24': 'Drops 2&4', 'drop23': 'Drops 2&3', 'doubleDrop23': 'Doble Drops 2 & 3' }},
+                voicingsByDifficulty: { medium: { 'drop2': 'Drops 2', 'drop3': 'Drops 3' }, advanced: { 'all': 'Todos', 'drop2': 'Drops 2', 'drop3': 'Drops 3', 'drop24': 'Drops 2&4', 'drop23': 'Drops 2&3', 'doubleDrop23': 'Doble Drops 2 & Drops 3' }},
                 voicingAbbreviations: { 'all': '', 'drop2': 'D2', 'drop3': 'D3', 'drop24': 'D2&4', 'drop23': 'D2&3', 'doubleDrop23': 'Dd2&D3' },
                 keySignatures: {
                     'C': { notes: ['C','D','E','F','G','A','B'] }, 'G': { notes: ['G','A','B','C','D','E','F#'] },
@@ -937,16 +941,17 @@
             }
             let currentX = xOffset + 20;
             const clef = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            clef.textContent = clefInfo.symbol;
             clef.setAttribute('x', currentX); clef.setAttribute('y', clefInfo.symbolY);
-            clef.setAttribute('font-size', '50px'); clef.textContent = clefInfo.symbol;
-            group.appendChild(clef); currentX += 40;
+            clef.setAttribute('font-size', '60px');
+            group.appendChild(clef); currentX += 50;
 
             const keyInfo = notesData.keySignatures[state.keySignature];
             const currentClef = ui.clefSelect.value;
             if (keyInfo && keyInfo.count > 0 && !ui.keySigContainer.classList.contains('hidden')) {
                 const positions = keyInfo.type === 'sharp' ? notesData.sharpPositions[currentClef] : notesData.flatPositions[currentClef];
                 const symbol = keyInfo.type === 'sharp' ? '♯' : '♭';
-                const fontSize = '28px';
+                const fontSize = '32px';
                 for (let i = 0; i < keyInfo.count; i++) {
                     const accidental = document.createElementNS("http://www.w3.org/2000/svg", "text");
                     accidental.setAttribute('x', currentX);
@@ -955,7 +960,7 @@
                     accidental.setAttribute('dominant-baseline', 'middle');
                     accidental.textContent = symbol;
                     group.appendChild(accidental);
-                    currentX += 10;
+                    currentX += 12;
                 }
                 currentX += 15; 
             }
@@ -963,12 +968,15 @@
             const timeSigParts = ui.timeSigSelect.value.split('/');
             const timeSigTop = document.createElementNS("http://www.w3.org/2000/svg", "text");
             timeSigTop.setAttribute('x', currentX); timeSigTop.setAttribute('y', 55);
-            timeSigTop.setAttribute('font-size', '28px'); timeSigTop.textContent = timeSigParts[0];
+            timeSigTop.setAttribute('font-size', '32px');
+            timeSigTop.textContent = timeSigParts[0];
             group.appendChild(timeSigTop);
             const timeSigBottom = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            timeSigBottom.setAttribute('x', currentX); timeSigBottom.setAttribute('y', 75);
-            timeSigBottom.setAttribute('font-size', '28px'); timeSigBottom.textContent = timeSigParts[1];
-            group.appendChild(timeSigBottom); currentX += 30;
+            timeSigBottom.setAttribute('x', currentX); timeSigBottom.setAttribute('y', 80);
+            timeSigBottom.setAttribute('font-size', '32px');
+            timeSigBottom.textContent = timeSigParts[1];
+            group.appendChild(timeSigBottom); currentX += 35;
+
             if(!content || content.length === 0) return;
             const noteSpacing = (measureWidth - (currentX - xOffset) - 20) / content.length;
             const noteStartX = currentX + noteSpacing / 2;
@@ -986,10 +994,10 @@
                         const chordInfo = getChordName(item);
                         if (chordInfo.name) {
                             const itemX = noteStartX + index * noteSpacing;
-                            const estimatedWidth = chordInfo.name.length * 9;
+                            const estimatedWidth = chordInfo.name.length * 10;
                             let currentLabel = { text: chordInfo.name, x: itemX, y: -5, left: itemX - estimatedWidth / 2, right: itemX + estimatedWidth / 2 };
-                            if (lastLabel && currentLabel.left < lastLabel.right + 15) { yLevel = 1 - yLevel; } else { yLevel = 0; }
-                            currentLabel.y = -5 - (yLevel * 20);
+                            if (lastLabel && currentLabel.left < lastLabel.right + 10) { yLevel = 1 - yLevel; } else { yLevel = 0; }
+                            currentLabel.y = -8 - (yLevel * 22);
                             americanChordLabels.push(currentLabel);
                             lastLabel = currentLabel;
                         } else { lastLabel = null; }
@@ -1002,7 +1010,7 @@
                 nameText.textContent = label.text;
                 nameText.setAttribute('x', label.x);
                 nameText.setAttribute('y', label.y);
-                nameText.setAttribute('font-size', '18px');
+                nameText.setAttribute('font-size', '20px');
                 nameText.setAttribute('fill', 'black');
                 nameText.setAttribute('text-anchor', 'middle');
                 group.appendChild(nameText);
@@ -1026,7 +1034,7 @@
                                 nameText.textContent = intervalInfo.name;
                                 nameText.setAttribute('x', itemX);
                                 nameText.setAttribute('y', 145);
-                                nameText.setAttribute('font-size', '16px');
+                                nameText.setAttribute('font-size', '18px');
                                 nameText.setAttribute('fill', 'black');
                                 nameText.setAttribute('text-anchor', 'middle');
                                 group.appendChild(nameText);
@@ -1048,7 +1056,7 @@
                                         textElem.textContent = part;
                                         textElem.setAttribute('x', itemX);
                                         textElem.setAttribute('y', 138 + i * 15);
-                                        textElem.setAttribute('font-size', '16px');
+                                        textElem.setAttribute('font-size', '18px');
                                         textElem.setAttribute('fill', 'black');
                                         textElem.setAttribute('text-anchor', 'middle');
                                         group.appendChild(textElem);
@@ -1058,7 +1066,7 @@
                                     bottomLabel.textContent = bottomText;
                                     bottomLabel.setAttribute('x', itemX);
                                     bottomLabel.setAttribute('y', 145);
-                                    bottomLabel.setAttribute('font-size', '16px');
+                                    bottomLabel.setAttribute('font-size', '18px');
                                     bottomLabel.setAttribute('fill', 'black');
                                     bottomLabel.setAttribute('text-anchor', 'middle');
                                     group.appendChild(bottomLabel);
@@ -1082,7 +1090,7 @@
                             nameText.textContent = latinName;
                             nameText.setAttribute('x', itemX);
                             nameText.setAttribute('y', 145); // Below the staff
-                            nameText.setAttribute('font-size', '16px');
+                            nameText.setAttribute('font-size', '18px');
                             nameText.setAttribute('fill', 'black');
                             nameText.setAttribute('text-anchor', 'middle');
                             group.appendChild(nameText);
@@ -1103,7 +1111,7 @@
                             accidentalText.textContent = accidentalSymbol;
                             accidentalText.setAttribute('x', headX - 25);
                             accidentalText.setAttribute('y', y);
-                            accidentalText.setAttribute('font-size', '28px');
+                            accidentalText.setAttribute('font-size', '30px');
                             accidentalText.setAttribute('dominant-baseline', 'middle');
                             group.appendChild(accidentalText);
                         }
