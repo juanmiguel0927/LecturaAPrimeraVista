@@ -133,6 +133,10 @@
                 <label for="show-note-names" class="text-zinc-300">Nombres:</label>
                 <input type="checkbox" id="show-note-names" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
             </div>
+            <div class="flex items-center space-x-2">
+                <label for="show-guide" class="text-zinc-300">Guía:</label>
+                <input type="checkbox" id="show-guide" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+            </div>
             <div id="melody-note-name-options-container" class="hidden flex items-center space-x-2">
                 <label for="melody-note-name-style-select" class="text-zinc-300">Alteración:</label>
                 <select id="melody-note-name-style-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -219,7 +223,7 @@
                 quadOptionsContainer: get('quad-options-container'), quadVoicingSelect: get('quad-voicing-select'),
                 keySigSelect: get('key-signature-select'), cipherTypeContainer: get('cipher-type-container'), cipherTypeSelect: get('cipher-type-select'),
                 keySigContainer: get('key-signature-container'), melodyNoteNameOptionsContainer: get('melody-note-name-options-container'),
-                melodyNoteNameStyleSelect: get('melody-note-name-style-select')
+                melodyNoteNameStyleSelect: get('melody-note-name-style-select'), showGuideToggle: get('show-guide')
             };
         }
         function initializeAppState() {
@@ -228,7 +232,8 @@
                 selectedQuadVoicing: 'all', cipherType: 'todos', melodyNoteNameStyle: 'con-alteracion',
                 exerciseStarted: false, isPaused: false, metronomeTimer: null, exerciseMeasures: [], currentMeasureContent: [], 
                 currentMetronomeCount: 0, timeSignatureBeats: 4, measuresChangeBeat: 4, currentMeasureIndex: -1, 
-                measuresPerExercise: 10, isPreRoll: false, isPlaying: false, showNoteNames: false, keySignature: 'C' 
+                measuresPerExercise: 10, isPreRoll: false, isPlaying: false, showNoteNames: false, keySignature: 'C',
+                showGuide: false, noteStartX: 0, noteSpacing: 0
             };
             audio = { context: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0 };
             notesData = {
@@ -279,15 +284,25 @@
             ui.closeModalBtn.addEventListener('click', hideTutorial);
             ui.tutorialModal.addEventListener('click', (e) => e.target === ui.tutorialModal && hideTutorial());
             ui.nextTutorialStepBtn.addEventListener('click', nextTutorialStep);
+            
             ui.showNoteNamesToggle.addEventListener('change', () => { 
                 state.showNoteNames = ui.showNoteNamesToggle.checked; 
                 updateHarmonyControlsVisibility();
                 renderStave(); 
             });
+
+            ui.showGuideToggle.addEventListener('change', () => {
+                state.showGuide = ui.showGuideToggle.checked;
+                if (!state.exerciseStarted) {
+                    if (ui.guideLine) ui.guideLine.style.display = 'none';
+                }
+            });
+
             ui.cipherTypeSelect.addEventListener('change', (e) => {
                 state.cipherType = e.target.value;
                 renderStave();
             });
+
             ui.exerciseTypeRadios.forEach(radio => radio.addEventListener('change', (e) => {
                 state.exerciseType = e.target.value;
                 if (state.exerciseType === 'armonia') {
@@ -298,12 +313,14 @@
                 if(state.exerciseStarted) stopExercise();
                 renderStave();
             }));
+
             ui.notesPerChordSelect.addEventListener('change', (e) => { 
                 state.notesPerChord = parseInt(e.target.value, 10); 
                 updateHarmonyControlsVisibility();
                 if(state.exerciseStarted) stopExercise();
                 renderStave(); 
             });
+
             ui.intervalSelect.addEventListener('change', e => { state.selectedInterval = parseInt(e.target.value, 10); if(state.exerciseStarted) stopExercise(); });
             ui.triadSelect.addEventListener('change', e => { state.selectedTriad = e.target.value; if(state.exerciseStarted) stopExercise(); });
             ui.quadVoicingSelect.addEventListener('change', e => { state.selectedQuadVoicing = e.target.value; if(state.exerciseStarted) stopExercise(); });
@@ -483,6 +500,7 @@
             handleMeasuresChange();
             ui.metronomeCount.textContent = "0";
             ui.preRollMessage.classList.add('hidden');
+            if(ui.guideLine) ui.guideLine.style.display = 'none';
             renderStave();
         }
         function togglePause() {
@@ -528,9 +546,25 @@
                     ui.metronomeCount.textContent = state.currentMetronomeCount;
                 }
                 renderStave();
+                updateGuidePosition();
                 audio.nextNoteTime += beatDuration;
             }
             state.metronomeTimer = setTimeout(scheduler, audio.lookahead);
+        }
+        function updateGuidePosition() {
+            if (!state.showGuide || !state.exerciseStarted || state.isPreRoll) {
+                if (ui.guideLine) ui.guideLine.style.display = 'none';
+                return;
+            }
+            if (ui.guideLine) {
+                ui.guideLine.style.display = 'block';
+                const beatIndex = state.currentMetronomeCount - 1;
+                const xPos = state.noteStartX + (beatIndex * state.noteSpacing);
+                if (!isNaN(xPos)) {
+                    ui.guideLine.setAttribute('x1', xPos);
+                    ui.guideLine.setAttribute('x2', xPos);
+                }
+            }
         }
         function getNoteRangeForDifficulty() {
             const { natural } = notesData;
@@ -860,6 +894,19 @@
             const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             svg.setAttribute('viewBox', `-10 0 420 220`);
             ui.staveContainer.appendChild(svg);
+
+            const guideLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            guideLine.setAttribute('id', 'guide-line');
+            guideLine.setAttribute('y1', '25'); 
+            guideLine.setAttribute('y2', '125'); 
+            guideLine.setAttribute('stroke', 'rgba(239, 68, 68, 0.7)');
+            guideLine.setAttribute('stroke-width', '2');
+            guideLine.setAttribute('stroke-linecap', 'round');
+            guideLine.style.display = 'none';
+            guideLine.style.transition = 'transform 0.1s linear';
+            svg.appendChild(guideLine);
+            ui.guideLine = guideLine;
+
             const mainGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
             mainGroup.setAttribute('transform', 'translate(0, 30)');
             svg.appendChild(mainGroup);
@@ -883,15 +930,15 @@
             let currentX = xOffset + 20;
             const clef = document.createElementNS("http://www.w3.org/2000/svg", "text");
             clef.setAttribute('x', currentX); clef.setAttribute('y', clefInfo.symbolY);
-            clef.setAttribute('font-size', '40px'); clef.textContent = clefInfo.symbol;
-            group.appendChild(clef); currentX += 30;
+            clef.setAttribute('font-size', '50px'); clef.textContent = clefInfo.symbol;
+            group.appendChild(clef); currentX += 40;
 
             const keyInfo = notesData.keySignatures[state.keySignature];
             const currentClef = ui.clefSelect.value;
             if (keyInfo && keyInfo.count > 0 && !ui.keySigContainer.classList.contains('hidden')) {
                 const positions = keyInfo.type === 'sharp' ? notesData.sharpPositions[currentClef] : notesData.flatPositions[currentClef];
                 const symbol = keyInfo.type === 'sharp' ? '♯' : '♭';
-                const fontSize = keyInfo.type === 'sharp' ? '22px' : '24px';
+                const fontSize = '28px';
                 for (let i = 0; i < keyInfo.count; i++) {
                     const accidental = document.createElementNS("http://www.w3.org/2000/svg", "text");
                     accidental.setAttribute('x', currentX);
@@ -900,23 +947,26 @@
                     accidental.setAttribute('dominant-baseline', 'middle');
                     accidental.textContent = symbol;
                     group.appendChild(accidental);
-                    currentX += (keyInfo.type === 'sharp' ? 8 : 9);
+                    currentX += 10;
                 }
                 currentX += 15; 
             }
 
             const timeSigParts = ui.timeSigSelect.value.split('/');
             const timeSigTop = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            timeSigTop.setAttribute('x', currentX); timeSigTop.setAttribute('y', 60);
-            timeSigTop.setAttribute('font-size', '18px'); timeSigTop.textContent = timeSigParts[0];
+            timeSigTop.setAttribute('x', currentX); timeSigTop.setAttribute('y', 55);
+            timeSigTop.setAttribute('font-size', '28px'); timeSigTop.textContent = timeSigParts[0];
             group.appendChild(timeSigTop);
             const timeSigBottom = document.createElementNS("http://www.w3.org/2000/svg", "text");
             timeSigBottom.setAttribute('x', currentX); timeSigBottom.setAttribute('y', 75);
-            timeSigBottom.setAttribute('font-size', '18px'); timeSigBottom.textContent = timeSigParts[1];
+            timeSigBottom.setAttribute('font-size', '28px'); timeSigBottom.textContent = timeSigParts[1];
             group.appendChild(timeSigBottom); currentX += 30;
             if(!content || content.length === 0) return;
             const noteSpacing = (measureWidth - (currentX - xOffset) - 20) / content.length;
             const noteStartX = currentX + noteSpacing / 2;
+            state.noteStartX = noteStartX;
+            state.noteSpacing = noteSpacing;
+
             content.forEach((item, index) => {
                 if (!item || item.length === 0) return;
                 const isChord = Array.isArray(item);
@@ -935,7 +985,7 @@
                                 nameText.textContent = intervalInfo.name;
                                 nameText.setAttribute('x', itemX);
                                 nameText.setAttribute('y', 145);
-                                nameText.setAttribute('font-size', '14px');
+                                nameText.setAttribute('font-size', '16px');
                                 nameText.setAttribute('fill', 'black');
                                 nameText.setAttribute('text-anchor', 'middle');
                                 group.appendChild(nameText);
@@ -948,7 +998,7 @@
                                 nameText.textContent = chordInfo.name;
                                 nameText.setAttribute('x', itemX);
                                 nameText.setAttribute('y', -5);
-                                nameText.setAttribute('font-size', '14px');
+                                nameText.setAttribute('font-size', '18px');
                                 nameText.setAttribute('fill', 'black');
                                 nameText.setAttribute('text-anchor', 'middle');
                                 group.appendChild(nameText);
@@ -968,8 +1018,8 @@
                                         const textElem = document.createElementNS("http://www.w3.org/2000/svg", "text");
                                         textElem.textContent = part;
                                         textElem.setAttribute('x', itemX);
-                                        textElem.setAttribute('y', 138 + i * 13);
-                                        textElem.setAttribute('font-size', '12px');
+                                        textElem.setAttribute('y', 138 + i * 15);
+                                        textElem.setAttribute('font-size', '16px');
                                         textElem.setAttribute('fill', 'black');
                                         textElem.setAttribute('text-anchor', 'middle');
                                         group.appendChild(textElem);
@@ -979,7 +1029,7 @@
                                     bottomLabel.textContent = bottomText;
                                     bottomLabel.setAttribute('x', itemX);
                                     bottomLabel.setAttribute('y', 145);
-                                    bottomLabel.setAttribute('font-size', '14px');
+                                    bottomLabel.setAttribute('font-size', '16px');
                                     bottomLabel.setAttribute('fill', 'black');
                                     bottomLabel.setAttribute('text-anchor', 'middle');
                                     group.appendChild(bottomLabel);
@@ -1003,7 +1053,7 @@
                             nameText.textContent = latinName;
                             nameText.setAttribute('x', itemX);
                             nameText.setAttribute('y', 145); // Below the staff
-                            nameText.setAttribute('font-size', '14px');
+                            nameText.setAttribute('font-size', '16px');
                             nameText.setAttribute('fill', 'black');
                             nameText.setAttribute('text-anchor', 'middle');
                             group.appendChild(nameText);
@@ -1024,7 +1074,7 @@
                             accidentalText.textContent = accidentalSymbol;
                             accidentalText.setAttribute('x', headX - 25);
                             accidentalText.setAttribute('y', y);
-                            accidentalText.setAttribute('font-size', '20px');
+                            accidentalText.setAttribute('font-size', '28px');
                             accidentalText.setAttribute('dominant-baseline', 'middle');
                             group.appendChild(accidentalText);
                         }
