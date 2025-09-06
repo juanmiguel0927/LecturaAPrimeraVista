@@ -69,7 +69,7 @@
                 <div id="quad-voicing-container" class="flex items-center space-x-2">
                     <label for="quad-voicing-select" class="text-zinc-300">Voicing:</label>
                     <select id="quad-voicing-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        {/* Options will be populated by JS */}
+                        <!-- Options will be populated by JS -->
                     </select>
                 </div>
             </div>
@@ -83,7 +83,7 @@
                     <option value="G" selected>Sol</option><option value="F">Fa</option><option value="C">Do</option>
                 </select>
             </div>
-             <div class="flex items-center space-x-2">
+             <div id="key-signature-container" class="flex items-center space-x-2">
                 <label for="key-signature-select" class="text-zinc-300">Armadura:</label>
                 <select id="key-signature-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="C">Do M / La m (0)</option>
@@ -133,12 +133,19 @@
                 <label for="show-note-names" class="text-zinc-300">Nombres:</label>
                 <input type="checkbox" id="show-note-names" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
             </div>
+            <div id="melody-note-name-options-container" class="hidden flex items-center space-x-2">
+                <label for="melody-note-name-style-select" class="text-zinc-300">Alteración:</label>
+                <select id="melody-note-name-style-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="con-alteracion" selected>Con Alteración</option>
+                    <option value="sin-alteracion">Sin Alteración</option>
+                </select>
+            </div>
              <div id="cipher-type-container" class="hidden flex items-center space-x-2">
                 <label for="cipher-type-select" class="text-zinc-300">Cifrado:</label>
                 <select id="cipher-type-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="todos" selected>Todos</option>
                     <option value="americano">Americano</option>
-                    <option value="bajo">Bajo Cifrado</option>
+                    <option value="drops">Drops</option>
                 </select>
             </div>
         </div>
@@ -210,13 +217,15 @@
                 notesPerChordSelect: get('notes-per-chord'), changeBeatContainer: get('change-beat-control'), intervalOptionsContainer: get('interval-options-container'),
                 intervalSelect: get('interval-select'), triadOptionsContainer: get('triad-options-container'), triadSelect: get('triad-select'),
                 quadOptionsContainer: get('quad-options-container'), quadVoicingSelect: get('quad-voicing-select'),
-                keySigSelect: get('key-signature-select'), cipherTypeContainer: get('cipher-type-container'), cipherTypeSelect: get('cipher-type-select')
+                keySigSelect: get('key-signature-select'), cipherTypeContainer: get('cipher-type-container'), cipherTypeSelect: get('cipher-type-select'),
+                keySigContainer: get('key-signature-container'), melodyNoteNameOptionsContainer: get('melody-note-name-options-container'),
+                melodyNoteNameStyleSelect: get('melody-note-name-style-select')
             };
         }
         function initializeAppState() {
             state = { 
                 exerciseType: 'melodia', notesPerChord: 3, selectedInterval: 0, selectedTriad: 'all',
-                selectedQuadVoicing: 'all', cipherType: 'todos',
+                selectedQuadVoicing: 'all', cipherType: 'todos', melodyNoteNameStyle: 'con-alteracion',
                 exerciseStarted: false, isPaused: false, metronomeTimer: null, exerciseMeasures: [], currentMeasureContent: [], 
                 currentMetronomeCount: 0, timeSignatureBeats: 4, measuresChangeBeat: 4, currentMeasureIndex: -1, 
                 measuresPerExercise: 10, isPreRoll: false, isPlaying: false, showNoteNames: false, keySignature: 'C' 
@@ -228,7 +237,7 @@
                 letterToDiatonic: {'C':0,'D':1,'E':2,'F':3,'G':4,'A':5,'B':6}, clefs: {},
                 triadFormulas: { 'all': ["2-4", "2-5", "3-5", "1-4", "3-6", "3-4"], 'triad_fundamental': ["2-4"], 'triad_inv1': ["2-5"], 'triad_inv2': ["3-5"], 'sus2_all': ["1-4", "3-6"], 'sus4_all': ["3-4", "1-4"] },
                 chordFormulas: { 'maj7': [0, 4, 7, 11], 'm7': [0, 3, 7, 10], 'dom7': [0, 4, 7, 10], 'm7b5': [0, 3, 6, 10], 'dim7': [0, 3, 6, 9] },
-                voicingsByDifficulty: { medium: { 'drop2': 'Drop 2', 'drop3': 'Drop 3' }, advanced: { 'all': 'Todos', 'drop2': 'Drop 2', 'drop3': 'Drop 3', 'drop24': 'Drop 2 & 4', 'drop23': 'Drop 2 & 3', 'doubleDrop23': 'Double Drop 2 & 3' }},
+                voicingsByDifficulty: { medium: { 'drop2': 'Drops 2', 'drop3': 'Drops 3' }, advanced: { 'all': 'Todos', 'drop2': 'Drops 2', 'drop3': 'Drops 3', 'drop24': 'Drops 2&4', 'drop23': 'Drops 2&3', 'doubleDrop23': 'Doble Drops 2 & 3' }},
                 voicingAbbreviations: { 'all': '', 'drop2': 'D2', 'drop3': 'D3', 'drop24': 'D2&4', 'drop23': 'D2&3', 'doubleDrop23': 'Dd2&D3' },
                 keySignatures: {
                     'C': { notes: ['C','D','E','F','G','A','B'] }, 'G': { notes: ['G','A','B','C','D','E','F#'] },
@@ -281,6 +290,10 @@
             });
             ui.exerciseTypeRadios.forEach(radio => radio.addEventListener('change', (e) => {
                 state.exerciseType = e.target.value;
+                if (state.exerciseType === 'armonia') {
+                    ui.keySigSelect.value = 'C';
+                    state.keySignature = 'C';
+                }
                 updateHarmonyControlsVisibility();
                 if(state.exerciseStarted) stopExercise();
                 renderStave();
@@ -295,6 +308,11 @@
             ui.triadSelect.addEventListener('change', e => { state.selectedTriad = e.target.value; if(state.exerciseStarted) stopExercise(); });
             ui.quadVoicingSelect.addEventListener('change', e => { state.selectedQuadVoicing = e.target.value; if(state.exerciseStarted) stopExercise(); });
             
+            ui.melodyNoteNameStyleSelect.addEventListener('change', (e) => {
+                state.melodyNoteNameStyle = e.target.value;
+                if(state.exerciseStarted) renderStave();
+            });
+
             ui.measuresSelect.addEventListener('change', handleMeasuresChange);
             ui.customMeasuresInput.addEventListener('input', handleMeasuresChange);
             
@@ -318,16 +336,67 @@
         function updateHarmonyControlsVisibility() {
             const isHarmony = state.exerciseType === 'armonia';
             const notes = parseInt(ui.notesPerChordSelect.value, 10);
+            const showNames = ui.showNoteNamesToggle.checked;
+
             ui.harmonyOptionsContainer.classList.toggle('hidden', !isHarmony);
             
             ui.intervalOptionsContainer.classList.toggle('hidden', !isHarmony || notes !== 2);
             ui.triadOptionsContainer.classList.toggle('hidden', !isHarmony || notes !== 3);
             ui.quadOptionsContainer.classList.toggle('hidden', !isHarmony || notes !== 4);
             
-            const showCipherControl = isHarmony && ui.showNoteNamesToggle.checked && notes > 2;
+            const showMelodyNameOptions = !isHarmony && showNames;
+            ui.melodyNoteNameOptionsContainer.classList.toggle('hidden', !showMelodyNameOptions);
+
+            const showCipherControl = isHarmony && showNames && notes > 2;
             ui.cipherTypeContainer.classList.toggle('hidden', !showCipherControl);
 
+            if (showCipherControl) {
+                const select = ui.cipherTypeSelect;
+                const currentVal = select.value;
+                select.innerHTML = '';
+                let options = [];
+                if (notes === 3) {
+                    options = [
+                        {value: 'todos', text: 'Todos'},
+                        {value: 'americano', text: 'Americano'},
+                        {value: 'bajo', text: 'Bajo Cifrado'}
+                    ];
+                } else if (notes === 4) {
+                    options = [
+                        {value: 'todos', text: 'Todos'},
+                        {value: 'americano', text: 'Americano'},
+                        {value: 'drops', text: 'Drops'}
+                    ];
+                }
+                options.forEach(opt => {
+                    const optionEl = document.createElement('option');
+                    optionEl.value = opt.value;
+                    optionEl.textContent = opt.text;
+                    select.appendChild(optionEl);
+                });
+                
+                if (options.some(opt => opt.value === currentVal)) {
+                    select.value = currentVal;
+                } else {
+                    select.value = 'todos';
+                }
+                state.cipherType = select.value;
+            }
+
             const isQuad = isHarmony && notes === 4;
+            
+            const clefOptions = ui.clefSelect.options;
+            for (let i = 0; i < clefOptions.length; i++) {
+                const option = clefOptions[i];
+                if (option.value === 'F' || option.value === 'C') {
+                    option.hidden = isQuad;
+                }
+            }
+            if (isQuad && ui.clefSelect.value !== 'G') {
+                ui.clefSelect.value = 'G';
+            }
+
+            ui.keySigContainer.classList.toggle('hidden', isQuad);
             const basicOption = ui.difficultySelect.querySelector('option[value="basico"]');
             if (basicOption) basicOption.disabled = isQuad;
             
@@ -337,10 +406,7 @@
             }
         }
         function updateDropVoicingOptions() {
-            const difficulty = ui.difficultySelect.value;
-            const effectiveDifficulty = (difficulty === 'basico' && state.notesPerChord === 4) ? 'medium' : difficulty;
-
-            const voicings = notesData.voicingsByDifficulty[effectiveDifficulty];
+            const voicings = notesData.voicingsByDifficulty.advanced;
             if (!voicings) {
                 ui.quadVoicingSelect.innerHTML = '';
                 return;
@@ -740,7 +806,10 @@
             const diatonicDiff = (oct2 - oct1) * 7 + (diatonicIndex2 - diatonicIndex1) + 1;
             const chromaticDiff = notesData.chromaticMap[note2] - notesData.chromaticMap[note1];
             const key = `${diatonicDiff}-${chromaticDiff}`;
-            return { name: notesData.intervalAbbreviations[key] || diatonicDiff.toString() };
+            
+            let abbrev = notesData.intervalAbbreviations[key] || diatonicDiff.toString();
+
+            return { name: abbrev };
         }
 
         function getChordName(notes) {
@@ -819,7 +888,7 @@
 
             const keyInfo = notesData.keySignatures[state.keySignature];
             const currentClef = ui.clefSelect.value;
-            if (keyInfo && keyInfo.count > 0) {
+            if (keyInfo && keyInfo.count > 0 && !ui.keySigContainer.classList.contains('hidden')) {
                 const positions = keyInfo.type === 'sharp' ? notesData.sharpPositions[currentClef] : notesData.flatPositions[currentClef];
                 const symbol = keyInfo.type === 'sharp' ? '♯' : '♭';
                 const fontSize = keyInfo.type === 'sharp' ? '22px' : '24px';
@@ -856,45 +925,88 @@
                 let noteObjects = notes.map(note => ({ note, y: clefInfo.yPositions[note] })).filter(n => n.y !== undefined);
                 if (noteObjects.length !== notes.length) { console.warn("Undefined note Y position", notes); return; }
                 
-                if(state.showNoteNames && isChord) {
-                    const cipherType = state.cipherType;
-                    if(notes.length > 2) {
-                        const chordInfo = getChordName(notes);
-                        if (chordInfo.name && (cipherType === 'americano' || cipherType === 'todos')) {
-                            const nameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                            nameText.textContent = chordInfo.name;
-                            nameText.setAttribute('x', itemX); nameText.setAttribute('y', 10);
-                            nameText.setAttribute('font-size', '14px'); nameText.setAttribute('fill', 'black');
-                            nameText.setAttribute('text-anchor', 'middle');
-                            group.appendChild(nameText);
+                if(state.showNoteNames) {
+                    if (isChord) {
+                        const cipherType = state.cipherType;
+                        if (notes.length === 2) {
+                            const intervalInfo = getIntervalAbbreviation(notes);
+                            if (intervalInfo.name) {
+                                const nameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                                nameText.textContent = intervalInfo.name;
+                                nameText.setAttribute('x', itemX);
+                                nameText.setAttribute('y', 145);
+                                nameText.setAttribute('font-size', '14px');
+                                nameText.setAttribute('fill', 'black');
+                                nameText.setAttribute('text-anchor', 'middle');
+                                group.appendChild(nameText);
+                            }
+                        } else if (notes.length > 2) {
+                            const chordInfo = getChordName(notes);
+
+                            if (chordInfo.name && (cipherType === 'americano' || cipherType === 'todos')) {
+                                const nameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                                nameText.textContent = chordInfo.name;
+                                nameText.setAttribute('x', itemX);
+                                nameText.setAttribute('y', -5);
+                                nameText.setAttribute('font-size', '14px');
+                                nameText.setAttribute('fill', 'black');
+                                nameText.setAttribute('text-anchor', 'middle');
+                                group.appendChild(nameText);
+                            }
+                            
+                            let bottomText = '';
+                            if (notes.length === 3 && (cipherType === 'bajo' || cipherType === 'todos')) {
+                                if (chordInfo.figuredBass) bottomText = chordInfo.figuredBass;
+                            } else if (notes.length === 4 && (cipherType === 'drops' || cipherType === 'todos')) {
+                                bottomText = notesData.voicingAbbreviations[item.voicing] || '';
+                            }
+                            
+                            if(bottomText) {
+                                if (bottomText.includes('/') || bottomText.includes(' ')) {
+                                    const parts = bottomText.split(/[\s/]/);
+                                    parts.forEach((part, i) => {
+                                        const textElem = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                                        textElem.textContent = part;
+                                        textElem.setAttribute('x', itemX);
+                                        textElem.setAttribute('y', 138 + i * 13);
+                                        textElem.setAttribute('font-size', '12px');
+                                        textElem.setAttribute('fill', 'black');
+                                        textElem.setAttribute('text-anchor', 'middle');
+                                        group.appendChild(textElem);
+                                    });
+                                } else {
+                                    const bottomLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                                    bottomLabel.textContent = bottomText;
+                                    bottomLabel.setAttribute('x', itemX);
+                                    bottomLabel.setAttribute('y', 145);
+                                    bottomLabel.setAttribute('font-size', '14px');
+                                    bottomLabel.setAttribute('fill', 'black');
+                                    bottomLabel.setAttribute('text-anchor', 'middle');
+                                    group.appendChild(bottomLabel);
+                                }
+                            }
                         }
-                        let bottomText = '';
-                        if (cipherType === 'bajo' || cipherType === 'todos') {
-                            if (notes.length === 4) bottomText = notesData.voicingAbbreviations[item.voicing] || '';
-                            else if (notes.length === 3 && chordInfo.figuredBass) bottomText = chordInfo.figuredBass;
+                    } else { // It's melody
+                        const fullNoteName = notes[0].split('/')[0];
+                        const baseNoteName = fullNoteName.slice(0, 1);
+                        let latinName = notesData.noteToLatin[baseNoteName];
+
+                        if (state.melodyNoteNameStyle === 'con-alteracion') {
+                            const accidental = fullNoteName.slice(1);
+                            if (accidental) {
+                                latinName += accidental;
+                            }
                         }
                         
-                        if(bottomText) {
-                             if (bottomText.includes('/') || bottomText.includes(' ')) {
-                                const parts = bottomText.split(/[\s/]/);
-                                parts.forEach((part, i) => {
-                                    const textElem = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                                    textElem.textContent = part;
-                                    textElem.setAttribute('x', itemX);
-                                    textElem.setAttribute('y', 138 + i * 13);
-                                    textElem.setAttribute('font-size', '12px');
-                                    textElem.setAttribute('fill', 'black');
-                                    textElem.setAttribute('text-anchor', 'middle');
-                                    group.appendChild(textElem);
-                                });
-                            } else {
-                                const bottomLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                                bottomLabel.textContent = bottomText;
-                                bottomLabel.setAttribute('x', itemX); bottomLabel.setAttribute('y', 145);
-                                bottomLabel.setAttribute('font-size', '14px'); bottomLabel.setAttribute('fill', 'black');
-                                bottomLabel.setAttribute('text-anchor', 'middle');
-                                group.appendChild(bottomLabel);
-                            }
+                        if (latinName) {
+                            const nameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                            nameText.textContent = latinName;
+                            nameText.setAttribute('x', itemX);
+                            nameText.setAttribute('y', 145); // Below the staff
+                            nameText.setAttribute('font-size', '14px');
+                            nameText.setAttribute('fill', 'black');
+                            nameText.setAttribute('text-anchor', 'middle');
+                            group.appendChild(nameText);
                         }
                     }
                 }
@@ -910,7 +1022,7 @@
                         if (accidentalSymbol) {
                             const accidentalText = document.createElementNS("http://www.w3.org/2000/svg", "text");
                             accidentalText.textContent = accidentalSymbol;
-                            accidentalText.setAttribute('x', headX - 18);
+                            accidentalText.setAttribute('x', headX - 25);
                             accidentalText.setAttribute('y', y);
                             accidentalText.setAttribute('font-size', '20px');
                             accidentalText.setAttribute('dominant-baseline', 'middle');
