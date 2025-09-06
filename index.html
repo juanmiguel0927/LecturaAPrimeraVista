@@ -24,7 +24,7 @@
 </head>
 <body class="bg-zinc-900 text-white flex flex-col items-center p-4 min-h-screen">
     <div id="loading-message">Cargando...</div>
-    <div id="main-content" class="hidden bg-zinc-800 rounded-2xl text-center border-2 shadow-2xl p-6 md:p-10 w-full max-w-4xl border-emerald-500">
+    <div id="main-content" class="hidden bg-zinc-800 rounded-2xl text-center border-2 shadow-2xl p-6 md:p-10 w-full max-w-5xl border-emerald-500">
         <h1 class="text-4xl md:text-5xl font-extrabold text-emerald-400 mb-2 drop-shadow-md">Lectura a Primera Vista</h1>
         <p class="text-zinc-500 text-sm mb-4">Aplicación realizada por Juan Miguel Rios Redondo</p>
         <p class="text-zinc-400 text-lg md:text-xl mb-6">Ejercicios para guitarra</p>
@@ -133,6 +133,14 @@
                 <label for="show-note-names" class="text-zinc-300">Nombres:</label>
                 <input type="checkbox" id="show-note-names" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
             </div>
+             <div id="cipher-type-container" class="hidden flex items-center space-x-2">
+                <label for="cipher-type-select" class="text-zinc-300">Cifrado:</label>
+                <select id="cipher-type-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="todos" selected>Todos</option>
+                    <option value="americano">Americano</option>
+                    <option value="bajo">Bajo Cifrado</option>
+                </select>
+            </div>
         </div>
         <div id="change-beat-control" class="flex items-center justify-center space-x-2 mb-8">
             <label for="change-beat-select" class="text-zinc-300">Cambiar compás en tiempo:</label>
@@ -202,13 +210,13 @@
                 notesPerChordSelect: get('notes-per-chord'), changeBeatContainer: get('change-beat-control'), intervalOptionsContainer: get('interval-options-container'),
                 intervalSelect: get('interval-select'), triadOptionsContainer: get('triad-options-container'), triadSelect: get('triad-select'),
                 quadOptionsContainer: get('quad-options-container'), quadVoicingSelect: get('quad-voicing-select'),
-                keySigSelect: get('key-signature-select')
+                keySigSelect: get('key-signature-select'), cipherTypeContainer: get('cipher-type-container'), cipherTypeSelect: get('cipher-type-select')
             };
         }
         function initializeAppState() {
             state = { 
                 exerciseType: 'melodia', notesPerChord: 3, selectedInterval: 0, selectedTriad: 'all',
-                selectedQuadVoicing: 'drop2',
+                selectedQuadVoicing: 'all', cipherType: 'todos',
                 exerciseStarted: false, isPaused: false, metronomeTimer: null, exerciseMeasures: [], currentMeasureContent: [], 
                 currentMetronomeCount: 0, timeSignatureBeats: 4, measuresChangeBeat: 4, currentMeasureIndex: -1, 
                 measuresPerExercise: 10, isPreRoll: false, isPlaying: false, showNoteNames: false, keySignature: 'C' 
@@ -219,45 +227,41 @@
                 natural: [], noteToLatin: {'C':'Do','D':'Re','E':'Mi','F':'Fa','G':'Sol','A':'La','B':'Si'},
                 letterToDiatonic: {'C':0,'D':1,'E':2,'F':3,'G':4,'A':5,'B':6}, clefs: {},
                 triadFormulas: { 'all': ["2-4", "2-5", "3-5", "1-4", "3-6", "3-4"], 'triad_fundamental': ["2-4"], 'triad_inv1': ["2-5"], 'triad_inv2': ["3-5"], 'sus2_all': ["1-4", "3-6"], 'sus4_all': ["3-4", "1-4"] },
-                voicingsByDifficulty: {
-                    medium: { 'drop2': 'Drop 2', 'drop3': 'Drop 3' },
-                    advanced: { 'drop2': 'Drop 2', 'drop3': 'Drop 3', 'drop24': 'Drop 2 & 4', 'drop23': 'Drop 2 & 3', 'doubleDrop23': 'Double Drop 2 & 3' }
-                },
+                chordFormulas: { 'maj7': [0, 4, 7, 11], 'm7': [0, 3, 7, 10], 'dom7': [0, 4, 7, 10], 'm7b5': [0, 3, 6, 10], 'dim7': [0, 3, 6, 9] },
+                voicingsByDifficulty: { medium: { 'drop2': 'Drop 2', 'drop3': 'Drop 3' }, advanced: { 'all': 'Todos', 'drop2': 'Drop 2', 'drop3': 'Drop 3', 'drop24': 'Drop 2 & 4', 'drop23': 'Drop 2 & 3', 'doubleDrop23': 'Double Drop 2 & 3' }},
+                voicingAbbreviations: { 'all': '', 'drop2': 'D2', 'drop3': 'D3', 'drop24': 'D2&4', 'drop23': 'D2&3', 'doubleDrop23': 'Dd2&D3' },
                 keySignatures: {
-                    'C': { type: null, count: 0, notes: ['C','D','E','F','G','A','B'] },
-                    'G': { type: 'sharp', count: 1, notes: ['G','A','B','C','D','E','F#'] },
-                    'D': { type: 'sharp', count: 2, notes: ['D','E','F#','G','A','B','C#'] },
-                    'A': { type: 'sharp', count: 3, notes: ['A','B','C#','D','E','F#','G#'] },
-                    'E': { type: 'sharp', count: 4, notes: ['E','F#','G#','A','B','C#','D#'] },
-                    'B': { type: 'sharp', count: 5, notes: ['B','C#','D#','E','F#','G#','A#'] },
-                    'F#': { type: 'sharp', count: 6, notes: ['F#','G#','A#','B','C#','D#','E#'] },
-                    'C#': { type: 'sharp', count: 7, notes: ['C#','D#','E#','F#','G#','A#','B#'] },
-                    'F': { type: 'flat', count: 1, notes: ['F','G','A','Bb','C','D','E'] },
-                    'Bb': { type: 'flat', count: 2, notes: ['Bb','C','D','Eb','F','G','A'] },
-                    'Eb': { type: 'flat', count: 3, notes: ['Eb','F','G','Ab','Bb','C','D'] },
-                    'Ab': { type: 'flat', count: 4, notes: ['Ab','Bb','C','Db','Eb','F','G'] },
-                    'Db': { type: 'flat', count: 5, notes: ['Db','Eb','F','Gb','Ab','Bb','C'] },
-                    'Gb': { type: 'flat', count: 6, notes: ['Gb','Ab','Bb','Cb','Db','Eb','F'] },
-                    'Cb': { type: 'flat', count: 7, notes: ['Cb','Db','Eb','Fb','Gb','Ab','Bb'] }
+                    'C': { notes: ['C','D','E','F','G','A','B'] }, 'G': { notes: ['G','A','B','C','D','E','F#'] },
+                    'D': { notes: ['D','E','F#','G','A','B','C#'] }, 'A': { notes: ['A','B','C#','D','E','F#','G#'] },
+                    'E': { notes: ['E','F#','G#','A','B','C#','D#'] }, 'B': { notes: ['B','C#','D#','E','F#','G#','A#'] },
+                    'F#':{ notes: ['F#','G#','A#','B','C#','D#','E#'] }, 'C#':{ notes: ['C#','D#','E#','F#','G#','A#','B#'] },
+                    'F': { notes: ['F','G','A','Bb','C','D','E'] }, 'Bb':{ notes: ['Bb','C','D','Eb','F','G','A'] },
+                    'Eb':{ notes: ['Eb','F','G','Ab','Bb','C','D'] }, 'Ab':{ notes: ['Ab','Bb','C','Db','Eb','F','G'] },
+                    'Db':{ notes: ['Db','Eb','F','Gb','Ab','Bb','C'] }, 'Gb':{ notes: ['Gb','Ab','Bb','Cb','Db','Eb','F'] },
+                    'Cb':{ notes: ['Cb','Db','Eb','Fb','Gb','Ab','Bb'] }
                 },
                 sharpPositions: { 'G': [40, 55, 35, 50, 65, 45, 60], 'F': [50, 65, 45, 60, 75, 55, 70], 'C': [45, 60, 40, 55, 70, 50, 65] },
                 flatPositions: { 'G': [55, 40, 60, 45, 65, 50, 70], 'F': [65, 50, 70, 55, 75, 60, 80], 'C': [60, 45, 65, 50, 70, 55, 75] },
-                chromaticMap: {},
-                noteNames: ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+                chromaticMap: {}, intervalAbbreviations: {}, figuredBass: {}, figuredBassSeventh: {}
             };
+            Object.keys(notesData.keySignatures).forEach((key, index) => {
+                if (index < 8) { notesData.keySignatures[key].type = index === 0 ? null : 'sharp'; notesData.keySignatures[key].count = index; } 
+                else { notesData.keySignatures[key].type = 'flat'; notesData.keySignatures[key].count = index - 7; }
+            });
             notesData.natural = notesData.all.filter(n => !n.includes('#') && !n.includes('b'));
             const calculateDiatonic = (note) => { const parts = note.split('/'); const letter = parts[0][0]; const octave = parseInt(parts[1], 10); return octave * 7 + notesData.letterToDiatonic[letter]; };
             const generateY = (baseNote) => { const baseVal = calculateDiatonic(baseNote); const positions = {}; notesData.all.forEach(n => { positions[n] = 80 - (calculateDiatonic(n) - baseVal) * 5; }); return positions; };
             notesData.clefs = { 'G': { symbol: '𝄞', symbolY: 75, yPositions: generateY('E/4') }, 'F': { symbol: '𝄢', symbolY: 75, yPositions: generateY('G/2') }, 'C': { symbol: '𝄡', symbolY: 80, yPositions: generateY('F/3') } };
-            notesData.all.forEach(note => {
-                const [name, octaveStr] = note.split('/');
-                const octave = parseInt(octaveStr, 10);
-                let value;
-                if(name.includes('#')) value = notesData.noteNames.indexOf(name);
-                else if (name.includes('b')) value = 'C Db D Eb E F Gb G Ab A Bb B'.split(' ').indexOf(name);
-                else value = notesData.noteNames.indexOf(name);
-                notesData.chromaticMap[note] = 12 * octave + value;
-            });
+            
+            let noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']; let flatNoteNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+            for(const note of notesData.all) {
+                const [name, octaveStr] = note.split('/'); const octave = parseInt(octaveStr, 10);
+                let noteIndex = name.includes('b') ? flatNoteNames.indexOf(name) : noteNames.indexOf(name);
+                notesData.chromaticMap[note] = 12 * (octave + 1) + noteIndex;
+            }
+            notesData.intervalAbbreviations = { '1-0': '1', '2-1': 'b2', '2-2': '2', '3-3': 'b3', '3-4': '3', '4-5': '4', '4-6': '#4', '5-6': 'b5', '5-7': '5', '5-8': '#5', '6-8': 'b6', '6-9': '6', '7-10': 'b7', '7-11': '7', '8-12': '8', '9-13': 'b9', '9-14': '9', '10-15': 'b10', '10-16': '10', '11-17': '11', '11-18': '#11', '12-18': 'b12', '12-19': '12', '13-20': 'b13', '13-21': '13'};
+            notesData.figuredBass = { 0: '', 1: '6', 2: '6 4' };
+            notesData.figuredBassSeventh = { 0: '7', 1: '6 5', 2: '4 3', 3: '4 2' };
         }
         function attachEventListeners() {
             ui.startStopButton.addEventListener('click', () => state.exerciseStarted ? stopExercise() : startExercise());
@@ -266,7 +270,15 @@
             ui.closeModalBtn.addEventListener('click', hideTutorial);
             ui.tutorialModal.addEventListener('click', (e) => e.target === ui.tutorialModal && hideTutorial());
             ui.nextTutorialStepBtn.addEventListener('click', nextTutorialStep);
-            ui.showNoteNamesToggle.addEventListener('change', () => { state.showNoteNames = ui.showNoteNamesToggle.checked; renderStave(); });
+            ui.showNoteNamesToggle.addEventListener('change', () => { 
+                state.showNoteNames = ui.showNoteNamesToggle.checked; 
+                updateHarmonyControlsVisibility();
+                renderStave(); 
+            });
+            ui.cipherTypeSelect.addEventListener('change', (e) => {
+                state.cipherType = e.target.value;
+                renderStave();
+            });
             ui.exerciseTypeRadios.forEach(radio => radio.addEventListener('change', (e) => {
                 state.exerciseType = e.target.value;
                 updateHarmonyControlsVisibility();
@@ -312,6 +324,9 @@
             ui.triadOptionsContainer.classList.toggle('hidden', !isHarmony || notes !== 3);
             ui.quadOptionsContainer.classList.toggle('hidden', !isHarmony || notes !== 4);
             
+            const showCipherControl = isHarmony && ui.showNoteNamesToggle.checked && notes > 2;
+            ui.cipherTypeContainer.classList.toggle('hidden', !showCipherControl);
+
             const isQuad = isHarmony && notes === 4;
             const basicOption = ui.difficultySelect.querySelector('option[value="basico"]');
             if (basicOption) basicOption.disabled = isQuad;
@@ -346,7 +361,9 @@
             if (newSelectionAvailable) {
                 ui.quadVoicingSelect.value = currentVoicing;
             } else {
-                ui.quadVoicingSelect.selectedIndex = 0;
+                 // Default to 'all' if it exists for the new level, otherwise first option
+                if(voicings['all']) ui.quadVoicingSelect.value = 'all';
+                else ui.quadVoicingSelect.selectedIndex = 0;
             }
         }
 
@@ -489,18 +506,21 @@
             let lastNote = diatonicNotePool[Math.floor(Math.random() * diatonicNotePool.length)];
             
             for (let i = 0; i < state.measuresPerExercise; i++) {
-                let firstNoteInMeasure = (i === 0) ? lastNote : getNextMeasureStartNote(lastNote, diatonicNotePool);
+                let rootNotesPool = (state.exerciseType === 'armonia' && state.notesPerChord === 4) ? noteRange : diatonicNotePool;
+                let firstNoteInMeasure = (i === 0) ? lastNote : getNextMeasureStartNote(lastNote, rootNotesPool);
                 let rootNotesForMeasure = [firstNoteInMeasure];
                 
                 const maxInterval = (ui.difficultySelect.value === 'advanced') ? 7 : 5;
-                const firstNoteIndex = diatonicNotePool.indexOf(firstNoteInMeasure);
-                const measureNotePool = diatonicNotePool.slice(
+                const poolForMelody = (state.exerciseType === 'armonia' && state.notesPerChord === 4) ? noteRange : rootNotesPool;
+                const firstNoteIndex = poolForMelody.indexOf(firstNoteInMeasure);
+
+                const measureNotePool = (firstNoteIndex !== -1) ? poolForMelody.slice(
                     Math.max(0, firstNoteIndex - maxInterval),
-                    Math.min(diatonicNotePool.length - 1, firstNoteIndex + maxInterval) + 1
-                );
+                    Math.min(poolForMelody.length - 1, firstNoteIndex + maxInterval) + 1
+                ).filter(n => rootNotesPool.includes(n)) : rootNotesPool;
 
                 for (let b = 1; b < state.timeSignatureBeats; b++) {
-                    const nextRoot = getNextMelodicNote(rootNotesForMeasure, measureNotePool.length > 1 ? measureNotePool : diatonicNotePool);
+                    const nextRoot = getNextMelodicNote(rootNotesForMeasure, measureNotePool.length > 1 ? measureNotePool : rootNotesPool);
                     rootNotesForMeasure.push(nextRoot);
                 }
 
@@ -515,13 +535,14 @@
 
                 if(allMeasures.length > i && allMeasures[i] && allMeasures[i].length > 0) {
                      const lastItem = allMeasures[i][allMeasures[i].length - 1];
-                     lastNote = Array.isArray(lastItem) ? (lastItem[0].split('/')[0].length > 1 ? lastItem[0] : lastItem.sort((a,b) => notesData.all.indexOf(a) - notesData.all.indexOf(b))[0] ) : lastItem;
+                     lastNote = Array.isArray(lastItem) ? lastItem.sort((a,b) => notesData.all.indexOf(a) - notesData.all.indexOf(b))[0] : lastItem;
                 }
             }
             return allMeasures;
         }
         function getNextMeasureStartNote(previousNote, notePool) {
             const lastNoteIndex = notePool.indexOf(previousNote);
+            if (lastNoteIndex === -1) return notePool[Math.floor(Math.random() * notePool.length)];
             const maxLeap = (ui.difficultySelect.value === 'advanced') ? 7 : 4; 
             let possibleNotes = [];
             for (let leap = 3; leap <= maxLeap; leap++) {
@@ -533,29 +554,52 @@
         function getNextMelodicNote(currentNotes, notePool) {
             const previousNote = currentNotes[currentNotes.length - 1];
             const prevNoteIndex = notePool.indexOf(previousNote);
+            if (prevNoteIndex === -1) return notePool[Math.floor(Math.random() * notePool.length)];
             let direction = 0;
             if (currentNotes.length > 1) {
-                const lastInterval = notePool.indexOf(previousNote) - notePool.indexOf(currentNotes[currentNotes.length - 2]);
-                if (Math.abs(lastInterval) >= 3) direction = lastInterval > 0 ? -1 : 1;
+                const lastNoteIndex = notePool.indexOf(currentNotes[currentNotes.length - 2]);
+                if(lastNoteIndex !== -1) {
+                    const lastInterval = prevNoteIndex - lastNoteIndex;
+                    if (Math.abs(lastInterval) >= 3) direction = lastInterval > 0 ? -1 : 1;
+                }
             }
             let candidates;
             if (direction !== 0) {
-                 candidates = notePool.filter(n => {
-                    const interval = notePool.indexOf(n) - prevNoteIndex;
+                 candidates = notePool.filter((n, idx) => {
+                    const interval = idx - prevNoteIndex;
                     return (direction === 1 && interval > 0 && interval <= 2) || (direction === -1 && interval < 0 && interval >= -2);
                 });
             } else {
-                candidates = notePool.filter(n => Math.abs(notePool.indexOf(n) - prevNoteIndex) <= 2 && n !== previousNote);
+                candidates = notePool.filter((n, idx) => Math.abs(idx - prevNoteIndex) <= 2 && n !== previousNote);
             }
             if (candidates.length === 0) candidates = notePool.filter(n => n !== previousNote);
             if (candidates.length === 0) return previousNote;
             return candidates[Math.floor(Math.random() * candidates.length)];
         }
         function alterNote(note, semitones) {
-            const index = notesData.all.indexOf(note);
-            if (index === -1) return null;
-            const newIndex = index + semitones;
-            return (newIndex >= 0 && newIndex < notesData.all.length) ? notesData.all[newIndex] : null;
+            const chromaticValue = notesData.chromaticMap[note];
+            if (chromaticValue === undefined) return null;
+            const newChromaticValue = chromaticValue + semitones;
+            const preferredAccidental = note.includes('b') ? 'b' : '#';
+            return getNoteNameFromChromaticValue(newChromaticValue, preferredAccidental);
+        }
+        
+        function getNoteNameFromChromaticValue(chromaticValue, preferredAccidental = '#') {
+             const noteIndex = chromaticValue % 12;
+            let noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            let flatNoteNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+            let noteName = (preferredAccidental === 'b' && flatNoteNames[noteIndex].includes('b')) ? flatNoteNames[noteIndex] : noteNames[noteIndex];
+            
+            for (let octave = 1; octave < 7; octave++) {
+                const fullNoteName = `${noteName}/${octave}`;
+                 if (notesData.chromaticMap[fullNoteName] === chromaticValue) return fullNoteName;
+            }
+            noteName = (preferredAccidental === 'b' && !flatNoteNames[noteIndex].includes('b')) ? noteNames[noteIndex] : flatNoteNames[noteIndex];
+             for (let octave = 1; octave < 7; octave++) {
+                const fullNoteName = `${noteName}/${octave}`;
+                 if (notesData.chromaticMap[fullNoteName] === chromaticValue) return fullNoteName;
+            }
+            return null;
         }
         
         function generateHarmonicItem(rootNote, noteRange, fullDiatonicPool) {
@@ -565,56 +609,74 @@
 
             while (item === null && attempts < 50) {
                 attempts++;
-                const currentRoot = attempts > 1 ? noteRange[Math.floor(Math.random() * noteRange.length)] : rootNote;
-                const rootIndex = fullDiatonicPool.indexOf(currentRoot);
-
-                if (rootIndex === -1) continue;
+                const currentRoot = attempts > 1 ? (numNotes === 4 ? noteRange : fullDiatonicPool)[Math.floor(Math.random() * (numNotes === 4 ? noteRange.length : fullDiatonicPool.length))] : rootNote;
+                if (!currentRoot) continue;
                 
                 let closePositionNotes = [];
 
-                if (numNotes === 2) {
-                    let intervalSteps = state.selectedInterval;
-                    if (intervalSteps === 0) intervalSteps = [1, 2, 3, 4, 5, 6, 7][Math.floor(Math.random() * 7)];
-                    const topNoteIndex = rootIndex + intervalSteps;
-                    if (topNoteIndex < fullDiatonicPool.length) {
-                        closePositionNotes = [currentRoot, fullDiatonicPool[topNoteIndex]];
-                    }
-                } else if (numNotes === 3) {
-                    const formulaKey = state.selectedTriad;
-                    const formulas = notesData.triadFormulas[formulaKey];
-                    const formula = formulas[Math.floor(Math.random() * formulas.length)];
-                    const intervals = formula.split('-').map(Number);
-                    if ((rootIndex + intervals[1]) < fullDiatonicPool.length) {
-                        const note1 = fullDiatonicPool[rootIndex + intervals[0]];
-                        const note2 = fullDiatonicPool[rootIndex + intervals[1]];
-                        closePositionNotes = [currentRoot, note1, note2];
-                    }
-                } else if (numNotes === 4) {
-                    if (rootIndex + 6 < fullDiatonicPool.length) {
-                        closePositionNotes = [
-                            fullDiatonicPool[rootIndex],
-                            fullDiatonicPool[rootIndex + 2],
-                            fullDiatonicPool[rootIndex + 4],
-                            fullDiatonicPool[rootIndex + 6]
-                        ];
+                if (numNotes === 4) {
+                    let qualities = Object.keys(notesData.chordFormulas);
+                    let quality = qualities[Math.floor(Math.random() * qualities.length)];
+                    let formula = notesData.chordFormulas[quality];
+                    
+                    const rootChromaticValue = notesData.chromaticMap[currentRoot];
+                    if (rootChromaticValue === undefined) continue;
+
+                    const preferredAccidental = currentRoot.includes('b') || state.keySignature.includes('b') || state.keySignature === 'F' ? 'b' : '#';
+
+                    closePositionNotes = formula.map(interval => {
+                        return getNoteNameFromChromaticValue(rootChromaticValue + interval, preferredAccidental);
+                    }).filter(Boolean);
+
+                    const noteLetters = closePositionNotes.map(n => n.split('/')[0].slice(0,1));
+                    if (new Set(noteLetters).size < 4) continue;
+
+                } else {
+                    const rootIndex = fullDiatonicPool.indexOf(currentRoot);
+                    if (rootIndex === -1) continue;
+                    if (numNotes === 2) {
+                        let intervalSteps = state.selectedInterval;
+                        if (intervalSteps === 0) {
+                            const difficulty = ui.difficultySelect.value;
+                            const maxDiatonicStep = (difficulty === 'basico') ? 7 : 12; // up to 8va for basic, up to 13th for med/adv
+                            intervalSteps = Math.floor(Math.random() * maxDiatonicStep) + 1;
+                        }
+                        const topNoteIndex = rootIndex + intervalSteps;
+                        if (topNoteIndex < fullDiatonicPool.length) {
+                            closePositionNotes = [currentRoot, fullDiatonicPool[topNoteIndex]];
+                        }
+                    } else if (numNotes === 3) {
+                        const formulaKey = state.selectedTriad;
+                        const formulas = notesData.triadFormulas[formulaKey];
+                        const formula = formulas[Math.floor(Math.random() * formulas.length)];
+                        const intervals = formula.split('-').map(Number);
+                        if ((rootIndex + intervals[1]) < fullDiatonicPool.length) {
+                            const note1 = fullDiatonicPool[rootIndex + intervals[0]];
+                            const note2 = fullDiatonicPool[rootIndex + intervals[1]];
+                            closePositionNotes = [currentRoot, note1, note2];
+                        }
                     }
                 }
-
+                
                 if (closePositionNotes.length !== numNotes) continue;
-
+                
                 if (numNotes < 4) {
-                    if (closePositionNotes.every(n => noteRange.includes(n))) {
+                     if (closePositionNotes.every(n => noteRange.includes(n))) {
                         item = closePositionNotes;
                     }
                 } else { 
                     let voicing = ui.quadVoicingSelect.value;
+                    if(voicing === 'all'){
+                        const allVoicings = Object.keys(notesData.voicingAbbreviations).filter(v => v !== 'all' && v !== '');
+                        voicing = allVoicings[Math.floor(Math.random() * allVoicings.length)];
+                    }
                     let inversion = Math.floor(Math.random() * 4);
                     
                     let invertedNotes = [...closePositionNotes];
                     for (let i = 0; i < inversion; i++) {
                         invertedNotes.push(alterNote(invertedNotes.shift(), 12));
                     }
-                    invertedNotes = invertedNotes.filter(Boolean).sort((a, b) => notesData.all.indexOf(a) - notesData.all.indexOf(b));
+                    invertedNotes = invertedNotes.filter(Boolean).sort((a, b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
                     if (invertedNotes.length < 4) continue;
 
                     let voicedChord = [...invertedNotes];
@@ -638,6 +700,7 @@
                     voicedChord = voicedChord.filter(Boolean);
                     if (voicedChord.length === 4 && voicedChord.every(n => noteRange.includes(n))) {
                         item = voicedChord;
+                        item.voicing = voicing;
                     }
                 }
             }
@@ -651,20 +714,96 @@
             gain.gain.setValueAtTime(isAccent ? 0.3 : 0.2, time);
             osc.start(time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05); osc.stop(time + 0.1);
         }
+        
+        function getAccidentalSymbolForNote(noteName, keySignature) {
+            const keyNotes = notesData.keySignatures[keySignature].notes;
+            const baseNote = noteName.split('/')[0].slice(0, 1);
+            const noteAccidental = noteName.includes('#') ? '#' : (noteName.includes('b') ? 'b' : '');
+            const diatonicNoteInKey = keyNotes.find(n => n.startsWith(baseNote));
+            if (!diatonicNoteInKey) return noteAccidental === '#' ? '♯' : (noteAccidental === 'b' ? '♭' : null);
+            const keyAccidental = diatonicNoteInKey.includes('#') ? '#' : (diatonicNoteInKey.includes('b') ? 'b' : '');
+            if (noteAccidental === keyAccidental) return null;
+            if (noteAccidental === '') return '♮';
+            if (noteAccidental === '#') return '♯';
+            if (noteAccidental === 'b') return '♭';
+            return null;
+        }
+
+        function getIntervalAbbreviation(notes) {
+            if (notes.length !== 2) return { name: '' };
+            const [note1, note2] = notes.sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
+
+            const [name1, oct1_str] = note1.split('/'); const [name2, oct2_str] = note2.split('/');
+            const oct1 = parseInt(oct1_str, 10); const oct2 = parseInt(oct2_str, 10);
+            const diatonicIndex1 = notesData.letterToDiatonic[name1[0]]; const diatonicIndex2 = notesData.letterToDiatonic[name2[0]];
+
+            const diatonicDiff = (oct2 - oct1) * 7 + (diatonicIndex2 - diatonicIndex1) + 1;
+            const chromaticDiff = notesData.chromaticMap[note2] - notesData.chromaticMap[note1];
+            const key = `${diatonicDiff}-${chromaticDiff}`;
+            return { name: notesData.intervalAbbreviations[key] || diatonicDiff.toString() };
+        }
+
+        function getChordName(notes) {
+            const sortedNotes = [...notes].sort((a, b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
+            const bassNoteName = sortedNotes[0].split('/')[0];
+            const noteValues = sortedNotes.map(n => notesData.chromaticMap[n]);
+            for (let i = 0; i < noteValues.length; i++) {
+                const rootValue = noteValues[i];
+                const intervals = noteValues.map(v => (v - rootValue + 120) % 12).sort((a,b) => a - b);
+                
+                let quality = null;
+                const intervalString = intervals.join(',');
+                const rootNoteName = sortedNotes[i].split('/')[0];
+                const inversionIndex = sortedNotes.findIndex(n => notesData.chromaticMap[n] % 12 === rootValue % 12);
+
+                if (notes.length === 3) {
+                    if (intervalString === '0,4,7') quality = ''; 
+                    else if (intervalString === '0,3,7') quality = 'm';
+                    else if (intervalString === '0,3,6') quality = '°'; 
+                    else if (intervalString === '0,4,8') quality = '+';
+                    else if (intervalString === '0,2,7') quality = 'sus2'; 
+                    else if (intervalString === '0,5,7') quality = 'sus4';
+
+                    if (quality !== null) {
+                        const chordName = rootNoteName === bassNoteName ? `${rootNoteName}${quality}` : `${rootNoteName}${quality}/${bassNoteName}`;
+                         const bassNote = sortedNotes[0];
+                        const otherNotes = sortedNotes.filter(n => n !== bassNote);
+                        const figuredBassIntervals = otherNotes.map(n => getIntervalAbbreviation([bassNote, n]).name).sort((a,b) => parseInt(b.replace(/[^0-9]/g, '')) - parseInt(a.replace(/[^0-9]/g, ''))).join(' ');
+                        return { name: chordName, figuredBass: figuredBassIntervals };
+                    }
+                }
+                if (notes.length === 4) {
+                    if (intervalString === '0,4,7,11') quality = 'maj7'; else if (intervalString === '0,3,7,10') quality = 'm7';
+                    else if (intervalString === '0,4,7,10') quality = '7'; else if (intervalString === '0,3,6,10') quality = 'm7♭5';
+                    else if (intervalString === '0,3,6,9') quality = '°7';
+                     if (quality) {
+                        const chordName = rootNoteName === bassNoteName ? `${rootNoteName}${quality}` : `${rootNoteName}${quality}/${bassNoteName}`;
+                        const figuredBassSymbol = notesData.figuredBassSeventh[inversionIndex] || '';
+                         return { name: chordName, figuredBass: figuredBassSymbol };
+                    }
+                }
+            }
+            return { name: '' };
+        }
+
         function renderStave() {
             ui.staveContainer.innerHTML = '';
             const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            svg.setAttribute('viewBox', `-10 0 380 200`);
+            svg.setAttribute('viewBox', `-10 0 420 220`);
             ui.staveContainer.appendChild(svg);
+            const mainGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            mainGroup.setAttribute('transform', 'translate(0, 30)');
+            svg.appendChild(mainGroup);
+
             let contentToDraw = [];
             if (state.isPreRoll && state.exerciseMeasures.length > 0) contentToDraw = state.exerciseMeasures[0];
             else if (state.exerciseStarted) contentToDraw = state.currentMeasureContent;
-            drawMeasure(svg, contentToDraw, 30, 300);
+            drawMeasure(mainGroup, contentToDraw, 30, 360);
         }
-        function drawMeasure(svg, content, xOffset, measureWidth) {
+        function drawMeasure(parentGroup, content, xOffset, measureWidth) {
             const clefInfo = notesData.clefs[ui.clefSelect.value];
             const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            svg.appendChild(group);
+            parentGroup.appendChild(group);
             for (let i = 0; i < 5; i++) {
                 const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 line.setAttribute('x1', xOffset); line.setAttribute('y1', 40 + i * 10);
@@ -716,14 +855,68 @@
                 const itemX = noteStartX + index * noteSpacing;
                 let noteObjects = notes.map(note => ({ note, y: clefInfo.yPositions[note] })).filter(n => n.y !== undefined);
                 if (noteObjects.length !== notes.length) { console.warn("Undefined note Y position", notes); return; }
-                let lastY = -1000;
                 
+                if(state.showNoteNames && isChord) {
+                    const cipherType = state.cipherType;
+                    if(notes.length > 2) {
+                        const chordInfo = getChordName(notes);
+                        if (chordInfo.name && (cipherType === 'americano' || cipherType === 'todos')) {
+                            const nameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                            nameText.textContent = chordInfo.name;
+                            nameText.setAttribute('x', itemX); nameText.setAttribute('y', 10);
+                            nameText.setAttribute('font-size', '14px'); nameText.setAttribute('fill', 'black');
+                            nameText.setAttribute('text-anchor', 'middle');
+                            group.appendChild(nameText);
+                        }
+                        let bottomText = '';
+                        if (cipherType === 'bajo' || cipherType === 'todos') {
+                            if (notes.length === 4) bottomText = notesData.voicingAbbreviations[item.voicing] || '';
+                            else if (notes.length === 3 && chordInfo.figuredBass) bottomText = chordInfo.figuredBass;
+                        }
+                        
+                        if(bottomText) {
+                             if (bottomText.includes('/') || bottomText.includes(' ')) {
+                                const parts = bottomText.split(/[\s/]/);
+                                parts.forEach((part, i) => {
+                                    const textElem = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                                    textElem.textContent = part;
+                                    textElem.setAttribute('x', itemX);
+                                    textElem.setAttribute('y', 138 + i * 13);
+                                    textElem.setAttribute('font-size', '12px');
+                                    textElem.setAttribute('fill', 'black');
+                                    textElem.setAttribute('text-anchor', 'middle');
+                                    group.appendChild(textElem);
+                                });
+                            } else {
+                                const bottomLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                                bottomLabel.textContent = bottomText;
+                                bottomLabel.setAttribute('x', itemX); bottomLabel.setAttribute('y', 145);
+                                bottomLabel.setAttribute('font-size', '14px'); bottomLabel.setAttribute('fill', 'black');
+                                bottomLabel.setAttribute('text-anchor', 'middle');
+                                group.appendChild(bottomLabel);
+                            }
+                        }
+                    }
+                }
+                
+                let lastY = -1000;
                 noteObjects.forEach(({note, y}) => {
                     let headX = itemX;
                     if(isChord && Math.abs(y - lastY) <= 5) {
                         headX = itemX + 12;
                     }
-                    
+                    if (isChord && state.notesPerChord === 4) {
+                        const accidentalSymbol = getAccidentalSymbolForNote(note, state.keySignature);
+                        if (accidentalSymbol) {
+                            const accidentalText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                            accidentalText.textContent = accidentalSymbol;
+                            accidentalText.setAttribute('x', headX - 18);
+                            accidentalText.setAttribute('y', y);
+                            accidentalText.setAttribute('font-size', '20px');
+                            accidentalText.setAttribute('dominant-baseline', 'middle');
+                            group.appendChild(accidentalText);
+                        }
+                    }
                     const noteHead = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
                     noteHead.setAttribute('cx', headX); noteHead.setAttribute('cy', y);
                     noteHead.setAttribute('rx', '6'); noteHead.setAttribute('ry', '4.5');
@@ -732,16 +925,6 @@
                     group.appendChild(noteHead); lastY = y;
                     for(let ly = 40; ly >= y; ly -= 10) if(ly < 40) drawLedgerLine(group, headX, ly);
                     for(let ly = 80; ly <= y; ly += 10) if(ly > 80) drawLedgerLine(group, headX, ly);
-                    if (state.showNoteNames) {
-                        const noteNameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                        const noteCipher = note.split('/')[0], baseNote = noteCipher[0], accidental = noteCipher.slice(1);
-                        noteNameText.textContent = notesData.noteToLatin[baseNote] + accidental;
-                        noteNameText.setAttribute('x', headX); noteNameText.setAttribute('y', y + 20);
-                        noteNameText.setAttribute('font-size', '12px');
-                        noteNameText.setAttribute('fill', 'black');
-                        noteNameText.setAttribute('text-anchor', 'middle');
-                        group.appendChild(noteNameText);
-                    }
                 });
             });
         }
@@ -799,5 +982,4 @@
     </script>
 </body>
 </html>
-
 
