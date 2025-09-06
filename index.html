@@ -712,6 +712,14 @@
                 const currentRoot = attempts > 1 ? (numNotes === 4 ? noteRange : fullDiatonicPool)[Math.floor(Math.random() * (numNotes === 4 ? noteRange.length : fullDiatonicPool.length))] : rootNote;
                 if (!currentRoot) continue;
                 
+                if (numNotes === 3 && (state.selectedTriad === 'sus2_all' || state.selectedTriad === 'sus4_all')) {
+                    const a3Index = notesData.all.indexOf('A/3');
+                    const rootNoteIndex = notesData.all.indexOf(currentRoot);
+                    if (a3Index !== -1 && rootNoteIndex < a3Index) {
+                        continue; // Root note is below A/3, try another.
+                    }
+                }
+
                 let closePositionNotes = [];
 
                 if (numNotes === 4) {
@@ -967,6 +975,39 @@
             state.noteStartX = noteStartX;
             state.noteSpacing = noteSpacing;
 
+            const americanChordLabels = [];
+            if (state.showNoteNames) {
+                let lastLabel = null;
+                let yLevel = 0; // 0 for high, 1 for low
+                content.forEach((item, index) => {
+                    const isChord = Array.isArray(item);
+                    const cipherType = state.cipherType;
+                    if (isChord && item.length > 2 && (cipherType === 'americano' || cipherType === 'todos')) {
+                        const chordInfo = getChordName(item);
+                        if (chordInfo.name) {
+                            const itemX = noteStartX + index * noteSpacing;
+                            const estimatedWidth = chordInfo.name.length * 9;
+                            let currentLabel = { text: chordInfo.name, x: itemX, y: -5, left: itemX - estimatedWidth / 2, right: itemX + estimatedWidth / 2 };
+                            if (lastLabel && currentLabel.left < lastLabel.right + 15) { yLevel = 1 - yLevel; } else { yLevel = 0; }
+                            currentLabel.y = -5 - (yLevel * 20);
+                            americanChordLabels.push(currentLabel);
+                            lastLabel = currentLabel;
+                        } else { lastLabel = null; }
+                    } else { lastLabel = null; }
+                });
+            }
+
+            americanChordLabels.forEach(label => {
+                const nameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                nameText.textContent = label.text;
+                nameText.setAttribute('x', label.x);
+                nameText.setAttribute('y', label.y);
+                nameText.setAttribute('font-size', '18px');
+                nameText.setAttribute('fill', 'black');
+                nameText.setAttribute('text-anchor', 'middle');
+                group.appendChild(nameText);
+            });
+
             content.forEach((item, index) => {
                 if (!item || item.length === 0) return;
                 const isChord = Array.isArray(item);
@@ -992,18 +1033,6 @@
                             }
                         } else if (notes.length > 2) {
                             const chordInfo = getChordName(notes);
-
-                            if (chordInfo.name && (cipherType === 'americano' || cipherType === 'todos')) {
-                                const nameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                                nameText.textContent = chordInfo.name;
-                                nameText.setAttribute('x', itemX);
-                                nameText.setAttribute('y', -5);
-                                nameText.setAttribute('font-size', '18px');
-                                nameText.setAttribute('fill', 'black');
-                                nameText.setAttribute('text-anchor', 'middle');
-                                group.appendChild(nameText);
-                            }
-                            
                             let bottomText = '';
                             if (notes.length === 3 && (cipherType === 'bajo' || cipherType === 'todos')) {
                                 if (chordInfo.figuredBass) bottomText = chordInfo.figuredBass;
