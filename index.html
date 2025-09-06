@@ -109,7 +109,7 @@
                     </optgroup>
                 </select>
             </div>
-            <div class="control-item">
+            <div id="time-signature-container" class="control-item">
                 <label for="time-signature-select" class="text-zinc-300 whitespace-nowrap">Compás:</label>
                 <select id="time-signature-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option>
@@ -227,7 +227,8 @@
                 quadOptionsContainer: get('quad-options-container'), quadVoicingSelect: get('quad-voicing-select'),
                 keySigSelect: get('key-signature-select'), cipherTypeContainer: get('cipher-type-container'), cipherTypeSelect: get('cipher-type-select'),
                 keySigContainer: get('key-signature-container'), melodyNoteNameOptionsContainer: get('melody-note-name-options-container'),
-                melodyNoteNameStyleSelect: get('melody-note-name-style-select'), showGuideToggle: get('show-guide')
+                melodyNoteNameStyleSelect: get('melody-note-name-style-select'), showGuideToggle: get('show-guide'),
+                timeSigContainer: get('time-signature-container')
             };
         }
         function initializeAppState() {
@@ -406,6 +407,13 @@
 
             const isQuad = isHarmony && notes === 4;
             
+            ui.timeSigContainer.classList.toggle('hidden', isQuad);
+            if(isQuad) {
+                ui.timeSigSelect.value = '4/4';
+                state.timeSignatureBeats = 4;
+                updateChangeBeatOptions();
+            }
+
             const clefOptions = ui.clefSelect.options;
             for (let i = 0; i < clefOptions.length; i++) {
                 const option = clefOptions[i];
@@ -562,7 +570,12 @@
             }
             if (ui.guideLine) {
                 ui.guideLine.style.display = 'block';
-                const beatIndex = state.currentMetronomeCount - 1;
+                let beatIndex = state.currentMetronomeCount - 1;
+                
+                if (state.exerciseType === 'armonia' && state.notesPerChord === 4) {
+                    beatIndex = Math.floor(beatIndex / 2);
+                }
+
                 const xPos = state.noteStartX + (beatIndex * state.noteSpacing);
                 if (!isNaN(xPos)) {
                     ui.guideLine.setAttribute('x1', xPos);
@@ -622,8 +635,13 @@
                     Math.max(0, firstNoteIndex - maxInterval),
                     Math.min(poolForMelody.length - 1, firstNoteIndex + maxInterval) + 1
                 ).filter(n => rootNotesPool.includes(n)) : rootNotesPool;
+                
+                let notesPerMeasure = state.timeSignatureBeats;
+                if (state.exerciseType === 'armonia' && state.notesPerChord === 4) {
+                    notesPerMeasure = 2;
+                }
 
-                for (let b = 1; b < state.timeSignatureBeats; b++) {
+                for (let b = 1; b < notesPerMeasure; b++) {
                     const nextRoot = getNextMelodicNote(rootNotesForMeasure, measureNotePool.length > 1 ? measureNotePool : rootNotesPool);
                     rootNotesForMeasure.push(nextRoot);
                 }
@@ -632,7 +650,7 @@
                     allMeasures.push(rootNotesForMeasure);
                 } else {
                     const measureChords = rootNotesForMeasure.map(root => generateHarmonicItem(root, noteRange, fullDiatonicPool)).filter(Boolean);
-                    if (measureChords.length === state.timeSignatureBeats) {
+                    if (measureChords.length === notesPerMeasure) {
                         allMeasures.push(measureChords);
                     } else { i--; continue; }
                 }
@@ -942,8 +960,9 @@
             let currentX = xOffset + 20;
             const clef = document.createElementNS("http://www.w3.org/2000/svg", "text");
             clef.textContent = clefInfo.symbol;
-            clef.setAttribute('x', currentX); clef.setAttribute('y', clefInfo.symbolY);
-            clef.setAttribute('font-size', '60px');
+            clef.setAttribute('x', currentX);
+            clef.setAttribute('y', clefInfo.symbolY);
+            clef.setAttribute('font-size', '55px');
             group.appendChild(clef); currentX += 50;
 
             const keyInfo = notesData.keySignatures[state.keySignature];
@@ -972,7 +991,7 @@
             timeSigTop.textContent = timeSigParts[0];
             group.appendChild(timeSigTop);
             const timeSigBottom = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            timeSigBottom.setAttribute('x', currentX); timeSigBottom.setAttribute('y', 80);
+            timeSigBottom.setAttribute('x', currentX); timeSigBottom.setAttribute('y', 85);
             timeSigBottom.setAttribute('font-size', '32px');
             timeSigBottom.textContent = timeSigParts[1];
             group.appendChild(timeSigBottom); currentX += 35;
@@ -1109,7 +1128,7 @@
                         if (accidentalSymbol) {
                             const accidentalText = document.createElementNS("http://www.w3.org/2000/svg", "text");
                             accidentalText.textContent = accidentalSymbol;
-                            accidentalText.setAttribute('x', headX - 25);
+                            accidentalText.setAttribute('x', headX - 30);
                             accidentalText.setAttribute('y', y);
                             accidentalText.setAttribute('font-size', '30px');
                             accidentalText.setAttribute('dominant-baseline', 'middle');
@@ -1164,7 +1183,7 @@
         }
         function updateTutorialStep() {
             const step = tutorialSteps[currentTutorialStep];
-            ui.tutorialStepsContainer.innerHTML = `<p class="tutorial-step active">${currentTutorialStep + 1}. ${step.text}</p>`;
+            ui.tutorialStepsContainer.innerHTML = `<p class="tutorial-step active">${step.text}</p>`;
             
             const targetElement = document.getElementById(step.id);
             if (targetElement) {
@@ -1181,4 +1200,5 @@
     </script>
 </body>
 </html>
+
 
