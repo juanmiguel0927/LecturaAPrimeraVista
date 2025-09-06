@@ -12,12 +12,16 @@
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1000; background-color: #1f2937; color: white; padding: 2rem; border-radius: 0.75rem; font-size: 1.5rem; font-weight: bold; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 100; }
         .modal-content { background-color: #374151; color: #d1d5db; padding: 2rem; border-radius: 1rem; max-width: 90%; width: 500px; max-height: 90%; overflow-y: auto; position: relative; }
+        .modal-content h2 { margin-bottom: 1.5rem; }
+        .modal-content p, .modal-content ul { line-height: 1.6; }
+        .modal-content strong { color: #34d399; }
+        .modal-content ul { list-style-position: inside; padding-left: 1rem; }
         .modal-close { position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem; cursor: pointer; }
         .stave-container { position: relative; }
         .tutorial-highlight-overlay { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 99; transition: all 0.5s ease-in-out; box-shadow: 0 0 0 0 transparent; border-radius: 1rem; }
         .pre-roll-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #34d399; font-size: 3rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .pre-roll-message-count { font-size: 5rem; }
-        .tutorial-step.active { color: #34d399; font-weight: bold; }
+        .tutorial-step.active { color: #d1d5db; }
         .radio-label { display: inline-block; background-color: #4b5563; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s ease-in-out; border: 2px solid transparent; }
         input[type="radio"]:checked + .radio-label { background-color: #374151; color: #34d399; border-color: #34d399; }
         .control-item { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
@@ -183,7 +187,7 @@
     <div id="tutorial-modal" class="modal-overlay hidden">
         <div class="modal-content text-left">
             <span class="modal-close" id="close-modal">×</span>
-            <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-emerald-400">Tutorial</h2>
+            <h2 class="text-2xl sm:text-3xl font-bold text-emerald-400">Tutorial</h2>
             <div id="tutorial-steps-container"></div>
             <button id="next-tutorial-step" class="mt-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-full shadow-lg">Siguiente</button>
         </div>
@@ -270,7 +274,8 @@
             notesData.natural = notesData.all.filter(n => !n.includes('#') && !n.includes('b'));
             const calculateDiatonic = (note) => { const parts = note.split('/'); const letter = parts[0][0]; const octave = parseInt(parts[1], 10); return octave * 7 + notesData.letterToDiatonic[letter]; };
             const generateY = (baseNote) => { const baseVal = calculateDiatonic(baseNote); const positions = {}; notesData.all.forEach(n => { positions[n] = 80 - (calculateDiatonic(n) - baseVal) * 5; }); return positions; };
-            notesData.clefs = { 'G': { symbol: '𝄞', symbolY: 75, yPositions: generateY('E/4') }, 'F': { symbol: '𝄢', symbolY: 75, yPositions: generateY('G/2') }, 'C': { symbol: '𝄡', symbolY: 80, yPositions: generateY('F/3') } };
+            // --- FINAL CLEF POSITIONS ---
+            notesData.clefs = { 'G': { symbol: '𝄞', symbolY: 75, yPositions: generateY('E/4') }, 'F': { symbol: '𝄢', symbolY: 85, yPositions: generateY('G/2') }, 'C': { symbol: '𝄡', symbolY: 85, yPositions: generateY('F/3') } };
             
             let noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']; let flatNoteNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
             for(const note of notesData.all) {
@@ -586,18 +591,18 @@
         function getNoteRangeForDifficulty() {
             const { natural } = notesData;
             switch (ui.difficultySelect.value) {
-                 case 'basico': 
+                case 'basico': 
                     if (ui.clefSelect.value === 'G') return natural.slice(natural.indexOf('E/4'), natural.indexOf('F/5') + 1);
                     if (ui.clefSelect.value === 'F') return natural.slice(natural.indexOf('G/2'), natural.indexOf('A/3') + 1);
-                    return natural.slice(natural.indexOf('F/3'), natural.indexOf('G/4') + 1);
+                    return natural.slice(natural.indexOf('F/3'), natural.indexOf('G/4') + 1); // C Clef
                 case 'medium':
                     if (ui.clefSelect.value === 'G') return natural.slice(natural.indexOf('E/3'), natural.indexOf('A/5') + 1);
                     if (ui.clefSelect.value === 'F') return natural.slice(natural.indexOf('E/2'), natural.indexOf('C/4') + 1);
-                    return natural.slice(natural.indexOf('D/2'), natural.indexOf('B/4') + 1);
-                default:
+                    return natural.slice(natural.indexOf('D/3'), natural.indexOf('B/4') + 1); // C Clef - Corrected
+                default: // 'advanced'
                     if (ui.clefSelect.value === 'G') return natural.slice(natural.indexOf('E/3'), natural.indexOf('E/6') + 1);
                     if (ui.clefSelect.value === 'F') return natural.slice(natural.indexOf('C/2'), natural.indexOf('F/4') + 1);
-                    return natural.slice(natural.indexOf('B/1'), natural.indexOf('B/4') + 1);
+                    return natural.slice(natural.indexOf('B/2'), natural.indexOf('D/5') + 1); // C Clef - Corrected
             }
         }
         function generateExercise() {
@@ -1153,15 +1158,36 @@
             line.setAttribute('stroke', 'black'); line.setAttribute('stroke-width', '1');
             parent.appendChild(line);
         }
-        // --- TUTORIAL FUNCTIONS ---
+        // --- TUTORIAL FUNCTIONS (UPDATED) ---
         const tutorialSteps = [
-            { id: 'exercise-type-control', text: 'Aquí puedes elegir entre ejercicios de Melodía (una nota a la vez) o Armonía (varias notas juntas, o acordes).' },
-            { id: 'controls-container', text: 'En esta sección, puedes ajustar todos los parámetros del ejercicio: tempo, clave, compás, nivel de dificultad y más.' },
-            { id: 'key-signature-select', text: 'Elige una armadura de clave para practicar con sostenidos o bemoles.'},
-            { id: 'quad-options-container', text: 'Para acordes de 4 notas, aquí defines el voicing (Drop 2). La calidad y la inversión serán aleatorias.'},
-            { id: 'startStopButton', text: 'Usa este botón para comenzar o detener el ejercicio en cualquier momento.' },
-            { id: 'stave-container', text: 'El pentagrama mostrará las notas que debes leer. ¡Prepárate!' },
-            { id: 'displayArea', text: 'Aquí verás el conteo del metrónomo y el progreso de los compases durante el ejercicio.' }
+            { 
+                id: 'exercise-type-control', 
+                text: '<p><strong>Tipo de Ejercicio:</strong></p><ul><li><strong>Melodía:</strong> Practica la lectura de notas individuales una tras otra.</li><li><strong>Armonía:</strong> Lee notas simultáneas. Puedes configurar el número de notas: 2 (intervalos), 3 (tríadas) o 4 (acordes de séptima).</li></ul>'
+            },
+            { 
+                id: 'difficulty-select', 
+                text: '<p><strong>Nivel de Dificultad:</strong></p><p>Define el rango de notas y la complejidad de los saltos melódicos.</p><ul><li><strong>Básico:</strong> Rango limitado y saltos pequeños, ideal para empezar.</li><li><strong>Medio:</strong> Rango extendido y saltos moderados.</li><li><strong>Avanzado:</strong> Rango completo del instrumento y saltos más amplios y complejos.</li></ul>'
+            },
+            { 
+                id: 'controls-container', 
+                text: '<p><strong>Controles Principales:</strong></p><p>Aquí puedes personalizar tu práctica. Ajusta el tempo (velocidad), elige la clave, la armadura y el compás.</p><p><strong>Aclaración sobre las claves:</strong> Aunque la app está pensada para guitarristas (clave de Sol), se incluyen las claves de Fa en 4ª y Do en 3ª. En <strong>Melodía</strong>, son útiles para practicar solfeo (rezado o entonado). En <strong>Armonía</strong>, están disponibles para 2 y 3 voces, pensando en otros instrumentos que puedan ejecutar lo escrito.</p>'
+            },
+            { 
+                id: 'harmony-options-container', 
+                text: '<p><strong>Opciones de Armonía:</strong></p><p>Cuando eliges "Armonía", estos controles se activan. Puedes seleccionar el tipo de intervalo, la inversión de las tríadas o el voicing para los acordes de cuatro notas.</p>'
+            },
+            { 
+                id: 'startStopButton', 
+                text: '<strong>Comenzar/Detener:</strong><br>Usa este botón para iniciar o detener el ejercicio en cualquier momento.' 
+            },
+            { 
+                id: 'stave-container', 
+                text: '<strong>Pentagrama:</strong><br>Aquí se mostrará la música que debes leer. ¡Mucha concentración!' 
+            },
+            { 
+                id: 'displayArea', 
+                text: '<strong>Área de Conteo:</strong><br>Sigue el pulso del metrónomo y tu progreso a través de los compases durante el ejercicio.' 
+            }
         ];
         let currentTutorialStep = 0;
         function showTutorial() {
@@ -1183,7 +1209,7 @@
         }
         function updateTutorialStep() {
             const step = tutorialSteps[currentTutorialStep];
-            ui.tutorialStepsContainer.innerHTML = `<p class="tutorial-step active">${step.text}</p>`;
+            ui.tutorialStepsContainer.innerHTML = `<div class="tutorial-step active">${step.text}</div>`;
             
             const targetElement = document.getElementById(step.id);
             if (targetElement) {
