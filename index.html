@@ -73,6 +73,14 @@
                     <option value="sus4_all">Acordes Sus4</option>
                 </select>
             </div>
+            <div id="triad-position-container" class="control-item hidden">
+                <label for="triad-position-select" class="text-zinc-300 whitespace-nowrap">Posición:</label>
+                <select id="triad-position-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="all" selected>Todas</option>
+                    <option value="cerrada">Cerrada</option>
+                    <option value="abierta">Abierta</option>
+                </select>
+            </div>
              <div id="quad-options-container" class="control-item hidden">
                 <label for="quad-voicing-select" class="text-zinc-300 whitespace-nowrap">Voicing:</label>
                 <select id="quad-voicing-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -228,6 +236,7 @@
                 exerciseTypeRadios: document.querySelectorAll('input[name="exerciseType"]'), harmonyOptionsContainer: get('harmony-options-container'),
                 notesPerChordSelect: get('notes-per-chord'), changeBeatContainer: get('change-beat-control'), intervalOptionsContainer: get('interval-options-container'),
                 intervalSelect: get('interval-select'), triadOptionsContainer: get('triad-options-container'), triadSelect: get('triad-select'),
+                triadPositionContainer: get('triad-position-container'), triadPositionSelect: get('triad-position-select'),
                 quadOptionsContainer: get('quad-options-container'), quadVoicingSelect: get('quad-voicing-select'),
                 keySigSelect: get('key-signature-select'), cipherTypeContainer: get('cipher-type-container'), cipherTypeSelect: get('cipher-type-select'),
                 keySigContainer: get('key-signature-container'), melodyNoteNameOptionsContainer: get('melody-note-name-options-container'),
@@ -237,7 +246,7 @@
         }
         function initializeAppState() {
             state = { 
-                exerciseType: 'melodia', notesPerChord: 3, selectedInterval: 0, selectedTriad: 'all',
+                exerciseType: 'melodia', notesPerChord: 3, selectedInterval: 0, selectedTriad: 'all', triadPosition: 'all',
                 selectedQuadVoicing: 'all', cipherType: 'todos', melodyNoteNameStyle: 'con-alteracion',
                 exerciseStarted: false, isPaused: false, metronomeTimer: null, exerciseMeasures: [], currentMeasureContent: [], 
                 currentMetronomeCount: 0, timeSignatureBeats: 4, measuresChangeBeat: 4, currentMeasureIndex: -1, 
@@ -333,6 +342,7 @@
 
             ui.intervalSelect.addEventListener('change', e => { state.selectedInterval = parseInt(e.target.value, 10); if(state.exerciseStarted) stopExercise(); });
             ui.triadSelect.addEventListener('change', e => { state.selectedTriad = e.target.value; if(state.exerciseStarted) stopExercise(); });
+            ui.triadPositionSelect.addEventListener('change', e => { state.triadPosition = e.target.value; if(state.exerciseStarted) stopExercise(); });
             ui.quadVoicingSelect.addEventListener('change', e => { state.selectedQuadVoicing = e.target.value; if(state.exerciseStarted) stopExercise(); });
             
             ui.melodyNoteNameStyleSelect.addEventListener('change', (e) => {
@@ -364,11 +374,16 @@
             const isHarmony = state.exerciseType === 'armonia';
             const notes = parseInt(ui.notesPerChordSelect.value, 10);
             const showNames = ui.showNoteNamesToggle.checked;
+            const difficulty = ui.difficultySelect.value;
 
             ui.harmonyOptionsContainer.classList.toggle('hidden', !isHarmony);
             
             ui.intervalOptionsContainer.classList.toggle('hidden', !isHarmony || notes !== 2);
             ui.triadOptionsContainer.classList.toggle('hidden', !isHarmony || notes !== 3);
+            
+            const showTriadPosition = isHarmony && notes === 3 && (difficulty === 'medium' || difficulty === 'advanced');
+            ui.triadPositionContainer.classList.toggle('hidden', !showTriadPosition);
+
             ui.quadOptionsContainer.classList.toggle('hidden', !isHarmony || notes !== 4);
             
             const showMelodyNameOptions = !isHarmony && showNames;
@@ -743,7 +758,7 @@
                     const a3Index = notesData.all.indexOf('A/3');
                     const rootNoteIndex = notesData.all.indexOf(currentRoot);
                     if (a3Index !== -1 && rootNoteIndex < a3Index) {
-                        continue; // Root note is below A/3, try another.
+                        continue;
                     }
                 }
 
@@ -773,7 +788,7 @@
                         let intervalSteps = state.selectedInterval;
                         if (intervalSteps === 0) {
                             const difficulty = ui.difficultySelect.value;
-                            const maxDiatonicStep = (difficulty === 'basico') ? 7 : 12; // up to 8va for basic, up to 13th for med/adv
+                            const maxDiatonicStep = (difficulty === 'basico') ? 7 : 12;
                             intervalSteps = Math.floor(Math.random() * maxDiatonicStep) + 1;
                         }
                         const topNoteIndex = rootIndex + intervalSteps;
@@ -795,11 +810,31 @@
                 
                 if (closePositionNotes.length !== numNotes) continue;
                 
-                if (numNotes < 4) {
-                     if (closePositionNotes.every(n => noteRange.includes(n))) {
+                if (numNotes === 2) {
+                    if (closePositionNotes.every(n => noteRange.includes(n))) {
                         item = closePositionNotes;
                     }
-                } else { 
+                } else if (numNotes === 3) {
+                    let finalNotes = [...closePositionNotes].sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
+                    const difficulty = ui.difficultySelect.value;
+                    
+                    if (difficulty !== 'basico') {
+                        const targetPosition = (state.triadPosition === 'all') ? (Math.random() < 0.5 ? 'cerrada' : 'abierta') : state.triadPosition;
+                        if (targetPosition === 'abierta') {
+                            const middleNoteUp = alterNote(finalNotes[1], 12);
+                            if(middleNoteUp) {
+                                finalNotes[1] = middleNoteUp;
+                                finalNotes.sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
+                            } else {
+                                finalNotes = []; 
+                            }
+                        }
+                    }
+                    
+                    if (finalNotes.length === 3 && finalNotes.every(n => noteRange.includes(n))) {
+                        item = finalNotes;
+                    }
+                } else { // numNotes === 4
                     let voicing = ui.quadVoicingSelect.value;
                     if(voicing === 'all'){
                         const allVoicings = Object.keys(notesData.voicingAbbreviations).filter(v => v !== 'all' && v !== '');
@@ -1174,7 +1209,7 @@
             },
             { 
                 id: 'harmony-options-container', 
-                text: '<p><strong>Opciones de Armonía:</strong></p><p>Cuando eliges "Armonía", estos controles se activan. Puedes seleccionar el tipo de intervalo, la inversión de las tríadas o el voicing para los acordes de cuatro notas.</p>'
+                text: '<p><strong>Opciones de Armonía:</strong></p><p>Cuando eliges "Armonía", estos controles se activan. Puedes seleccionar el tipo de intervalo, la inversión de las tríadas, la posición (abierta/cerrada) o el voicing para los acordes de cuatro notas.</p>'
             },
             { 
                 id: 'startStopButton', 
