@@ -9,6 +9,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css?family=Inter:wght@400;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #111827; }
+        body.fullscreen-active { overflow: hidden; }
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1000; background-color: #1f2937; color: white; padding: 2rem; border-radius: 0.75rem; font-size: 1.5rem; font-weight: bold; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 100; }
         .modal-content { background-color: #374151; color: #d1d5db; padding: 2rem; border-radius: 1rem; max-width: 90%; width: 500px; max-height: 90%; overflow-y: auto; position: relative; }
@@ -27,6 +28,26 @@
         .control-item { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
         @media (min-width: 640px) {
             .control-item { flex-direction: row; align-items: center; justify-content: space-between; width: 100%;}
+        }
+        
+        /* --- Faux Fullscreen Styles --- */
+        #stave-viewer.fullscreen-stave {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 50;
+            padding: 0;
+            margin: 0;
+            background-color: #ffffff; /* Match stave background */
+            border-radius: 0;
+        }
+        
+        #stave-viewer.fullscreen-stave #stave-container {
+             height: 100%;
+             width: 100%;
+             border-radius: 0;
         }
     </style>
 </head>
@@ -174,13 +195,17 @@
             <select id="change-beat-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
             </select>
         </div>
-        <div class="flex justify-center space-x-4 mb-8">
+        <div class="flex justify-center items-center space-x-4 mb-8">
             <button id="startStopButton" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Comenzar</button>
             <button id="pauseResumeButton" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Pausar</button>
             <button id="show-tutorial" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Tutorial</button>
         </div>
-        <div class="bg-zinc-700 p-2 md:p-6 rounded-lg shadow-inner mb-8 overflow-x-auto w-full">
+        <div id="stave-viewer" class="group relative bg-zinc-700 p-2 md:p-6 rounded-lg shadow-inner mb-8 overflow-x-auto w-full">
             <div id="stave-container" class="stave-container w-full h-80 flex items-center justify-center bg-white rounded-lg shadow-md border border-zinc-600"></div>
+            <button id="fullscreen-toggle" class="absolute z-10 bottom-4 right-4 p-3 rounded-full bg-gray-800 bg-opacity-60 text-white hover:bg-opacity-80 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100" title="Pantalla Completa">
+                <svg id="enter-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                <svg id="exit-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
+            </button>
         </div>
         <div id="displayArea" class="hidden bg-zinc-700 p-6 rounded-lg shadow-inner">
             <div class="flex justify-center items-center space-x-4">
@@ -241,7 +266,8 @@
                 keySigSelect: get('key-signature-select'), cipherTypeContainer: get('cipher-type-container'), cipherTypeSelect: get('cipher-type-select'),
                 keySigContainer: get('key-signature-container'), melodyNoteNameOptionsContainer: get('melody-note-name-options-container'),
                 melodyNoteNameStyleSelect: get('melody-note-name-style-select'), showGuideToggle: get('show-guide'),
-                timeSigContainer: get('time-signature-container')
+                timeSigContainer: get('time-signature-container'), 
+                staveViewer: get('stave-viewer'), fullscreenToggle: get('fullscreen-toggle'), enterFullscreenIcon: get('enter-fullscreen-icon'), exitFullscreenIcon: get('exit-fullscreen-icon')
             };
         }
         function initializeAppState() {
@@ -296,7 +322,9 @@
             notesData.figuredBass = { 0: '', 1: '6', 2: '6 4' };
             notesData.figuredBassSeventh = { 0: '7', 1: '6 5', 2: '4 3', 3: '4 2' };
         }
+        
         function attachEventListeners() {
+            // ... (other event listeners setup)
             ui.startStopButton.addEventListener('click', () => state.exerciseStarted ? stopExercise() : startExercise());
             ui.pauseResumeButton.addEventListener('click', togglePause);
             ui.showTutorialBtn.addEventListener('click', showTutorial);
@@ -369,7 +397,40 @@
                     renderStave();
                 });
             });
+
+            // --- Faux Fullscreen Logic ---
+            ui.fullscreenToggle.addEventListener('click', toggleFauxFullscreen);
+            window.addEventListener('resize', () => {
+                if(ui.staveViewer.classList.contains('fullscreen-stave')) {
+                    // Debounce resize event to avoid excessive redraws
+                    clearTimeout(window.resizeTimeout);
+                    window.resizeTimeout = setTimeout(renderStave, 100);
+                }
+            });
         }
+
+        // Toggles a CSS class to simulate fullscreen for better compatibility.
+        function toggleFauxFullscreen() {
+            const isCurrentlyFullscreen = ui.staveViewer.classList.contains('fullscreen-stave');
+
+            if (isCurrentlyFullscreen) {
+                // Exit fullscreen
+                ui.staveViewer.classList.remove('fullscreen-stave');
+                document.body.classList.remove('fullscreen-active');
+                ui.enterFullscreenIcon.classList.remove('hidden');
+                ui.exitFullscreenIcon.classList.add('hidden');
+            } else {
+                // Enter fullscreen
+                ui.staveViewer.classList.add('fullscreen-stave');
+                document.body.classList.add('fullscreen-active');
+                ui.enterFullscreenIcon.classList.add('hidden');
+                ui.exitFullscreenIcon.classList.remove('hidden');
+            }
+
+            // Redraw the stave after a short delay to ensure CSS has been applied
+            setTimeout(renderStave, 50);
+        }
+        
         function updateHarmonyControlsVisibility() {
             const isHarmony = state.exerciseType === 'armonia';
             const notes = parseInt(ui.notesPerChordSelect.value, 10);
@@ -962,7 +1023,9 @@
         function renderStave() {
             ui.staveContainer.innerHTML = '';
             const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            svg.setAttribute('viewBox', `-10 0 420 220`);
+            
+            svg.setAttribute('viewBox', `0 0 420 210`);
+            
             ui.staveContainer.appendChild(svg);
 
             const guideLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -1193,7 +1256,7 @@
             line.setAttribute('stroke', 'black'); line.setAttribute('stroke-width', '1');
             parent.appendChild(line);
         }
-        // --- TUTORIAL FUNCTIONS (UPDATED) ---
+        
         const tutorialSteps = [
             { 
                 id: 'exercise-type-control', 
@@ -1208,22 +1271,23 @@
                 text: '<p><strong>Controles Principales:</strong></p><p>Aquí puedes personalizar tu práctica. Ajusta el tempo (velocidad), elige la clave, la armadura y el compás.</p><p><strong>Aclaración sobre las claves:</strong> Aunque la app está pensada para guitarristas (clave de Sol), se incluyen las claves de Fa en 4ª y Do en 3ª. En <strong>Melodía</strong>, son útiles para practicar solfeo (rezado o entonado). En <strong>Armonía</strong>, están disponibles para 2 y 3 voces, pensando en otros instrumentos que puedan ejecutar lo escrito.</p>'
             },
             { 
-                id: 'harmony-options-container', 
-                text: '<p><strong>Opciones de Armonía:</strong></p><p>Cuando eliges "Armonía", estos controles se activan. Puedes seleccionar el tipo de intervalo, la inversión de las tríadas, la posición (abierta/cerrada) o el voicing para los acordes de cuatro notas.</p>'
-            },
-            { 
                 id: 'startStopButton', 
                 text: '<strong>Comenzar/Detener:</strong><br>Usa este botón para iniciar o detener el ejercicio en cualquier momento.' 
             },
             { 
-                id: 'stave-container', 
+                id: 'stave-viewer', 
                 text: '<strong>Pentagrama:</strong><br>Aquí se mostrará la música que debes leer. ¡Mucha concentración!' 
+            },
+            { 
+                id: 'stave-viewer', 
+                text: '<p><strong>Pantalla Completa:</strong></p><p>Usa el ícono de expandir en la esquina del pentagrama para entrar en un modo de visualización inmersivo. Vuelve a hacer clic en el ícono para salir.</p>' 
             },
             { 
                 id: 'displayArea', 
                 text: '<strong>Área de Conteo:</strong><br>Sigue el pulso del metrónomo y tu progreso a través de los compases durante el ejercicio.' 
             }
         ];
+
         let currentTutorialStep = 0;
         function showTutorial() {
             currentTutorialStep = 0;
