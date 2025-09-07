@@ -440,11 +440,14 @@
             });
 
             window.addEventListener('keydown', (e) => {
-                if (e.key.toLowerCase() === 'f') {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                
+                const key = e.key.toLowerCase();
+
+                if (key === 'f') {
                     e.preventDefault();
                     toggleFullscreen();
-                }
-                if (e.key === ' ') {
+                } else if (key === ' ') {
                     e.preventDefault();
                     state.spacebarPressCount++;
                     if (state.spacebarTimeout) {
@@ -452,18 +455,28 @@
                     }
                     state.spacebarTimeout = setTimeout(() => {
                         if (state.spacebarPressCount === 1) {
-                            if (!state.exerciseStarted) {
-                                startExercise();
-                            } else {
-                                togglePause();
-                            }
+                            if (!state.exerciseStarted) startExercise();
+                            else togglePause();
                         } else if (state.spacebarPressCount >= 2) {
-                            if (state.exerciseStarted) {
-                                stopExercise();
-                            }
+                            if (state.exerciseStarted) stopExercise();
                         }
                         state.spacebarPressCount = 0;
                     }, 300);
+                } else if (key === 'n') {
+                    e.preventDefault();
+                    ui.showNoteNamesToggle.checked = !ui.showNoteNamesToggle.checked;
+                    ui.showNoteNamesToggle.dispatchEvent(new Event('change'));
+                } else if (key === 'g') {
+                    e.preventDefault();
+                    ui.showGuideToggle.checked = !ui.showGuideToggle.checked;
+                    ui.showGuideToggle.dispatchEvent(new Event('change'));
+                } else if (key === 'c') {
+                    e.preventDefault();
+                    const clefs = Array.from(ui.clefSelect.options).filter(opt => !opt.hidden);
+                    const currentIndex = clefs.findIndex(opt => opt.value === ui.clefSelect.value);
+                    const nextIndex = (currentIndex + 1) % clefs.length;
+                    ui.clefSelect.value = clefs[nextIndex].value;
+                    ui.clefSelect.dispatchEvent(new Event('change'));
                 }
             });
         }
