@@ -9,7 +9,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css?family=Inter:wght@400;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #111827; }
-        body.fullscreen-active { overflow: hidden; }
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1000; background-color: #1f2937; color: white; padding: 2rem; border-radius: 0.75rem; font-size: 1.5rem; font-weight: bold; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 100; }
         .modal-content { background-color: #374151; color: #d1d5db; padding: 2rem; border-radius: 1rem; max-width: 90%; width: 500px; max-height: 90%; overflow-y: auto; position: relative; }
@@ -30,25 +29,19 @@
             .control-item { flex-direction: row; align-items: center; justify-content: space-between; width: 100%;}
         }
         
-        /* --- Faux Fullscreen Styles --- */
-        #stave-viewer.fullscreen-stave {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 50;
-            padding: 0;
-            margin: 0;
-            background-color: #ffffff; /* Match stave background */
-            border-radius: 0;
+        /* --- Fullscreen Styles --- */
+        #stave-viewer:fullscreen {
+            background-color: #f8fafc; /* Same as stave bg */
+            padding: 1rem;
         }
-        
-        #stave-viewer.fullscreen-stave #stave-container {
-             height: 100%;
-             width: 100%;
-             border-radius: 0;
+        #stave-viewer:fullscreen #stave-container {
+            height: 100%;
+            width: 100%;
         }
+        #stave-viewer:fullscreen #fullscreen-toggle {
+            opacity: 1;
+        }
+
     </style>
 </head>
 <body class="bg-zinc-900 text-white flex flex-col items-center p-4 min-h-screen">
@@ -220,9 +213,12 @@
     <div id="tutorial-modal" class="modal-overlay hidden">
         <div class="modal-content text-left">
             <span class="modal-close" id="close-modal">×</span>
-            <h2 class="text-2xl sm:text-3xl font-bold text-emerald-400">Tutorial</h2>
             <div id="tutorial-steps-container"></div>
-            <button id="next-tutorial-step" class="mt-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-full shadow-lg">Siguiente</button>
+            <div class="flex justify-between items-center mt-4">
+                <button id="prev-tutorial-step" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full shadow-lg">Anterior</button>
+                <span id="tutorial-step-counter" class="text-zinc-400"></span>
+                <button id="next-tutorial-step" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-full shadow-lg">Siguiente</button>
+            </div>
         </div>
     </div>
     <div id="tutorial-highlight-overlay" class="tutorial-highlight-overlay hidden"></div>
@@ -257,6 +253,7 @@
                 customMeasuresInput: get('custom-measures-input'), preRollMessage: get('pre-roll-message'), difficultySelect: get('difficulty-select'),
                 changeBeatSelect: get('change-beat-select'), showTutorialBtn: get('show-tutorial'), tutorialModal: get('tutorial-modal'),
                 closeModalBtn: get('close-modal'), tutorialStepsContainer: get('tutorial-steps-container'), nextTutorialStepBtn: get('next-tutorial-step'),
+                prevTutorialStepBtn: get('prev-tutorial-step'), tutorialStepCounter: get('tutorial-step-counter'),
                 tutorialHighlight: get('tutorial-highlight-overlay'), preRollCount: get('preRollCount'), showNoteNamesToggle: get('show-note-names'),
                 exerciseTypeRadios: document.querySelectorAll('input[name="exerciseType"]'), harmonyOptionsContainer: get('harmony-options-container'),
                 notesPerChordSelect: get('notes-per-chord'), changeBeatContainer: get('change-beat-control'), intervalOptionsContainer: get('interval-options-container'),
@@ -277,7 +274,7 @@
                 exerciseStarted: false, isPaused: false, metronomeTimer: null, exerciseMeasures: [], currentMeasureContent: [], 
                 currentMetronomeCount: 0, timeSignatureBeats: 4, measuresChangeBeat: 4, currentMeasureIndex: -1, 
                 measuresPerExercise: 10, isPreRoll: false, isPlaying: false, showNoteNames: false, keySignature: 'C',
-                showGuide: false, noteStartX: 0, noteSpacing: 0
+                showGuide: false, noteStartX: 0, noteSpacing: 0, spacebarPressCount: 0, spacebarTimeout: null
             };
             audio = { context: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0 };
             notesData = {
@@ -286,7 +283,7 @@
                 letterToDiatonic: {'C':0,'D':1,'E':2,'F':3,'G':4,'A':5,'B':6}, clefs: {},
                 triadFormulas: { 'all': ["2-4", "2-5", "3-5", "1-4", "3-6", "3-4"], 'triad_fundamental': ["2-4"], 'triad_inv1': ["2-5"], 'triad_inv2': ["3-5"], 'sus2_all': ["1-4", "3-6"], 'sus4_all': ["3-4", "1-4"] },
                 chordFormulas: { 'maj7': [0, 4, 7, 11], 'm7': [0, 3, 7, 10], 'dom7': [0, 4, 7, 10], 'm7b5': [0, 3, 6, 10], 'dim7': [0, 3, 6, 9] },
-                voicingsByDifficulty: { medium: { 'drop2': 'Drops 2', 'drop3': 'Drops 3' }, advanced: { 'all': 'Todos', 'drop2': 'Drops 2', 'drop3': 'Drops 3', 'drop24': 'Drops 2&4', 'drop23': 'Drops 2&3', 'doubleDrop23': 'Doble Drops 2 & Drops 3' }},
+                voicingsByDifficulty: { medium: { 'drop2': 'Drops 2', 'drop3': 'Drops 3' }, advanced: { 'all': 'Todos', 'drop2': 'Drops 2', 'drop3': 'Drops 3', 'drop24': 'Drops 2&4', 'drop23': 'Drops 2&3', 'doubleDrop23': 'Doble Drops 2 & Drops 3'}},
                 voicingAbbreviations: { 'all': '', 'drop2': 'D2', 'drop3': 'D3', 'drop24': 'D2&4', 'drop23': 'D2&3', 'doubleDrop23': 'Dd2&D3' },
                 keySignatures: {
                     'C': { notes: ['C','D','E','F','G','A','B'] }, 'G': { notes: ['G','A','B','C','D','E','F#'] },
@@ -308,9 +305,9 @@
             });
             notesData.natural = notesData.all.filter(n => !n.includes('#') && !n.includes('b'));
             const calculateDiatonic = (note) => { const parts = note.split('/'); const letter = parts[0][0]; const octave = parseInt(parts[1], 10); return octave * 7 + notesData.letterToDiatonic[letter]; };
-            const generateY = (baseNote) => { const baseVal = calculateDiatonic(baseNote); const positions = {}; notesData.all.forEach(n => { positions[n] = 80 - (calculateDiatonic(n) - baseVal) * 5; }); return positions; };
+            const generateY = (baseNote, baseY) => { const baseVal = calculateDiatonic(baseNote); const positions = {}; notesData.all.forEach(n => { positions[n] = baseY - (calculateDiatonic(n) - baseVal) * 5; }); return positions; };
             // --- FINAL CLEF POSITIONS ---
-            notesData.clefs = { 'G': { symbol: '𝄞', symbolY: 75, yPositions: generateY('E/4') }, 'F': { symbol: '𝄢', symbolY: 85, yPositions: generateY('G/2') }, 'C': { symbol: '𝄡', symbolY: 85, yPositions: generateY('F/3') } };
+            notesData.clefs = { 'G': { symbol: '𝄞', symbolY: 68, yPositions: generateY('G/4', 70) }, 'F': { symbol: '𝄢', symbolY: 70, yPositions: generateY('F/3', 50) }, 'C': { symbol: '𝄡', symbolY: 70, yPositions: generateY('C/4', 60) } };
             
             let noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']; let flatNoteNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
             for(const note of notesData.all) {
@@ -324,13 +321,36 @@
         }
         
         function attachEventListeners() {
-            // ... (other event listeners setup)
             ui.startStopButton.addEventListener('click', () => state.exerciseStarted ? stopExercise() : startExercise());
             ui.pauseResumeButton.addEventListener('click', togglePause);
             ui.showTutorialBtn.addEventListener('click', showTutorial);
             ui.closeModalBtn.addEventListener('click', hideTutorial);
             ui.tutorialModal.addEventListener('click', (e) => e.target === ui.tutorialModal && hideTutorial());
             ui.nextTutorialStepBtn.addEventListener('click', nextTutorialStep);
+            ui.prevTutorialStepBtn.addEventListener('click', prevTutorialStep);
+
+            let staveClickTimer = null;
+            let staveClickCount = 0;
+            ui.staveContainer.addEventListener('click', (e) => {
+                staveClickCount++;
+                if (staveClickTimer) {
+                    clearTimeout(staveClickTimer);
+                }
+                staveClickTimer = setTimeout(() => {
+                    if (staveClickCount === 1) {
+                        if (!state.exerciseStarted) {
+                            startExercise();
+                        } else {
+                            togglePause();
+                        }
+                    } else if (staveClickCount >= 2) {
+                        if (state.exerciseStarted) {
+                            stopExercise();
+                        }
+                    }
+                    staveClickCount = 0;
+                }, 300);
+            });
             
             ui.showNoteNamesToggle.addEventListener('change', () => { 
                 state.showNoteNames = ui.showNoteNamesToggle.checked; 
@@ -398,37 +418,73 @@
                 });
             });
 
-            // --- Faux Fullscreen Logic ---
-            ui.fullscreenToggle.addEventListener('click', toggleFauxFullscreen);
+            // --- Fullscreen Logic ---
+            ui.fullscreenToggle.addEventListener('click', toggleFullscreen);
+
+            function updateFullscreenIcons() {
+                const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+                ui.enterFullscreenIcon.classList.toggle('hidden', isFullscreen);
+                ui.exitFullscreenIcon.classList.toggle('hidden', !isFullscreen);
+                setTimeout(renderStave, 50);
+            }
+
+            ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(event => {
+                document.addEventListener(event, updateFullscreenIcons);
+            });
+
             window.addEventListener('resize', () => {
-                if(ui.staveViewer.classList.contains('fullscreen-stave')) {
-                    // Debounce resize event to avoid excessive redraws
+                if(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
                     clearTimeout(window.resizeTimeout);
                     window.resizeTimeout = setTimeout(renderStave, 100);
                 }
             });
+
+            window.addEventListener('keydown', (e) => {
+                if (e.key.toLowerCase() === 'f') {
+                    e.preventDefault();
+                    toggleFullscreen();
+                }
+                if (e.key === ' ') {
+                    e.preventDefault();
+                    state.spacebarPressCount++;
+                    if (state.spacebarTimeout) {
+                        clearTimeout(state.spacebarTimeout);
+                    }
+                    state.spacebarTimeout = setTimeout(() => {
+                        if (state.spacebarPressCount === 1) {
+                            if (!state.exerciseStarted) {
+                                startExercise();
+                            } else {
+                                togglePause();
+                            }
+                        } else if (state.spacebarPressCount >= 2) {
+                            if (state.exerciseStarted) {
+                                stopExercise();
+                            }
+                        }
+                        state.spacebarPressCount = 0;
+                    }, 300);
+                }
+            });
         }
 
-        // Toggles a CSS class to simulate fullscreen for better compatibility.
-        function toggleFauxFullscreen() {
-            const isCurrentlyFullscreen = ui.staveViewer.classList.contains('fullscreen-stave');
-
-            if (isCurrentlyFullscreen) {
-                // Exit fullscreen
-                ui.staveViewer.classList.remove('fullscreen-stave');
-                document.body.classList.remove('fullscreen-active');
-                ui.enterFullscreenIcon.classList.remove('hidden');
-                ui.exitFullscreenIcon.classList.add('hidden');
+        function toggleFullscreen() {
+            const el = ui.staveViewer;
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
+                const requestFullscreen = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+                if (requestFullscreen) {
+                    requestFullscreen.call(el).catch(err => {
+                        console.warn(`Error al intentar activar la pantalla completa: ${err.message}`);
+                    });
+                }
             } else {
-                // Enter fullscreen
-                ui.staveViewer.classList.add('fullscreen-stave');
-                document.body.classList.add('fullscreen-active');
-                ui.enterFullscreenIcon.classList.add('hidden');
-                ui.exitFullscreenIcon.classList.remove('hidden');
+                const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+                if (exitFullscreen) {
+                    exitFullscreen.call(document).catch(err => {
+                         console.warn(`Error al intentar salir de la pantalla completa: ${err.message}`);
+                    });
+                }
             }
-
-            // Redraw the stave after a short delay to ensure CSS has been applied
-            setTimeout(renderStave, 50);
         }
         
         function updateHarmonyControlsVisibility() {
@@ -674,11 +730,11 @@
                 case 'medium':
                     if (ui.clefSelect.value === 'G') return natural.slice(natural.indexOf('E/3'), natural.indexOf('A/5') + 1);
                     if (ui.clefSelect.value === 'F') return natural.slice(natural.indexOf('E/2'), natural.indexOf('C/4') + 1);
-                    return natural.slice(natural.indexOf('D/3'), natural.indexOf('B/4') + 1); // C Clef - Corrected
+                    return natural.slice(natural.indexOf('D/2'), natural.indexOf('B/4') + 1); // C Clef
                 default: // 'advanced'
                     if (ui.clefSelect.value === 'G') return natural.slice(natural.indexOf('E/3'), natural.indexOf('E/6') + 1);
                     if (ui.clefSelect.value === 'F') return natural.slice(natural.indexOf('C/2'), natural.indexOf('F/4') + 1);
-                    return natural.slice(natural.indexOf('B/2'), natural.indexOf('D/5') + 1); // C Clef - Corrected
+                    return natural.slice(natural.indexOf('B/1'), natural.indexOf('B/4') + 1); // C Clef
             }
         }
         function generateExercise() {
@@ -698,7 +754,7 @@
             }
             const diatonicNotePool = fullDiatonicPool.filter(note => noteRange.includes(note));
 
-            if (!diatonicNotePool || diatonicNotePool.length < 2) { console.error("Diatonic note pool too small.", diatonicNotePool); return []; }
+            if (!diatonicNotePool || diatonicNotePool.length < 2) { console.error("Diatonic note pool too small.", diatonicNotePool); return []; } 
             
             const allMeasures = [];
             let lastNote = diatonicNotePool[Math.floor(Math.random() * diatonicNotePool.length)];
@@ -926,7 +982,7 @@
                             let note2 = dropNote(voicedChord.splice(2, 1)[0], 2); let note3 = dropNote(voicedChord.splice(1, 1)[0], 1);
                             voicedChord.unshift(note2, note3);
                         }
-                    } catch (e) { voicedChord = []; }
+                    } catch (e) { voicedChord = []; } 
                     
                     voicedChord = voicedChord.filter(Boolean);
                     if (voicedChord.length === 4 && voicedChord.every(n => noteRange.includes(n))) {
@@ -1041,7 +1097,7 @@
             ui.guideLine = guideLine;
 
             const mainGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            mainGroup.setAttribute('transform', 'translate(0, 30)');
+            mainGroup.setAttribute('transform', 'translate(0, 40)');
             svg.appendChild(mainGroup);
 
             let contentToDraw = [];
@@ -1066,6 +1122,7 @@
             clef.setAttribute('x', currentX);
             clef.setAttribute('y', clefInfo.symbolY);
             clef.setAttribute('font-size', '55px');
+            clef.setAttribute('dominant-baseline', 'middle');
             group.appendChild(clef); currentX += 50;
 
             const keyInfo = notesData.keySignatures[state.keySignature];
@@ -1144,7 +1201,7 @@
                 const notes = isChord ? item.sort((a,b) => notesData.all.indexOf(b) - notesData.all.indexOf(a)) : [item];
                 const itemX = noteStartX + index * noteSpacing;
                 let noteObjects = notes.map(note => ({ note, y: clefInfo.yPositions[note] })).filter(n => n.y !== undefined);
-                if (noteObjects.length !== notes.length) { console.warn("Undefined note Y position", notes); return; }
+                if (noteObjects.length !== notes.length) { console.warn("Undefined note Y position", notes); return; } 
                 
                 if(state.showNoteNames) {
                     if (isChord) {
@@ -1172,7 +1229,7 @@
                             
                             if(bottomText) {
                                 if (bottomText.includes('/') || bottomText.includes(' ')) {
-                                    const parts = bottomText.split(/[\s/]/);
+                                    const parts = bottomText.split(/[\/]/);
                                     parts.forEach((part, i) => {
                                         const textElem = document.createElementNS("http://www.w3.org/2000/svg", "text");
                                         textElem.textContent = part;
@@ -1258,33 +1315,45 @@
         }
         
         const tutorialSteps = [
-            { 
-                id: 'exercise-type-control', 
-                text: '<p><strong>Tipo de Ejercicio:</strong></p><ul><li><strong>Melodía:</strong> Practica la lectura de notas individuales una tras otra.</li><li><strong>Armonía:</strong> Lee notas simultáneas. Puedes configurar el número de notas: 2 (intervalos), 3 (tríadas) o 4 (acordes de séptima).</li></ul>'
+             {
+                id: 'main-content',
+                text: '<h2 class="text-2xl font-bold text-emerald-400">¡Bienvenido a Lectura a Primera Vista!</h2><p>Esta aplicación está pensada principalmente para guitarristas, pero es una herramienta versátil para cualquier músico.</p><p class="mt-2">Aunque la guitarra usa la clave de Sol, hemos incluido las claves de Fa y Do para que puedas practicar solfeo (rezado o cantado) o para que la use cualquier otro instrumento melódico.</p><p class="mt-2">La sección de <strong>Armonía</strong> está diseñada con la guitarra en mente, pero también es muy útil para la lectura a 2 y 3 voces en instrumentos que puedan tocar armonía en clave de Fa y Do.</p><p class="mt-4">¡Vamos a explorar cómo funciona!</p>'
             },
-            { 
-                id: 'difficulty-select', 
-                text: '<p><strong>Nivel de Dificultad:</strong></p><p>Define el rango de notas y la complejidad de los saltos melódicos.</p><ul><li><strong>Básico:</strong> Rango limitado y saltos pequeños, ideal para empezar.</li><li><strong>Medio:</strong> Rango extendido y saltos moderados.</li><li><strong>Avanzado:</strong> Rango completo del instrumento y saltos más amplios y complejos.</li></ul>'
+            {
+                id: 'exercise-type-control',
+                text: '<h3><strong>1. Tipo de Ejercicio</strong></h3><p>Primero, elige tu modo de práctica:</p><ul><li class="mt-2"><strong>Melodía:</strong> Practica la lectura de notas individuales, una tras otra.</li><li class="mt-2"><strong>Armonía:</strong> Practica la lectura de varias notas sonando al mismo tiempo.</li></ul>'
             },
-            { 
-                id: 'controls-container', 
-                text: '<p><strong>Controles Principales:</strong></p><p>Aquí puedes personalizar tu práctica. Ajusta el tempo (velocidad), elige la clave, la armadura y el compás.</p><p><strong>Aclaración sobre las claves:</strong> Aunque la app está pensada para guitarristas (clave de Sol), se incluyen las claves de Fa en 4ª y Do en 3ª. En <strong>Melodía</strong>, son útiles para practicar solfeo (rezado o entonado). En <strong>Armonía</strong>, están disponibles para 2 y 3 voces, pensando en otros instrumentos que puedan ejecutar lo escrito.</p>'
+            {
+                id: 'harmony-options-container',
+                text: '<h3><strong>2. Opciones de Armonía</strong></h3><p>Si eliges <strong>Armonía</strong>, aparecerán nuevas opciones:</p><ul><li class="mt-2"><strong>Notas:</strong> Define cuántas notas simultáneas leerás. <strong>2</strong> para intervalos, <strong>3</strong> para tríadas (acordes de 3 notas) y <strong>4</strong> para cuatríadas (acordes de 7ma).</li><li class="mt-2"><strong>Filtros específicos:</strong> Según las notas que elijas, podrás filtrar por tipos de intervalos, acordes, inversiones o voicings que quieras practicar.</li></ul>'
             },
-            { 
-                id: 'startStopButton', 
-                text: '<strong>Comenzar/Detener:</strong><br>Usa este botón para iniciar o detener el ejercicio en cualquier momento.' 
+            {
+                id: 'difficulty-select',
+                text: '<h3><strong>3. Nivel de Dificultad</strong></h3><p>Ajusta la complejidad del ejercicio:</p><ul><li class="mt-2"><strong>Básico:</strong> Rango de notas limitado y saltos melódicos pequeños.</li><li class="mt-2"><strong>Medio:</strong> Un rango más amplio y saltos más desafiantes.</li><li class="mt-2"><strong>Avanzado:</strong> Todo el rango del instrumento con saltos complejos e inesperados.</li></ul>'
             },
-            { 
-                id: 'stave-viewer', 
-                text: '<strong>Pentagrama:</strong><br>Aquí se mostrará la música que debes leer. ¡Mucha concentración!' 
+            {
+                id: 'clef-select',
+                text: '<h3><strong>4. Configuración del Pentagrama</strong></h3><p>Personaliza la escritura musical:</p><ul><li class="mt-2"><strong>Clave:</strong> Elige entre Sol, Fa y Do.</li><li class="mt-2"><strong>Armadura:</strong> Selecciona la tonalidad del ejercicio.</li><li class="mt-2"><strong>Compás:</strong> Define el compás (4/4, 3/4, 2/4).</li></ul><p class="mt-4 p-2 bg-zinc-600 rounded-md text-sm"><strong>Nota Importante:</strong> La app está optimizada para móviles y tablets. Si en tu computadora las claves no se ven en la línea correcta (Sol en 2ª, Fa en 4ª, Do en 3ª), es debido a diferencias de renderizado de fuentes entre sistemas operativos.</p>'
             },
-            { 
-                id: 'stave-viewer', 
-                text: '<p><strong>Pantalla Completa:</strong></p><p>Usa el ícono de expandir en la esquina del pentagrama para entrar en un modo de visualización inmersivo. Vuelve a hacer clic en el ícono para salir.</p>' 
+            {
+                id: 'tempo',
+                text: '<h3><strong>5. Duración y Velocidad</strong></h3><ul><li class="mt-2"><strong>Tempo (BPM):</strong> Establece la velocidad del metrónomo en pulsos por minuto.</li><li class="mt-2"><strong>Compases:</strong> Elige cuántos compases durará el ejercicio. Puedes seleccionar un valor predefinido o "Personalizado" para escribir tu propio número.</li></ul>'
             },
-            { 
-                id: 'displayArea', 
-                text: '<strong>Área de Conteo:</strong><br>Sigue el pulso del metrónomo y tu progreso a través de los compases durante el ejercicio.' 
+            {
+                id: 'show-note-names',
+                text: '<h3><strong>6. Ayudas Visuales</strong></h3><p>Activa estas opciones para facilitar la lectura:</p><ul><li class="mt-2"><strong>Nombres:</strong> Muestra el nombre de las notas o el cifrado de los acordes debajo del pentagrama.</li><li class="mt-2"><strong>Guía:</strong> Muestra una línea vertical que se mueve pulso a pulso, ayudándote a no perderte.</li></ul>'
+            },
+            {
+                id: 'startStopButton',
+                text: '<h3><strong>7. Controles de Reproducción</strong></h3><p>Usa los botones o atajos para manejar el ejercicio:</p><ul><li class="mt-2"><strong>Comenzar/Detener:</strong> Inicia y para el ejercicio (o haz doble clic en el pentagrama).</li><li class="mt-2"><strong>Pausar/Reanudar:</strong> Pausa la música (o haz un solo clic en el pentagrama).</li><li class="mt-2"><strong>Atajo de teclado:</strong> Usa la <strong>barra espaciadora</strong> (un toque para pausar/reanudar, dos toques para detener).</li></ul>'
+            },
+            {
+                id: 'stave-viewer',
+                text: '<h3><strong>8. Modo Inmersivo</strong></h3><p>Para una experiencia sin distracciones, haz clic en el ícono de expandir en la esquina del pentagrama o presiona la tecla <strong>"F"</strong> para entrar y salir del modo de pantalla completa.</p>'
+            },
+            {
+                id: 'main-content',
+                text: '<h2 class="text-2xl font-bold text-emerald-400">¡Todo Listo!</h2><p>Ya conoces todas las funciones. Configura tu ejercicio ideal y ¡a mejorar esa lectura! La práctica constante es la clave.</p>'
             }
         ];
 
@@ -1306,9 +1375,25 @@
                 updateTutorialStep();
             }
         }
+         function prevTutorialStep() {
+            currentTutorialStep--;
+            if (currentTutorialStep < 0) {
+               currentTutorialStep = 0;
+            }
+            updateTutorialStep();
+        }
         function updateTutorialStep() {
             const step = tutorialSteps[currentTutorialStep];
             ui.tutorialStepsContainer.innerHTML = `<div class="tutorial-step active">${step.text}</div>`;
+            ui.tutorialStepCounter.textContent = `${currentTutorialStep + 1} / ${tutorialSteps.length}`;
+
+            ui.prevTutorialStepBtn.classList.toggle('hidden', currentTutorialStep === 0);
+             if (currentTutorialStep === tutorialSteps.length - 1) {
+                ui.nextTutorialStepBtn.textContent = 'Finalizar';
+            } else {
+                ui.nextTutorialStepBtn.textContent = 'Siguiente';
+            }
+
             
             const targetElement = document.getElementById(step.id);
             if (targetElement) {
@@ -1320,6 +1405,8 @@
                 highlight.style.height = `${rect.height + 20}px`;
                 highlight.style.boxShadow = '0 0 0 9999px rgba(0, 0, 0, 0.7)';
                 highlight.classList.remove('hidden');
+            } else {
+                ui.tutorialHighlight.classList.add('hidden');
             }
         }
     </script>
