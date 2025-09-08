@@ -440,14 +440,11 @@
             });
 
             window.addEventListener('keydown', (e) => {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-                
-                const key = e.key.toLowerCase();
-
-                if (key === 'f') {
+                if (e.key.toLowerCase() === 'f') {
                     e.preventDefault();
                     toggleFullscreen();
-                } else if (key === ' ') {
+                }
+                if (e.key === ' ') {
                     e.preventDefault();
                     state.spacebarPressCount++;
                     if (state.spacebarTimeout) {
@@ -455,28 +452,18 @@
                     }
                     state.spacebarTimeout = setTimeout(() => {
                         if (state.spacebarPressCount === 1) {
-                            if (!state.exerciseStarted) startExercise();
-                            else togglePause();
+                            if (!state.exerciseStarted) {
+                                startExercise();
+                            } else {
+                                togglePause();
+                            }
                         } else if (state.spacebarPressCount >= 2) {
-                            if (state.exerciseStarted) stopExercise();
+                            if (state.exerciseStarted) {
+                                stopExercise();
+                            }
                         }
                         state.spacebarPressCount = 0;
                     }, 300);
-                } else if (key === 'n') {
-                    e.preventDefault();
-                    ui.showNoteNamesToggle.checked = !ui.showNoteNamesToggle.checked;
-                    ui.showNoteNamesToggle.dispatchEvent(new Event('change'));
-                } else if (key === 'g') {
-                    e.preventDefault();
-                    ui.showGuideToggle.checked = !ui.showGuideToggle.checked;
-                    ui.showGuideToggle.dispatchEvent(new Event('change'));
-                } else if (key === 'c') {
-                    e.preventDefault();
-                    const clefs = Array.from(ui.clefSelect.options).filter(opt => !opt.hidden);
-                    const currentIndex = clefs.findIndex(opt => opt.value === ui.clefSelect.value);
-                    const nextIndex = (currentIndex + 1) % clefs.length;
-                    ui.clefSelect.value = clefs[nextIndex].value;
-                    ui.clefSelect.dispatchEvent(new Event('change'));
                 }
             });
         }
@@ -1175,39 +1162,6 @@
             state.noteStartX = noteStartX;
             state.noteSpacing = noteSpacing;
 
-            const americanChordLabels = [];
-            if (state.showNoteNames) {
-                let lastLabel = null;
-                let yLevel = 0; // 0 for high, 1 for low
-                content.forEach((item, index) => {
-                    const isChord = Array.isArray(item);
-                    const cipherType = state.cipherType;
-                    if (isChord && item.length > 2 && (cipherType === 'americano' || cipherType === 'todos')) {
-                        const chordInfo = getChordName(item);
-                        if (chordInfo.name) {
-                            const itemX = noteStartX + index * noteSpacing;
-                            const estimatedWidth = chordInfo.name.length * 10;
-                            let currentLabel = { text: chordInfo.name, x: itemX, y: -5, left: itemX - estimatedWidth / 2, right: itemX + estimatedWidth / 2 };
-                            if (lastLabel && currentLabel.left < lastLabel.right + 10) { yLevel = 1 - yLevel; } else { yLevel = 0; }
-                            currentLabel.y = -8 - (yLevel * 22);
-                            americanChordLabels.push(currentLabel);
-                            lastLabel = currentLabel;
-                        } else { lastLabel = null; }
-                    } else { lastLabel = null; }
-                });
-            }
-
-            americanChordLabels.forEach(label => {
-                const nameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                nameText.textContent = label.text;
-                nameText.setAttribute('x', label.x);
-                nameText.setAttribute('y', label.y);
-                nameText.setAttribute('font-size', '20px');
-                nameText.setAttribute('fill', 'black');
-                nameText.setAttribute('text-anchor', 'middle');
-                group.appendChild(nameText);
-            });
-
             content.forEach((item, index) => {
                 if (!item || item.length === 0) return;
                 const isChord = Array.isArray(item);
@@ -1218,7 +1172,6 @@
                 
                 if(state.showNoteNames) {
                     if (isChord) {
-                        const cipherType = state.cipherType;
                         if (notes.length === 2) {
                             const intervalInfo = getIntervalAbbreviation(notes);
                             if (intervalInfo.name) {
@@ -1234,15 +1187,32 @@
                         } else if (notes.length > 2) {
                             const chordInfo = getChordName(notes);
                             let bottomText = '';
-                            if (notes.length === 3 && (cipherType === 'bajo' || cipherType === 'todos')) {
-                                if (chordInfo.figuredBass) bottomText = chordInfo.figuredBass;
-                            } else if (notes.length === 4 && (cipherType === 'drops' || cipherType === 'todos')) {
+                            let isFiguredBass = false; 
+
+                            if (state.cipherType === 'americano' || state.cipherType === 'todos') {
+                                if (chordInfo.name) {
+                                    const nameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                                    nameText.textContent = chordInfo.name;
+                                    nameText.setAttribute('x', itemX);
+                                    nameText.setAttribute('y', -5);
+                                    nameText.setAttribute('font-size', '20px');
+                                    nameText.setAttribute('fill', 'black');
+                                    nameText.setAttribute('text-anchor', 'middle');
+                                    group.appendChild(nameText);
+                                }
+                            }
+                            if (notes.length === 3 && (state.cipherType === 'bajo' || state.cipherType === 'todos')) {
+                                if (chordInfo.figuredBass) {
+                                    bottomText = chordInfo.figuredBass;
+                                    isFiguredBass = true;
+                                }
+                            } else if (notes.length === 4 && (state.cipherType === 'drops' || state.cipherType === 'todos')) {
                                 bottomText = notesData.voicingAbbreviations[item.voicing] || '';
                             }
                             
                             if(bottomText) {
-                                if (bottomText.includes('/') || bottomText.includes(' ')) {
-                                    const parts = bottomText.split(/[\/]/);
+                                if (isFiguredBass && bottomText.includes(' ')) {
+                                    const parts = bottomText.split(/\s+/); 
                                     parts.forEach((part, i) => {
                                         const textElem = document.createElementNS("http://www.w3.org/2000/svg", "text");
                                         textElem.textContent = part;
@@ -1358,7 +1328,11 @@
             },
             {
                 id: 'startStopButton',
-                text: '<h3><strong>7. Controles y Atajos</strong></h3><p>Usa los botones o atajos para manejar el ejercicio:</p><ul><li class="mt-2"><strong>Botones:</strong> Inicia, pausa o detén el ejercicio.</li><li class="mt-2"><strong>Clics:</strong> Un clic en el pentagrama inicia o pausa, doble clic detiene.</li><li class="mt-2"><strong>Barra Espaciadora:</strong> Inicia/Pausa (un toque) y Detiene (doble toque).</li><li class="mt-2"><strong>F:</strong> Activa/Desactiva el modo de pantalla completa.</li><li class="mt-2"><strong>N:</strong> Muestra/Oculta los nombres de las notas.</li><li class="mt-2"><strong>G:</strong> Muestra/Oculta la guía de lectura.</li><li class="mt-2"><strong>C:</strong> Cambia entre las claves de Sol, Fa y Do.</li></ul>'
+                text: '<h3><strong>7. Controles de Reproducción</strong></h3><p>Usa los botones o atajos para manejar el ejercicio:</p><ul><li class="mt-2"><strong>Comenzar/Detener:</strong> Inicia y para el ejercicio (o haz doble clic en el pentagrama).</li><li class="mt-2"><strong>Pausar/Reanudar:</strong> Pausa la música (o haz un solo clic en el pentagrama).</li><li class="mt-2"><strong>Atajo de teclado:</strong> Usa la <strong>barra espaciadora</strong> (un toque para pausar/reanudar, dos toques para detener).</li></ul>'
+            },
+            {
+                id: 'stave-viewer',
+                text: '<h3><strong>8. Modo Inmersivo</strong></h3><p>Para una experiencia sin distracciones, haz clic en el ícono de expandir en la esquina del pentagrama o presiona la tecla <strong>"F"</strong> para entrar y salir del modo de pantalla completa.</p>'
             },
             {
                 id: 'main-content',
