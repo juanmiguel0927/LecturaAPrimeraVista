@@ -83,8 +83,8 @@
                     <option value="triad_fundamental">Tríada Fundamental</option>
                     <option value="triad_inv1">Tríada 1ra Inv.</option>
                     <option value="triad_inv2">Tríada 2da Inv.</option>
-                    <option value="sus2_all">Acordes Sus2</option>
-                    <option value="sus4_all">Acordes Sus4</option>
+                    <option value="sus2_fundamental">Acordes Sus2</option>
+                    <option value="sus4_fundamental">Acordes Sus4</option>
                 </select>
             </div>
             <div id="triad-position-container" class="control-item hidden">
@@ -278,11 +278,24 @@
             };
             audio = { context: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0 };
             notesData = {
-                all: ['C/1','C#/1','Db/1','D/1','D#/1','Eb/1','E/1','F/1','F#/1','Gb/1','G/1','G#/1','Ab/1','A/1','A#/1','Bb/1','B/1','C/2','C#/2','Db/2','D/2','D#/2','Eb/2','E/2','F/2','F#/2','Gb/2','G/2','G#/2','Ab/2','A/2','A#/2','Bb/2','B/2','C/3','C#/3','Db/3','D/3','D#/3','Eb/3','E/3','F/3','F#/3','Gb/3','G/3','G#/3','Ab/3','A/3','A#/3','Bb/3','B/3','C/4','C#/4','Db/4','D/4','D#/4','Eb/4','E/4','F/4','F#/4','Gb/4','G/4','G#/4','Ab/4','A/4','A#/4','Bb/4','B/4','C/5','C#/5','Db/5','D/5','D#/5','Eb/5','E/5','F/5','F#/5','Gb/5','G/5','G#/5','Ab/5','A/5','A#/5','Bb/5','B/5','C/6','C#/6','Db/6','D/6','D#/6','Eb/6','E/6'],
-                natural: [], noteToLatin: {'C':'Do','D':'Re','E':'Mi','F':'Fa','G':'Sol','A':'La','B':'Si'},
+                all: [], natural: [], noteToLatin: {'C':'Do','D':'Re','E':'Mi','F':'Fa','G':'Sol','A':'La','B':'Si'},
                 letterToDiatonic: {'C':0,'D':1,'E':2,'F':3,'G':4,'A':5,'B':6}, clefs: {},
-                triadFormulas: { 'all': ["2-4", "2-5", "3-5", "1-4", "3-6", "3-4"], 'triad_fundamental': ["2-4"], 'triad_inv1': ["2-5"], 'triad_inv2': ["3-5"], 'sus2_all': ["1-4", "3-6"], 'sus4_all': ["3-4", "1-4"] },
-                chordFormulas: { 'maj7': [0, 4, 7, 11], 'm7': [0, 3, 7, 10], 'dom7': [0, 4, 7, 10], 'm7b5': [0, 3, 6, 10], 'dim7': [0, 3, 6, 9] },
+                allowedFourNoteChords: {
+                    'C':    [{ name: 'Cmaj7', notes: ['C','E','G','B'] },{ name: 'Cm7', notes: ['C','Eb','G','Bb'] },{ name: 'C7', notes: ['C','E','G','Bb'] },{ name: 'Cm7b5', notes: ['C','Eb','Gb','Bb'] },{ name: 'C°7', notes: ['C','Eb','Gb','A'] }],
+                    'C#':   [{ name: 'C#m7', notes: ['C#','E','G#','B'] },{ name: 'C#7', notes: ['C#','E#','G#','B'] },{ name: 'C#m7b5', notes: ['C#','E','G','B'] },{ name: 'C#°7', notes: ['C#','E','G','Bb'] }],
+                    'Db':   [{ name: 'Dbmaj7', notes: ['Db','F','Ab','C'] },{ name: 'Dbm7', notes: ['Db','Fb','Ab','Cb'] },{ name: 'Db7', notes: ['Db','F','Ab','Cb'] },{ name: 'Db°7', notes: ['Db','Fb','Abb','A'] }],
+                    'D':    [{ name: 'Dmaj7', notes: ['D','F#','A','C#'] },{ name: 'Dm7', notes: ['D','F','A','C'] },{ name: 'D7', notes: ['D','F#','A','C'] },{ name: 'Dm7b5', notes: ['D','F','Ab','C'] },{ name: 'D°7', notes: ['D','F','Ab','B'] }],
+                    'Eb':   [{ name: 'Ebmaj7', notes: ['Eb','G','Bb','D'] },{ name: 'Ebm7', notes: ['Eb','Gb','Bb','Db'] },{ name: 'Eb7', notes: ['Eb','G','Bb','Db'] },{ name: 'Ebm7b5', notes: ['Eb','Gb','Bbb','Db'] },{ name: 'Eb°7', notes: ['Eb','Gb','A','C'] }],
+                    'E':    [{ name: 'Emaj7', notes: ['E','G#','B','D#'] },{ name: 'Em7', notes: ['E','G','B','D'] },{ name: 'E7', notes: ['E','G#','B','D'] },{ name: 'Em7b5', notes: ['E','G','Bb','D'] },{ name: 'E°7', notes: ['E','G','Bb','Db'] }],
+                    'F':    [{ name: 'Fmaj7', notes: ['F','A','C','E'] },{ name: 'Fm7', notes: ['F','Ab','C','Eb'] },{ name: 'F7', notes: ['F','A','C','Eb'] },{ name: 'Fm7b5', notes: ['F','Ab','Cb','Eb'] },{ name: 'F°7', notes: ['F','Ab','B','D'] }],
+                    'F#':   [{ name: 'F#maj7', notes: ['F#','A#','C#','E#'] },{ name: 'F#m7', notes: ['F#','A','C#','E'] },{ name: 'F#7', notes: ['F#','A#','C#','E'] },{ name: 'F#m7b5', notes: ['F#','A','C','E'] },{ name: 'F#°7', notes: ['F#','A','C','Eb'] }],
+                    'Gb':   [{ name: 'Gbmaj7', notes: ['Gb','Bb','Db','F'] },{ name: 'Gb7', notes: ['Gb','Bb','Db','Fb'] },{ name: 'Gb°7', notes: ['Gb','A','C','Eb'] }],
+                    'G':    [{ name: 'Gmaj7', notes: ['G','B','D','F#'] },{ name: 'Gm7', notes: ['G','Bb','D','F'] },{ name: 'G7', notes: ['G','B','D','F'] },{ name: 'Gm7b5', notes: ['G','Bb','Db','F'] },{ name: 'G°7', notes: ['G','Bb','Db','E'] }],
+                    'Ab':   [{ name: 'Abmaj7', notes: ['Ab','C','Eb','G'] },{ name: 'Abm7', notes: ['Ab','Cb','Eb','Gb'] },{ name: 'Ab7', notes: ['Ab','C','Eb','Gb'] },{ name: 'Abm7b5', notes: ['Ab','Cb','Ebb','Gb'] },{ name: 'Ab°7', notes: ['Ab','B','D','F'] }],
+                    'A':    [{ name: 'Amaj7', notes: ['A','C#','E','G#'] },{ name: 'Am7', notes: ['A','C','E','G'] },{ name: 'A7', notes: ['A','C#','E','G'] },{ name: 'Am7b5', notes: ['A','C','Eb','G'] },{ name: 'A°7', notes: ['A','C','Eb','Gb'] }],
+                    'Bb':   [{ name: 'Bbmaj7', notes: ['Bb','D','F','A'] },{ name: 'Bbm7', notes: ['Bb','Db','F','Ab'] },{ name: 'Bb7', notes: ['Bb','D','F','Ab'] },{ name: 'Bbm7b5', notes: ['Bb','Db','Fb','Ab'] },{ name: 'Bb°7', notes: ['Bb','Db','E','G'] }],
+                    'B':    [{ name: 'Bmaj7', notes: ['B','D#','F#','A#'] },{ name: 'Bm7', notes: ['B','D','F#','A'] },{ name: 'B7', notes: ['B','D#','F#','A'] },{ name: 'Bm7b5', notes: ['B','D','F','A'] },{ name: 'B°7', notes: ['B','D','F','Ab'] }]
+                },
                 voicingsByDifficulty: { medium: { 'drop2': 'Drops 2', 'drop3': 'Drops 3' }, advanced: { 'all': 'Todos', 'drop2': 'Drops 2', 'drop3': 'Drops 3', 'drop24': 'Drops 2&4', 'drop23': 'Drops 2&3', 'doubleDrop23': 'Doble Drops 2 & Drops 3'}},
                 voicingAbbreviations: { 'all': '', 'drop2': 'D2', 'drop3': 'D3', 'drop24': 'D2&4', 'drop23': 'D2&3', 'doubleDrop23': 'Dd2&D3' },
                 keySignatures: {
@@ -297,8 +310,17 @@
                 },
                 sharpPositions: { 'G': [40, 55, 35, 50, 65, 45, 60], 'F': [50, 65, 45, 60, 75, 55, 70], 'C': [45, 60, 40, 55, 70, 50, 65] },
                 flatPositions: { 'G': [55, 40, 60, 45, 65, 50, 70], 'F': [65, 50, 70, 55, 75, 60, 80], 'C': [60, 45, 65, 50, 70, 55, 75] },
-                chromaticMap: {}, intervalAbbreviations: {}, figuredBass: {}, figuredBassSeventh: {}
+                chromaticMap: {}, intervalAbbreviations: {}
             };
+            
+            const noteLetters = ['C','D','E','F','G','A','B'];
+            for(let octave = 1; octave <= 6; octave++){
+                for(const letter of noteLetters) {
+                    notesData.all.push(`${letter}bb/${octave}`, `${letter}b/${octave}`, `${letter}/${octave}`, `${letter}#/${octave}`, `${letter}##/${octave}`);
+                }
+            }
+            notesData.all = notesData.all.filter(n => !n.startsWith('E##') && !n.startsWith('B##') && !n.startsWith('Fbb') && !n.startsWith('Cbb'));
+
             Object.keys(notesData.keySignatures).forEach((key, index) => {
                 if (index < 8) { notesData.keySignatures[key].type = index === 0 ? null : 'sharp'; notesData.keySignatures[key].count = index; } 
                 else { notesData.keySignatures[key].type = 'flat'; notesData.keySignatures[key].count = index - 7; }
@@ -309,15 +331,21 @@
             // --- FINAL CLEF POSITIONS ---
             notesData.clefs = { 'G': { symbol: '𝄞', symbolY: 68, yPositions: generateY('G/4', 70) }, 'F': { symbol: '𝄢', symbolY: 70, yPositions: generateY('F/3', 50) }, 'C': { symbol: '𝄡', symbolY: 70, yPositions: generateY('C/4', 60) } };
             
-            let noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']; let flatNoteNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-            for(const note of notesData.all) {
-                const [name, octaveStr] = note.split('/'); const octave = parseInt(octaveStr, 10);
-                let noteIndex = name.includes('b') ? flatNoteNames.indexOf(name) : noteNames.indexOf(name);
-                notesData.chromaticMap[note] = 12 * (octave + 1) + noteIndex;
-            }
+            const baseValues = {'C':0, 'D':2, 'E':4, 'F':5, 'G':7, 'A':9, 'B':11};
+            notesData.all.forEach(note => {
+                const [name, octaveStr] = note.split('/');
+                const octave = parseInt(octaveStr, 10);
+                const letter = name[0];
+                const accidentals = name.substring(1);
+                
+                let value = baseValues[letter];
+                for (const char of accidentals) {
+                    if (char === '#') value++;
+                    else if (char === 'b') value--;
+                }
+                notesData.chromaticMap[note] = 12 * (octave + 1) + (value % 12);
+            });
             notesData.intervalAbbreviations = { '1-0': '1', '2-1': 'b2', '2-2': '2', '3-3': 'b3', '3-4': '3', '4-5': '4', '4-6': '#4', '5-6': 'b5', '5-7': '5', '5-8': '#5', '6-8': 'b6', '6-9': '6', '7-10': 'b7', '7-11': '7', '8-12': '8', '9-13': 'b9', '9-14': '9', '10-15': 'b10', '10-16': '10', '11-17': '11', '11-18': '#11', '12-18': 'b12', '12-19': '12', '13-20': 'b13', '13-21': '13'};
-            notesData.figuredBass = { 0: '', 1: '6', 2: '6 4' };
-            notesData.figuredBassSeventh = { 0: '7', 1: '6 5', 2: '4 3', 3: '4 2' };
         }
         
         function attachEventListeners() {
@@ -372,17 +400,13 @@
 
             ui.exerciseTypeRadios.forEach(radio => radio.addEventListener('change', (e) => {
                 state.exerciseType = e.target.value;
-                if (state.exerciseType === 'armonia') {
-                    ui.keySigSelect.value = 'C';
-                    state.keySignature = 'C';
-                }
                 updateHarmonyControlsVisibility();
                 if(state.exerciseStarted) stopExercise();
                 renderStave();
             }));
 
             ui.notesPerChordSelect.addEventListener('change', (e) => { 
-                state.notesPerChord = parseInt(e.target.value, 10); 
+                state.notesPerChord = parseInt(e.target.value, 10);
                 updateHarmonyControlsVisibility();
                 if(state.exerciseStarted) stopExercise();
                 renderStave(); 
@@ -440,11 +464,14 @@
             });
 
             window.addEventListener('keydown', (e) => {
-                if (e.key.toLowerCase() === 'f') {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                
+                const key = e.key.toLowerCase();
+
+                if (key === 'f') {
                     e.preventDefault();
                     toggleFullscreen();
-                }
-                if (e.key === ' ') {
+                } else if (key === ' ') {
                     e.preventDefault();
                     state.spacebarPressCount++;
                     if (state.spacebarTimeout) {
@@ -452,18 +479,28 @@
                     }
                     state.spacebarTimeout = setTimeout(() => {
                         if (state.spacebarPressCount === 1) {
-                            if (!state.exerciseStarted) {
-                                startExercise();
-                            } else {
-                                togglePause();
-                            }
+                            if (!state.exerciseStarted) startExercise();
+                            else togglePause();
                         } else if (state.spacebarPressCount >= 2) {
-                            if (state.exerciseStarted) {
-                                stopExercise();
-                            }
+                            if (state.exerciseStarted) stopExercise();
                         }
                         state.spacebarPressCount = 0;
                     }, 300);
+                } else if (key === 'n') {
+                    e.preventDefault();
+                    ui.showNoteNamesToggle.checked = !ui.showNoteNamesToggle.checked;
+                    ui.showNoteNamesToggle.dispatchEvent(new Event('change'));
+                } else if (key === 'g') {
+                    e.preventDefault();
+                    ui.showGuideToggle.checked = !ui.showGuideToggle.checked;
+                    ui.showGuideToggle.dispatchEvent(new Event('change'));
+                } else if (key === 'c') {
+                    e.preventDefault();
+                    const clefs = Array.from(ui.clefSelect.options).filter(opt => !opt.hidden);
+                    const currentIndex = clefs.findIndex(opt => opt.value === ui.clefSelect.value);
+                    const nextIndex = (currentIndex + 1) % clefs.length;
+                    ui.clefSelect.value = clefs[nextIndex].value;
+                    ui.clefSelect.dispatchEvent(new Event('change'));
                 }
             });
         }
@@ -493,8 +530,17 @@
             const showNames = ui.showNoteNamesToggle.checked;
             const difficulty = ui.difficultySelect.value;
 
+            // Hide key signature for all harmony exercises and default to C major.
+            ui.keySigContainer.classList.toggle('hidden', isHarmony);
+            if (isHarmony) {
+                state.keySignature = 'C';
+                ui.keySigSelect.value = 'C'; // Ensure dropdown is also set for consistency
+            } else {
+                // When switching back to melody, read the current selection from the UI
+                state.keySignature = ui.keySigSelect.value;
+            }
+
             ui.harmonyOptionsContainer.classList.toggle('hidden', !isHarmony);
-            
             ui.intervalOptionsContainer.classList.toggle('hidden', !isHarmony || notes !== 2);
             ui.triadOptionsContainer.classList.toggle('hidden', !isHarmony || notes !== 3);
             
@@ -543,7 +589,8 @@
             }
 
             const isQuad = isHarmony && notes === 4;
-            
+            const is3or4VoiceHarmony = isHarmony && (notes === 3 || notes === 4);
+
             ui.timeSigContainer.classList.toggle('hidden', isQuad);
             if(isQuad) {
                 ui.timeSigSelect.value = '4/4';
@@ -555,14 +602,13 @@
             for (let i = 0; i < clefOptions.length; i++) {
                 const option = clefOptions[i];
                 if (option.value === 'F' || option.value === 'C') {
-                    option.hidden = isQuad;
+                    option.hidden = is3or4VoiceHarmony;
                 }
             }
-            if (isQuad && ui.clefSelect.value !== 'G') {
+            if (is3or4VoiceHarmony && ui.clefSelect.value !== 'G') {
                 ui.clefSelect.value = 'G';
             }
 
-            ui.keySigContainer.classList.toggle('hidden', isQuad);
             const basicOption = ui.difficultySelect.querySelector('option[value="basico"]');
             if (basicOption) basicOption.disabled = isQuad;
             
@@ -724,17 +770,17 @@
             const { natural } = notesData;
             switch (ui.difficultySelect.value) {
                 case 'basico': 
-                    if (ui.clefSelect.value === 'G') return natural.slice(natural.indexOf('E/4'), natural.indexOf('F/5') + 1);
-                    if (ui.clefSelect.value === 'F') return natural.slice(natural.indexOf('G/2'), natural.indexOf('A/3') + 1);
-                    return natural.slice(natural.indexOf('F/3'), natural.indexOf('G/4') + 1); // C Clef
+                    if (ui.clefSelect.value === 'G') return notesData.all.slice(notesData.all.indexOf('E/4'), notesData.all.indexOf('F/5') + 1);
+                    if (ui.clefSelect.value === 'F') return notesData.all.slice(notesData.all.indexOf('G/2'), notesData.all.indexOf('A/3') + 1);
+                    return notesData.all.slice(notesData.all.indexOf('F/3'), notesData.all.indexOf('G/4') + 1); // C Clef
                 case 'medium':
-                    if (ui.clefSelect.value === 'G') return natural.slice(natural.indexOf('E/3'), natural.indexOf('A/5') + 1);
-                    if (ui.clefSelect.value === 'F') return natural.slice(natural.indexOf('E/2'), natural.indexOf('C/4') + 1);
-                    return natural.slice(natural.indexOf('D/2'), natural.indexOf('B/4') + 1); // C Clef
+                    if (ui.clefSelect.value === 'G') return notesData.all.slice(notesData.all.indexOf('E/3'), notesData.all.indexOf('A/5') + 1);
+                    if (ui.clefSelect.value === 'F') return notesData.all.slice(notesData.all.indexOf('E/2'), notesData.all.indexOf('C/4') + 1);
+                    return notesData.all.slice(notesData.all.indexOf('D/2'), notesData.all.indexOf('B/4') + 1); // C Clef
                 default: // 'advanced'
-                    if (ui.clefSelect.value === 'G') return natural.slice(natural.indexOf('E/3'), natural.indexOf('E/6') + 1);
-                    if (ui.clefSelect.value === 'F') return natural.slice(natural.indexOf('C/2'), natural.indexOf('F/4') + 1);
-                    return natural.slice(natural.indexOf('B/1'), natural.indexOf('B/4') + 1); // C Clef
+                    if (ui.clefSelect.value === 'G') return notesData.all.slice(notesData.all.indexOf('E/3'), notesData.all.indexOf('E/6') + 1);
+                    if (ui.clefSelect.value === 'F') return notesData.all.slice(notesData.all.indexOf('C/2'), notesData.all.indexOf('F/4') + 1);
+                    return notesData.all.slice(notesData.all.indexOf('B/1'), notesData.all.indexOf('B/4') + 1); // C Clef
             }
         }
         function generateExercise() {
@@ -835,32 +881,64 @@
             if (candidates.length === 0) return previousNote;
             return candidates[Math.floor(Math.random() * candidates.length)];
         }
-        function alterNote(note, semitones) {
+        function alterNote(note, semitones, keySignature) {
             const chromaticValue = notesData.chromaticMap[note];
-            if (chromaticValue === undefined) return null;
+            if (chromaticValue === undefined) {
+                console.warn(`Cannot alter note, not found in chromatic map: ${note}`);
+                return null;
+            }
+            
             const newChromaticValue = chromaticValue + semitones;
-            const preferredAccidental = note.includes('b') ? 'b' : '#';
+            
+            const keyInfo = notesData.keySignatures[keySignature];
+            let preferredAccidental = '#'; // Default for C major and sharp keys
+            if (keyInfo && keyInfo.type === 'flat') {
+                preferredAccidental = 'b';
+            }
+
             return getNoteNameFromChromaticValue(newChromaticValue, preferredAccidental);
         }
         
         function getNoteNameFromChromaticValue(chromaticValue, preferredAccidental = '#') {
-             const noteIndex = chromaticValue % 12;
+            const noteIndex = chromaticValue % 12;
+            const octave = Math.floor(chromaticValue / 12) - 1;
+
+            if (octave < 1 || octave > 6) { 
+                return null;
+            }
+
             let noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
             let flatNoteNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-            let noteName = (preferredAccidental === 'b' && flatNoteNames[noteIndex].includes('b')) ? flatNoteNames[noteIndex] : noteNames[noteIndex];
+
+            let noteName;
+
+            if (noteNames[noteIndex] !== flatNoteNames[noteIndex]) {
+                 if (preferredAccidental === 'b') {
+                    noteName = flatNoteNames[noteIndex];
+                 } else { 
+                    noteName = noteNames[noteIndex];
+                 }
+            } else {
+                noteName = noteNames[noteIndex];
+            }
             
-            for (let octave = 1; octave < 7; octave++) {
-                const fullNoteName = `${noteName}/${octave}`;
-                 if (notesData.chromaticMap[fullNoteName] === chromaticValue) return fullNoteName;
+            const result = `${noteName}/${octave}`;
+            
+            if(notesData.all.includes(result)) {
+                return result;
+            } else {
+                 if(noteNames[noteIndex] !== flatNoteNames[noteIndex]) {
+                     const fallbackNoteName = (noteName === noteNames[noteIndex]) ? flatNoteNames[noteIndex] : noteNames[noteIndex];
+                     const fallbackResult = `${fallbackNoteName}/${octave}`;
+                     if(notesData.all.includes(fallbackResult)){
+                         return fallbackResult;
+                     }
+                 }
             }
-            noteName = (preferredAccidental === 'b' && !flatNoteNames[noteIndex].includes('b')) ? noteNames[noteIndex] : flatNoteNames[noteIndex];
-             for (let octave = 1; octave < 7; octave++) {
-                const fullNoteName = `${noteName}/${octave}`;
-                 if (notesData.chromaticMap[fullNoteName] === chromaticValue) return fullNoteName;
-            }
-            return null;
+            
+            return null; 
         }
-        
+
         function generateHarmonicItem(rootNote, noteRange, fullDiatonicPool) {
             let item = null;
             let attempts = 0;
@@ -871,128 +949,166 @@
                 const currentRoot = attempts > 1 ? (numNotes === 4 ? noteRange : fullDiatonicPool)[Math.floor(Math.random() * (numNotes === 4 ? noteRange.length : fullDiatonicPool.length))] : rootNote;
                 if (!currentRoot) continue;
                 
-                if (numNotes === 3 && (state.selectedTriad === 'sus2_all' || state.selectedTriad === 'sus4_all')) {
-                    const a3Index = notesData.all.indexOf('A/3');
-                    const rootNoteIndex = notesData.all.indexOf(currentRoot);
-                    if (a3Index !== -1 && rootNoteIndex < a3Index) {
-                        continue;
-                    }
-                }
+                let finalNotes = [];
 
-                let closePositionNotes = [];
-
-                if (numNotes === 4) {
-                    let qualities = Object.keys(notesData.chordFormulas);
-                    let quality = qualities[Math.floor(Math.random() * qualities.length)];
-                    let formula = notesData.chordFormulas[quality];
-                    
-                    const rootChromaticValue = notesData.chromaticMap[currentRoot];
-                    if (rootChromaticValue === undefined) continue;
-
-                    const preferredAccidental = currentRoot.includes('b') || state.keySignature.includes('b') || state.keySignature === 'F' ? 'b' : '#';
-
-                    closePositionNotes = formula.map(interval => {
-                        return getNoteNameFromChromaticValue(rootChromaticValue + interval, preferredAccidental);
-                    }).filter(Boolean);
-
-                    const noteLetters = closePositionNotes.map(n => n.split('/')[0].slice(0,1));
-                    if (new Set(noteLetters).size < 4) continue;
-
-                } else {
+                if (numNotes === 2) {
                     const rootIndex = fullDiatonicPool.indexOf(currentRoot);
                     if (rootIndex === -1) continue;
-                    if (numNotes === 2) {
-                        let intervalSteps = state.selectedInterval;
-                        if (intervalSteps === 0) {
-                            const difficulty = ui.difficultySelect.value;
-                            const maxDiatonicStep = (difficulty === 'basico') ? 7 : 12;
-                            intervalSteps = Math.floor(Math.random() * maxDiatonicStep) + 1;
-                        }
-                        const topNoteIndex = rootIndex + intervalSteps;
-                        if (topNoteIndex < fullDiatonicPool.length) {
-                            closePositionNotes = [currentRoot, fullDiatonicPool[topNoteIndex]];
-                        }
-                    } else if (numNotes === 3) {
-                        const formulaKey = state.selectedTriad;
-                        const formulas = notesData.triadFormulas[formulaKey];
-                        const formula = formulas[Math.floor(Math.random() * formulas.length)];
-                        const intervals = formula.split('-').map(Number);
-                        if ((rootIndex + intervals[1]) < fullDiatonicPool.length) {
-                            const note1 = fullDiatonicPool[rootIndex + intervals[0]];
-                            const note2 = fullDiatonicPool[rootIndex + intervals[1]];
-                            closePositionNotes = [currentRoot, note1, note2];
-                        }
+                    let intervalSteps = state.selectedInterval;
+                    if (intervalSteps === 0) {
+                        const difficulty = ui.difficultySelect.value;
+                        const maxDiatonicStep = (difficulty === 'basico') ? 7 : 12;
+                        intervalSteps = Math.floor(Math.random() * maxDiatonicStep) + 1;
                     }
-                }
-                
-                if (closePositionNotes.length !== numNotes) continue;
-                
-                if (numNotes === 2) {
-                    if (closePositionNotes.every(n => noteRange.includes(n))) {
-                        item = closePositionNotes;
+                    const topNoteIndex = rootIndex + intervalSteps;
+                    if (topNoteIndex < fullDiatonicPool.length) {
+                        finalNotes = [currentRoot, fullDiatonicPool[topNoteIndex]];
                     }
                 } else if (numNotes === 3) {
-                    let finalNotes = [...closePositionNotes].sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
-                    const difficulty = ui.difficultySelect.value;
+                    const rootIndex = fullDiatonicPool.indexOf(currentRoot);
+                    if (rootIndex === -1 || rootIndex + 4 >= fullDiatonicPool.length) continue;
+
+                    let chordFamily = state.selectedTriad;
+                    if (chordFamily === 'all') {
+                        const types = ['triad', 'sus2', 'sus4'];
+                        chordFamily = types[Math.floor(Math.random() * types.length)];
+                    } else {
+                        if (chordFamily.includes('triad')) chordFamily = 'triad';
+                        if (chordFamily.includes('sus2')) chordFamily = 'sus2';
+                        if (chordFamily.includes('sus4')) chordFamily = 'sus4';
+                    }
+
+                    let fundamentalClosedChord;
+                    if (chordFamily === 'triad') {
+                        fundamentalClosedChord = [currentRoot, fullDiatonicPool[rootIndex + 2], fullDiatonicPool[rootIndex + 4]];
+                    } else if (chordFamily === 'sus2') {
+                        fundamentalClosedChord = [currentRoot, fullDiatonicPool[rootIndex + 1], fullDiatonicPool[rootIndex + 4]];
+                    } else { // sus4
+                        fundamentalClosedChord = [currentRoot, fullDiatonicPool[rootIndex + 3], fullDiatonicPool[rootIndex + 4]];
+                    }
+
+                    let closedChord = [...fundamentalClosedChord];
+                    if (chordFamily === 'triad') {
+                        let inversionType = state.selectedTriad;
+                        if (inversionType === 'all' || !inversionType.includes('inv')) {
+                            const invTypes = ['triad_fundamental', 'triad_inv1', 'triad_inv2'];
+                            inversionType = invTypes[Math.floor(Math.random() * invTypes.length)];
+                        }
+                        if (inversionType === 'triad_inv1') {
+                             const newRoot = alterNote(closedChord[0], 12, state.keySignature);
+                             if (!newRoot) continue;
+                             closedChord = [closedChord[1], closedChord[2], newRoot];
+                        } else if (inversionType === 'triad_inv2') {
+                             const newRoot = alterNote(closedChord[0], 12, state.keySignature);
+                             const newThird = alterNote(closedChord[1], 12, state.keySignature);
+                             if (!newRoot || !newThird) continue;
+                             closedChord = [closedChord[2], newRoot, newThird];
+                        }
+                    }
+                    closedChord.sort((a, b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
                     
-                    if (difficulty !== 'basico') {
-                        const targetPosition = (state.triadPosition === 'all') ? (Math.random() < 0.5 ? 'cerrada' : 'abierta') : state.triadPosition;
-                        if (targetPosition === 'abierta') {
-                            const middleNoteUp = alterNote(finalNotes[1], 12);
-                            if(middleNoteUp) {
-                                finalNotes[1] = middleNoteUp;
-                                finalNotes.sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
-                            } else {
-                                finalNotes = []; 
+                    finalNotes = [...closedChord];
+
+                    const difficulty = ui.difficultySelect.value;
+                    const isBasicDifficulty = difficulty === 'basico';
+                    const targetPosition = isBasicDifficulty ? 'cerrada' : (state.triadPosition === 'all' ? (Math.random() < 0.5 ? 'cerrada' : 'abierta') : state.triadPosition);
+                    
+                    if (targetPosition === 'abierta') {
+                        const middleNoteDown = alterNote(finalNotes[1], -12, state.keySignature);
+                        if(middleNoteDown) {
+                            finalNotes[1] = middleNoteDown;
+                        } else { 
+                            continue; 
+                        }
+                    }
+
+                } else if (numNotes === 4) {
+                    const rootName = currentRoot.split('/')[0];
+                    const possibleChords = notesData.allowedFourNoteChords[rootName];
+                    if (!possibleChords || possibleChords.length === 0) continue; 
+                    
+                    const chosenChordData = possibleChords[Math.floor(Math.random() * possibleChords.length)];
+                    const chordNoteNames = chosenChordData.notes;
+                    
+                    let closePositionNotes = [];
+                    let lastChromaticValue = -1;
+                    const rootOctave = parseInt(currentRoot.split('/')[1], 10);
+                    
+                    let tempNotes = [];
+                    for(let i = 0; i < chordNoteNames.length; i++) {
+                        const noteName = chordNoteNames[i];
+                        let found = false;
+                        for(let oct = rootOctave - 1; oct <= rootOctave + 1; oct++) {
+                            const fullNote = `${noteName}/${oct}`;
+                            if(notesData.chromaticMap[fullNote] !== undefined) {
+                                tempNotes.push(fullNote);
+                                found = true;
+                                break;
                             }
+                        }
+                        if(!found) { tempNotes = []; break; }
+                    }
+
+                    if(tempNotes.length < 4) continue;
+                    
+                    tempNotes.sort((a, b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
+
+                    // Find the most compact voicing around the root note
+                    let minRange = Infinity;
+                    for (let i = 0; i <= tempNotes.length - 4; i++) {
+                        let potentialVoicing = tempNotes.slice(i, i + 4);
+                        let currentRange = notesData.chromaticMap[potentialVoicing[3]] - notesData.chromaticMap[potentialVoicing[0]];
+                        if(currentRange < minRange) {
+                            minRange = currentRange;
+                            closePositionNotes = potentialVoicing;
                         }
                     }
                     
-                    if (finalNotes.length === 3 && finalNotes.every(n => noteRange.includes(n))) {
-                        item = finalNotes;
-                    }
-                } else { // numNotes === 4
+                    if (closePositionNotes.length < 4) continue;
+                    
                     let voicing = ui.quadVoicingSelect.value;
                     if(voicing === 'all'){
                         const allVoicings = Object.keys(notesData.voicingAbbreviations).filter(v => v !== 'all' && v !== '');
                         voicing = allVoicings[Math.floor(Math.random() * allVoicings.length)];
                     }
-                    let inversion = Math.floor(Math.random() * 4);
                     
-                    let invertedNotes = [...closePositionNotes];
-                    for (let i = 0; i < inversion; i++) {
-                        invertedNotes.push(alterNote(invertedNotes.shift(), 12));
-                    }
-                    invertedNotes = invertedNotes.filter(Boolean).sort((a, b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
-                    if (invertedNotes.length < 4) continue;
-
-                    let voicedChord = [...invertedNotes];
-                    const dropNote = (note, octavesDown) => alterNote(note, -12 * octavesDown);
+                    // Inversions are implicitly handled by the user list, so we just apply drops
+                    finalNotes = [...closePositionNotes];
+                    const dropNote = (note, octavesDown) => alterNote(note, -12 * octavesDown, state.keySignature);
                     
                     try {
-                        if (voicing === 'drop2') voicedChord.unshift(dropNote(voicedChord.splice(2, 1)[0], 1));
-                        else if (voicing === 'drop3') voicedChord.unshift(dropNote(voicedChord.splice(1, 1)[0], 1));
+                        if (voicing === 'drop2') finalNotes.unshift(dropNote(finalNotes.splice(2, 1)[0], 1));
+                        else if (voicing === 'drop3') finalNotes.unshift(dropNote(finalNotes.splice(1, 1)[0], 1));
                         else if (voicing === 'drop24') {
-                            let note2 = dropNote(voicedChord.splice(2, 1)[0], 1); let note4 = dropNote(voicedChord.splice(0, 1)[0], 1);
-                            voicedChord.unshift(note2, note4);
+                            let note2 = dropNote(finalNotes.splice(2, 1)[0], 1); let note4 = dropNote(finalNotes.splice(0, 1)[0], 1);
+                            finalNotes.unshift(note2, note4);
                         } else if (voicing === 'drop23') {
-                            let note2 = dropNote(voicedChord.splice(2, 1)[0], 1); let note3 = dropNote(voicedChord.splice(1, 1)[0], 1);
-                            voicedChord.unshift(note2, note3);
+                            let note2 = dropNote(finalNotes.splice(2, 1)[0], 1); let note3 = dropNote(finalNotes.splice(1, 1)[0], 1);
+                            finalNotes.unshift(note2, note3);
                         } else if (voicing === 'doubleDrop23') {
-                            let note2 = dropNote(voicedChord.splice(2, 1)[0], 2); let note3 = dropNote(voicedChord.splice(1, 1)[0], 1);
-                            voicedChord.unshift(note2, note3);
+                            let note2 = dropNote(finalNotes.splice(2, 1)[0], 2); let note3 = dropNote(finalNotes.splice(1, 1)[0], 1);
+                            finalNotes.unshift(note2, note3);
                         }
-                    } catch (e) { voicedChord = []; } 
-                    
-                    voicedChord = voicedChord.filter(Boolean);
-                    if (voicedChord.length === 4 && voicedChord.every(n => noteRange.includes(n))) {
-                        item = voicedChord;
-                        item.voicing = voicing;
-                    }
+                    } catch (e) { finalNotes = []; } 
+                    finalNotes = finalNotes.filter(Boolean);
+                    if(finalNotes.length === 4) finalNotes.voicing = voicing;
                 }
+                
+                if (finalNotes.length !== numNotes || finalNotes.some(n => n === null)) continue;
+                finalNotes.sort((a, b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
+                if (!finalNotes.every(n => noteRange.includes(n))) continue;
+
+                const clef = ui.clefSelect.value;
+                const lowestNoteValue = notesData.chromaticMap[finalNotes[0]];
+                let minNoteValue = -1;
+                if (clef === 'G') { minNoteValue = notesData.chromaticMap['E/3']; }
+                if (minNoteValue !== -1 && lowestNoteValue < minNoteValue) continue;
+
+                item = finalNotes;
             }
             return item;
         }
+
         function playMetronomeSound(time, isAccent) {
             if (!audio.context) return;
             const osc = audio.context.createOscillator(); const gain = audio.context.createGain();
@@ -1002,20 +1118,6 @@
             osc.start(time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05); osc.stop(time + 0.1);
         }
         
-        function getAccidentalSymbolForNote(noteName, keySignature) {
-            const keyNotes = notesData.keySignatures[keySignature].notes;
-            const baseNote = noteName.split('/')[0].slice(0, 1);
-            const noteAccidental = noteName.includes('#') ? '#' : (noteName.includes('b') ? 'b' : '');
-            const diatonicNoteInKey = keyNotes.find(n => n.startsWith(baseNote));
-            if (!diatonicNoteInKey) return noteAccidental === '#' ? '♯' : (noteAccidental === 'b' ? '♭' : null);
-            const keyAccidental = diatonicNoteInKey.includes('#') ? '#' : (diatonicNoteInKey.includes('b') ? 'b' : '');
-            if (noteAccidental === keyAccidental) return null;
-            if (noteAccidental === '') return '♮';
-            if (noteAccidental === '#') return '♯';
-            if (noteAccidental === 'b') return '♭';
-            return null;
-        }
-
         function getIntervalAbbreviation(notes) {
             if (notes.length !== 2) return { name: '' };
             const [note1, note2] = notes.sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
@@ -1033,18 +1135,32 @@
             return { name: abbrev };
         }
 
+        function getDiatonicInterval(note1, note2) {
+            if (notesData.chromaticMap[note1] > notesData.chromaticMap[note2]) {
+                [note1, note2] = [note2, note1];
+            }
+            const [name1, oct1_str] = note1.split('/');
+            const [name2, oct2_str] = note2.split('/');
+            const oct1 = parseInt(oct1_str, 10);
+            const oct2 = parseInt(oct2_str, 10);
+            const diatonicIndex1 = notesData.letterToDiatonic[name1[0]];
+            const diatonicIndex2 = notesData.letterToDiatonic[name2[0]];
+            return (oct2 - oct1) * 7 + (diatonicIndex2 - diatonicIndex1) + 1;
+        }
+        
         function getChordName(notes) {
             const sortedNotes = [...notes].sort((a, b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
-            const bassNoteName = sortedNotes[0].split('/')[0];
-            const noteValues = sortedNotes.map(n => notesData.chromaticMap[n]);
-            for (let i = 0; i < noteValues.length; i++) {
-                const rootValue = noteValues[i];
-                const intervals = noteValues.map(v => (v - rootValue + 120) % 12).sort((a,b) => a - b);
+            const bassNote = sortedNotes[0];
+            const bassNoteName = bassNote.split('/')[0];
+            
+            for (let i = 0; i < sortedNotes.length; i++) {
+                const potentialRoot = sortedNotes[i];
+                const rootValue = notesData.chromaticMap[potentialRoot];
+                const intervals = sortedNotes.map(n => (notesData.chromaticMap[n] - rootValue + 120) % 12).sort((a,b) => a - b);
                 
                 let quality = null;
                 const intervalString = intervals.join(',');
-                const rootNoteName = sortedNotes[i].split('/')[0];
-                const inversionIndex = sortedNotes.findIndex(n => notesData.chromaticMap[n] % 12 === rootValue % 12);
+                let rootNoteName = potentialRoot.split('/')[0];
 
                 if (notes.length === 3) {
                     if (intervalString === '0,4,7') quality = ''; 
@@ -1053,27 +1169,55 @@
                     else if (intervalString === '0,4,8') quality = '+';
                     else if (intervalString === '0,2,7') quality = 'sus2'; 
                     else if (intervalString === '0,5,7') quality = 'sus4';
-
-                    if (quality !== null) {
-                        const chordName = rootNoteName === bassNoteName ? `${rootNoteName}${quality}` : `${rootNoteName}${quality}/${bassNoteName}`;
-                         const bassNote = sortedNotes[0];
-                        const otherNotes = sortedNotes.filter(n => n !== bassNote);
-                        const figuredBassIntervals = otherNotes.map(n => getIntervalAbbreviation([bassNote, n]).name).sort((a,b) => parseInt(b.replace(/[^0-9]/g, '')) - parseInt(a.replace(/[^0-9]/g, ''))).join(' ');
-                        return { name: chordName, figuredBass: figuredBassIntervals };
-                    }
-                }
-                if (notes.length === 4) {
-                    if (intervalString === '0,4,7,11') quality = 'maj7'; else if (intervalString === '0,3,7,10') quality = 'm7';
-                    else if (intervalString === '0,4,7,10') quality = '7'; else if (intervalString === '0,3,6,10') quality = 'm7♭5';
+                } else if (notes.length === 4) {
+                    if (intervalString === '0,4,7,11') quality = 'maj7'; 
+                    else if (intervalString === '0,3,7,10') quality = 'm7';
+                    else if (intervalString === '0,4,7,10') quality = '7'; 
+                    else if (intervalString === '0,3,6,10') quality = 'm7♭5';
                     else if (intervalString === '0,3,6,9') quality = '°7';
-                     if (quality) {
-                        const chordName = rootNoteName === bassNoteName ? `${rootNoteName}${quality}` : `${rootNoteName}${quality}/${bassNoteName}`;
-                        const figuredBassSymbol = notesData.figuredBassSeventh[inversionIndex] || '';
-                         return { name: chordName, figuredBass: figuredBassSymbol };
+                }
+
+                if (quality !== null) {
+                    if (rootNoteName !== bassNoteName) { 
+                        const rootLetter = rootNoteName.slice(0, 1);
+                        const bassLetter = bassNoteName.slice(0, 1);
+                        if (rootLetter === bassLetter) {
+                            const enarmonicMap = { 'C#': 'Db', 'Db': 'C#', 'D#': 'Eb', 'Eb': 'D#', 'F#': 'Gb', 'Gb': 'F#', 'G#': 'Ab', 'Ab': 'G#', 'A#': 'Bb', 'Bb': 'A#' };
+                            const newRootName = enarmonicMap[rootNoteName];
+                            if (newRootName) rootNoteName = newRootName;
+                        }
                     }
+                    
+                    let chordName = rootNoteName === bassNoteName ? `${rootNoteName}${quality}` : `${rootNoteName}${quality}/${bassNoteName}`;
+                    
+                    let figuredBass = [];
+                    const isStandardTriad = (quality === '' || quality === 'm' || quality === '°' || quality === '+');
+                    const isStandardSeventh = (quality === 'maj7' || quality === 'm7' || quality === '7' || quality === 'm7♭5' || quality === '°7');
+
+                    if (notes.length === 3 && isStandardTriad) {
+                        const interval1 = getDiatonicInterval(bassNote, sortedNotes[1]);
+                        const interval2 = getDiatonicInterval(bassNote, sortedNotes[2]);
+                        
+                        // Notación estándar del bajo cifrado para tríadas
+                        if (interval1 === 3 && interval2 === 5) figuredBass = []; // Posición fundamental 5/3 (se omite)
+                        else if (interval1 === 3 && interval2 === 6) figuredBass = ['6']; // 1ra inversión 6/3
+                        else if (interval1 === 4 && interval2 === 6) figuredBass = ['6', '4']; // 2da inversión 6/4
+                    } else if (notes.length === 4 && isStandardSeventh) {
+                        const interval1 = getDiatonicInterval(bassNote, sortedNotes[1]);
+                        const interval2 = getDiatonicInterval(bassNote, sortedNotes[2]);
+                        const interval3 = getDiatonicInterval(bassNote, sortedNotes[3]);
+
+                        // Notación estándar del bajo cifrado para acordes de séptima
+                        if (interval1 === 3 && interval2 === 5 && interval3 === 7) figuredBass = ['7']; // Posición fundamental
+                        else if (interval1 === 3 && interval2 === 5 && interval3 === 6) figuredBass = ['6', '5']; // 1ra inversión
+                        else if (interval1 === 3 && interval2 === 4 && interval3 === 6) figuredBass = ['4', '3']; // 2da inversión
+                        else if (interval1 === 2 && interval2 === 4 && interval3 === 6) figuredBass = ['4', '2']; // 3ra inversión
+                    }
+
+                    return { name: chordName, figuredBass: figuredBass };
                 }
             }
-            return { name: '' };
+            return { name: '', figuredBass: [] };
         }
 
         function renderStave() {
@@ -1162,16 +1306,59 @@
             state.noteStartX = noteStartX;
             state.noteSpacing = noteSpacing;
 
+            const americanChordLabels = [];
+            if (state.showNoteNames) {
+                let lastLabel = null;
+                let yLevel = 0; // 0 for high, 1 for low
+                content.forEach((item, index) => {
+                    const isChord = Array.isArray(item);
+                    const cipherType = state.cipherType;
+                    if (isChord && item.length > 2 && (cipherType === 'americano' || cipherType === 'todos')) {
+                        const chordInfo = getChordName(item);
+                        if (chordInfo.name) {
+                            const itemX = noteStartX + index * noteSpacing;
+                            const estimatedWidth = chordInfo.name.length * 10;
+                            let currentLabel = { text: chordInfo.name, x: itemX, y: -5, left: itemX - estimatedWidth / 2, right: itemX + estimatedWidth / 2 };
+                            if (lastLabel && currentLabel.left < lastLabel.right + 10) { yLevel = 1 - yLevel; } else { yLevel = 0; }
+                            currentLabel.y = -5 + (yLevel * 20);
+                            americanChordLabels.push(currentLabel);
+                            lastLabel = currentLabel;
+                        } else { lastLabel = null; }
+                    } else { lastLabel = null; }
+                });
+            }
+
+            americanChordLabels.forEach(label => {
+                const nameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                nameText.textContent = label.text;
+                nameText.setAttribute('x', label.x);
+                nameText.setAttribute('y', label.y);
+                nameText.setAttribute('font-size', '20px');
+                nameText.setAttribute('fill', 'black');
+                nameText.setAttribute('text-anchor', 'middle');
+                group.appendChild(nameText);
+            });
+
+            const activeAccidentalsInMeasure = {};
+
             content.forEach((item, index) => {
                 if (!item || item.length === 0) return;
                 const isChord = Array.isArray(item);
                 const notes = isChord ? item.sort((a,b) => notesData.all.indexOf(b) - notesData.all.indexOf(a)) : [item];
                 const itemX = noteStartX + index * noteSpacing;
-                let noteObjects = notes.map(note => ({ note, y: clefInfo.yPositions[note] })).filter(n => n.y !== undefined);
-                if (noteObjects.length !== notes.length) { console.warn("Undefined note Y position", notes); return; } 
+                let noteObjects = notes.map(note => {
+                    const noteNameOnly = note.split('/')[0];
+                    const octave = note.split('/')[1];
+                    const baseLetter = noteNameOnly[0];
+                    const lookupNote = `${baseLetter}/${octave}`;
+                    return { note, y: clefInfo.yPositions[lookupNote] };
+                }).filter(n => n.y !== undefined);
+                
+                if (noteObjects.length !== notes.length) { console.warn("Undefined note Y position for one of:", notes); return; } 
                 
                 if(state.showNoteNames) {
                     if (isChord) {
+                        const cipherType = state.cipherType;
                         if (notes.length === 2) {
                             const intervalInfo = getIntervalAbbreviation(notes);
                             if (intervalInfo.name) {
@@ -1186,53 +1373,27 @@
                             }
                         } else if (notes.length > 2) {
                             const chordInfo = getChordName(notes);
-                            let bottomText = '';
-                            let isFiguredBass = false; 
-
-                            if (state.cipherType === 'americano' || state.cipherType === 'todos') {
-                                if (chordInfo.name) {
-                                    const nameText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                                    nameText.textContent = chordInfo.name;
-                                    nameText.setAttribute('x', itemX);
-                                    nameText.setAttribute('y', -5);
-                                    nameText.setAttribute('font-size', '20px');
-                                    nameText.setAttribute('fill', 'black');
-                                    nameText.setAttribute('text-anchor', 'middle');
-                                    group.appendChild(nameText);
+                            let bottomParts = [];
+                            if ((notes.length === 3 || notes.length === 4) && (cipherType === 'bajo' || cipherType === 'todos')) {
+                                bottomParts = chordInfo.figuredBass || [];
+                            } else if (notes.length === 4 && (cipherType === 'drops' || cipherType === 'todos')) {
+                                const voicingText = notesData.voicingAbbreviations[item.voicing];
+                                if (voicingText) {
+                                    bottomParts = [voicingText];
                                 }
-                            }
-                            if (notes.length === 3 && (state.cipherType === 'bajo' || state.cipherType === 'todos')) {
-                                if (chordInfo.figuredBass) {
-                                    bottomText = chordInfo.figuredBass;
-                                    isFiguredBass = true;
-                                }
-                            } else if (notes.length === 4 && (state.cipherType === 'drops' || state.cipherType === 'todos')) {
-                                bottomText = notesData.voicingAbbreviations[item.voicing] || '';
                             }
                             
-                            if(bottomText) {
-                                if (isFiguredBass && bottomText.includes(' ')) {
-                                    const parts = bottomText.split(/\s+/); 
-                                    parts.forEach((part, i) => {
-                                        const textElem = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                                        textElem.textContent = part;
-                                        textElem.setAttribute('x', itemX);
-                                        textElem.setAttribute('y', 138 + i * 15);
-                                        textElem.setAttribute('font-size', '18px');
-                                        textElem.setAttribute('fill', 'black');
-                                        textElem.setAttribute('text-anchor', 'middle');
-                                        group.appendChild(textElem);
-                                    });
-                                } else {
-                                    const bottomLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                                    bottomLabel.textContent = bottomText;
-                                    bottomLabel.setAttribute('x', itemX);
-                                    bottomLabel.setAttribute('y', 145);
-                                    bottomLabel.setAttribute('font-size', '18px');
-                                    bottomLabel.setAttribute('fill', 'black');
-                                    bottomLabel.setAttribute('text-anchor', 'middle');
-                                    group.appendChild(bottomLabel);
-                                }
+                            if (bottomParts.length > 0) {
+                                bottomParts.forEach((part, i) => {
+                                    const textElem = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                                    textElem.textContent = part;
+                                    textElem.setAttribute('x', itemX);
+                                    textElem.setAttribute('y', 138 + i * 15);
+                                    textElem.setAttribute('font-size', '18px');
+                                    textElem.setAttribute('fill', 'black');
+                                    textElem.setAttribute('text-anchor', 'middle');
+                                    group.appendChild(textElem);
+                                });
                             }
                         }
                     } else { // It's melody
@@ -1260,23 +1421,39 @@
                     }
                 }
                 
+                const accidentalsToDraw = [];
+
+                noteObjects.forEach(({note, y}) => {
+                    let symbolToDraw = null;
+                    const noteName = note.split('/')[0];
+                    const noteLetter = noteName.slice(0, 1);
+                    const requiredAccidental = noteName.length > 1 ? noteName.slice(1) : '';
+                    
+                    const keyNotes = notesData.keySignatures[state.keySignature].notes;
+                    const noteInKey = keyNotes.find(n => n.startsWith(noteLetter));
+                    const keyAccidental = noteInKey && noteInKey.length > 1 ? noteInKey.slice(1) : '';
+
+                    const currentAccidentalInMeasure = activeAccidentalsInMeasure[noteLetter] === undefined ? keyAccidental : activeAccidentalsInMeasure[noteLetter];
+                    
+                    if (requiredAccidental !== currentAccidentalInMeasure) {
+                        if (requiredAccidental === '#') symbolToDraw = '♯';
+                        else if (requiredAccidental === 'b') symbolToDraw = '♭';
+                        else if (requiredAccidental === '##') symbolToDraw = '𝄪';
+                        else if (requiredAccidental === 'bb') symbolToDraw = '𝄫';
+                        else symbolToDraw = '♮';
+                        activeAccidentalsInMeasure[noteLetter] = requiredAccidental;
+                    }
+
+                    if (symbolToDraw) {
+                        accidentalsToDraw.push({ symbol: symbolToDraw, y: y });
+                    }
+                });
+
                 let lastY = -1000;
                 noteObjects.forEach(({note, y}) => {
                     let headX = itemX;
                     if(isChord && Math.abs(y - lastY) <= 5) {
                         headX = itemX + 12;
-                    }
-                    if (isChord && state.notesPerChord === 4) {
-                        const accidentalSymbol = getAccidentalSymbolForNote(note, state.keySignature);
-                        if (accidentalSymbol) {
-                            const accidentalText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                            accidentalText.textContent = accidentalSymbol;
-                            accidentalText.setAttribute('x', headX - 30);
-                            accidentalText.setAttribute('y', y);
-                            accidentalText.setAttribute('font-size', '30px');
-                            accidentalText.setAttribute('dominant-baseline', 'middle');
-                            group.appendChild(accidentalText);
-                        }
                     }
                     const noteHead = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
                     noteHead.setAttribute('cx', headX); noteHead.setAttribute('cy', y);
@@ -1287,9 +1464,47 @@
                     for(let ly = 40; ly >= y; ly -= 10) if(ly < 40) drawLedgerLine(group, headX, ly);
                     for(let ly = 80; ly <= y; ly += 10) if(ly > 80) drawLedgerLine(group, headX, ly);
                 });
+
+                if (accidentalsToDraw.length > 0) {
+                    accidentalsToDraw.sort((a, b) => a.y - b.y);
+                    let columnAssignments = [];
+                    for(let i = 0; i < accidentalsToDraw.length; i++) {
+                        let currentAcc = accidentalsToDraw[i];
+                        let assignedColumn = 0;
+                        let placed = false;
+                        while(!placed) {
+                            let clash = false;
+                            for(let j = 0; j < i; j++) {
+                                if(columnAssignments[j] === assignedColumn) {
+                                    let prevAcc = accidentalsToDraw[j];
+                                    if (Math.abs(currentAcc.y - prevAcc.y) < 15) { // 15 is a magic number for vertical clearance
+                                        clash = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!clash) {
+                                columnAssignments[i] = assignedColumn;
+                                placed = true;
+                            } else {
+                                assignedColumn++;
+                            }
+                        }
+                    }
+                    accidentalsToDraw.forEach((acc, i) => {
+                        const xPos = (itemX - 30) - (columnAssignments[i] * 15); // Stagger columns leftward
+                        const accidentalText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        accidentalText.textContent = acc.symbol;
+                        accidentalText.setAttribute('x', xPos);
+                        accidentalText.setAttribute('y', acc.y);
+                        accidentalText.setAttribute('font-size', '30px');
+                        accidentalText.setAttribute('dominant-baseline', 'middle');
+                        group.appendChild(accidentalText);
+                    });
+                }
             });
         }
-                function drawLedgerLine(parent, x, y){
+        function drawLedgerLine(parent, x, y){
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line.setAttribute('x1', x - 10); line.setAttribute('y1', y);
             line.setAttribute('x2', x + 10); line.setAttribute('y2', y);
@@ -1300,7 +1515,7 @@
         const tutorialSteps = [
              {
                 id: 'main-content',
-                text: '<h2 class="text-2xl font-bold text-emerald-400">¡Bienvenido a Lectura a Primera Vista!</h2><p>Esta aplicación está pensada principalmente para guitarristas, pero es una herramienta versátil para cualquier músico.</p><p class="mt-2">Aunque la guitarra usa la clave de Sol, hemos incluido las claves de Fa y Do para que puedas practicar solfeo (rezado o cantado) o para que la use cualquier otro instrumento melódico.</p><p class="mt-2">La sección de <strong>Armonía</strong> está diseñada con la guitarra en mente, pero también es muy útil para la lectura a 2 y 3 voces en instrumentos que puedan tocar armonía en clave de Fa y Do.</p><p class="mt-4">¡Vamos a explorar cómo funciona!</p>'
+                text: '<h2 class="text-2xl font-bold text-emerald-400">¡Bienvenido a Lectura a Primera Vista!</h2><p>Esta aplicación está pensada principalmente para guitarristas, pero es una herramienta versátil para cualquier músico.</p><p class="mt-2">La sección de <strong>Melodía</strong> y la <strong>Armonía a 2 voces (intervalos)</strong> están disponibles en clave de Sol, Fa y Do, siendo útiles para cualquier instrumento o para practicar solfeo.</p><p class="mt-2">La <strong>Armonía a 3 y 4 voces</strong> ha sido diseñada específicamente con la guitarra en mente, por lo que estos ejercicios solo están disponibles en <strong>clave de Sol</strong>.</p><p class="mt-4">¡Vamos a explorar cómo funciona!</p>'
             },
             {
                 id: 'exercise-type-control',
@@ -1316,23 +1531,24 @@
             },
             {
                 id: 'clef-select',
-                text: '<h3><strong>4. Configuración del Pentagrama</strong></h3><p>Personaliza la escritura musical:</p><ul><li class="mt-2"><strong>Clave:</strong> Elige entre Sol, Fa y Do.</li><li class="mt-2"><strong>Armadura:</strong> Selecciona la tonalidad del ejercicio.</li><li class="mt-2"><strong>Compás:</strong> Define el compás (4/4, 3/4, 2/4).</li></ul><p class="mt-4 p-2 bg-zinc-600 rounded-md text-sm"><strong>Nota Importante:</strong> La app está optimizada para móviles y tablets. Si en tu computadora las claves no se ven en la línea correcta (Sol en 2ª, Fa en 4ª, Do en 3ª), es debido a diferencias de renderizado de fuentes entre sistemas operativos.</p>'
+                text: `<h3><strong>4. Configuración del Pentagrama</strong></h3><p>Personaliza la escritura musical:</p><ul><li class="mt-2"><strong>Clave:</strong> Elige entre Sol, Fa y Do.</li><li class="mt-2"><strong>Armadura:</strong> Selecciona la tonalidad del ejercicio (disponible solo en modo Melodía).</li><li class="mt-2"><strong>Compás:</strong> Define el compás (4/4, 3/4, 2/4).</li></ul><div class="mt-4 p-2 bg-sky-800 rounded-md text-sm"><p><strong>🧠 Trabajo Mental en Armonía:</strong></p><p class="mt-1">El modo <strong>Armonía</strong> siempre se muestra sin armadura (Do Mayor), pero el verdadero ejercicio es mental. Imagina que estás en otra tonalidad. Por ejemplo, si decides practicar en <strong>Re Mayor</strong>, debes leer todas las notas F y C como si fueran F♯ y C♯. Si piensas en <strong>Mi♭ Mayor</strong>, las notas B, E y A se convierten en Si♭, Mi♭ y La♭. ¡Este es el núcleo del entrenamiento!</p></div><p class="mt-4 p-2 bg-zinc-600 rounded-md text-sm"><strong>Nota Importante:</strong> La app está optimizada para móviles y tablets. Si en tu computadora las claves no se ven en la línea correcta (Sol en 2ª, Fa en 4ª, Do en 3ª), es debido a diferencias de renderizado de fuentes entre sistemas operativos.</p>`
             },
             {
                 id: 'tempo',
                 text: '<h3><strong>5. Duración y Velocidad</strong></h3><ul><li class="mt-2"><strong>Tempo (BPM):</strong> Establece la velocidad del metrónomo en pulsos por minuto.</li><li class="mt-2"><strong>Compases:</strong> Elige cuántos compases durará el ejercicio. Puedes seleccionar un valor predefinido o "Personalizado" para escribir tu propio número.</li></ul>'
             },
             {
+                id: 'change-beat-control',
+                text: '<h3><strong>6. Lectura Adelantada</strong></h3><p>Esta es una herramienta clave para forzarte a leer más adelante. Por defecto, el siguiente compás aparece en el tiempo 1. Si cambias <strong>"Cambiar compás en"</strong> a un tiempo anterior (por ejemplo, al tiempo 3 en un 4/4), el pentagrama con las nuevas notas se dibujará antes de que termine el compás actual.</p><p class="mt-2">Esto te obliga a despegar la vista de lo que estás tocando y a procesar lo que viene, una habilidad crucial para la lectura a primera vista fluida.</p>'
+    
+            },
+            {
                 id: 'show-note-names',
-                text: '<h3><strong>6. Ayudas Visuales</strong></h3><p>Activa estas opciones para facilitar la lectura:</p><ul><li class="mt-2"><strong>Nombres:</strong> Muestra el nombre de las notas o el cifrado de los acordes debajo del pentagrama.</li><li class="mt-2"><strong>Guía:</strong> Muestra una línea vertical que se mueve pulso a pulso, ayudándote a no perderte.</li></ul>'
+                text: '<h3><strong>7. Ayudas Visuales</strong></h3><p>Activa estas opciones para facilitar la lectura:</p><ul><li class="mt-2"><strong>Nombres:</strong> Muestra el nombre de las notas o el cifrado de los acordes debajo del pentagrama.</li><li class="mt-2"><strong>Guía:</strong> Muestra una línea vertical que se mueve pulso a pulso, ayudándote a no perderte.</li></ul>'
             },
             {
                 id: 'startStopButton',
-                text: '<h3><strong>7. Controles de Reproducción</strong></h3><p>Usa los botones o atajos para manejar el ejercicio:</p><ul><li class="mt-2"><strong>Comenzar/Detener:</strong> Inicia y para el ejercicio (o haz doble clic en el pentagrama).</li><li class="mt-2"><strong>Pausar/Reanudar:</strong> Pausa la música (o haz un solo clic en el pentagrama).</li><li class="mt-2"><strong>Atajo de teclado:</strong> Usa la <strong>barra espaciadora</strong> (un toque para pausar/reanudar, dos toques para detener).</li></ul>'
-            },
-            {
-                id: 'stave-viewer',
-                text: '<h3><strong>8. Modo Inmersivo</strong></h3><p>Para una experiencia sin distracciones, haz clic en el ícono de expandir en la esquina del pentagrama o presiona la tecla <strong>"F"</strong> para entrar y salir del modo de pantalla completa.</p>'
+                text: '<h3><strong>8. Controles y Atajos</strong></h3><p>Usa los botones o atajos para manejar el ejercicio:</p><ul><li class="mt-2"><strong>Botones:</strong> Inicia, pausa o detén el ejercicio.</li><li class="mt-2"><strong>Clics:</strong> Un clic en el pentagrama inicia o pausa, doble clic detiene.</li><li class="mt-2"><strong>Barra Espaciadora:</strong> Inicia/Pausa (un toque) y Detiene (doble toque).</li><li class="mt-2"><strong>F:</strong> Activa/Desactiva el modo de pantalla completa.</li><li class="mt-2"><strong>N:</strong> Muestra/Oculta los nombres de las notas.</li><li class="mt-2"><strong>G:</strong> Muestra/Oculta la guía de lectura.</li><li class="mt-2"><strong>C:</strong> Cambia entre las claves de Sol, Fa y Do.</li></ul>'
             },
             {
                 id: 'main-content',
