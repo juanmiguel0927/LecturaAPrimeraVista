@@ -249,8 +249,12 @@
                     <span class="tooltiptext">Atajo: S</span>
                 </div>
                  <div id="enharmonic-control-container" class="flex items-center gap-2 tooltip hidden">
-                    <label for="enharmonic-toggle" class="text-zinc-300 whitespace-nowrap">Sostenidos (♯):</label>
-                    <input type="checkbox" id="enharmonic-toggle" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                    <label for="enharmonic-toggle" class="text-zinc-300 whitespace-nowrap">Enarmónicos (♯/♭):</label>
+                    <select id="enharmonic-select" class="p-1 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="auto" selected>Auto</option>
+                        <option value="sharps">♯</option>
+                        <option value="flats">♭</option>
+                    </select>
                     <span class="tooltiptext">Atajo: A</span>
                 </div>
             </div>
@@ -405,7 +409,7 @@
                 showFretboardToggle: get('show-fretboard'), enableSoundToggle: get('enable-sound'),
                 fretboardContainer: get('fretboard-container'), soundControlContainer: get('sound-control-container'),
                 fretboardControlContainer: get('fretboard-control-container'),
-                enharmonicToggle: get('enharmonic-toggle'), enharmonicControlContainer: get('enharmonic-control-container')
+                enharmonicSelect: get('enharmonic-select'), enharmonicControlContainer: get('enharmonic-control-container')
             };
         }
 
@@ -421,7 +425,7 @@
                 selectedCustomTriads: new Set(['triad_fundamental', 'triad_inv1', 'triad_inv2']),
                 selectedCustomVoicings: new Set(['drop2', 'drop3']),
                 lastMelodicNote: null, showFretboard: false, soundEnabled: false,
-                displayedMeasureContent: [], preferSharps: true
+                displayedMeasureContent: [], enharmonicPreference: 'auto' // auto, sharps, flats
             };
             audio = { context: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0 };
             notesData = {
@@ -598,8 +602,8 @@
                 state.soundEnabled = e.target.checked;
             });
 
-             ui.enharmonicToggle.addEventListener('change', (e) => {
-                state.preferSharps = e.target.checked;
+             ui.enharmonicSelect.addEventListener('change', (e) => {
+                state.enharmonicPreference = e.target.value;
                 if (state.showFretboard) {
                     drawFretboardWithCurrentSettings();
                 }
@@ -658,8 +662,8 @@
             ui.keySigSelect.addEventListener('change', () => {
                 state.keySignature = ui.keySigSelect.value;
                 const keyInfo = notesData.keySignatures[state.keySignature];
-                state.preferSharps = (keyInfo.type !== 'flat');
-                ui.enharmonicToggle.checked = state.preferSharps;
+                state.enharmonicPreference = (keyInfo.type === 'flat') ? 'flats' : 'sharps';
+                ui.enharmonicSelect.value = state.enharmonicPreference;
                 if (state.showFretboard) {
                     drawFretboardWithCurrentSettings();
                 }
@@ -743,8 +747,12 @@
                 } else if (key === 'a') {
                     if (state.showFretboard) {
                         e.preventDefault();
-                        ui.enharmonicToggle.checked = !ui.enharmonicToggle.checked;
-                        ui.enharmonicToggle.dispatchEvent(new Event('change'));
+                        const currentVal = ui.enharmonicSelect.value;
+                        const options = Array.from(ui.enharmonicSelect.options).map(o => o.value);
+                        const currentIndex = options.indexOf(currentVal);
+                        const nextIndex = (currentIndex + 1) % options.length;
+                        ui.enharmonicSelect.value = options[nextIndex];
+                        ui.enharmonicSelect.dispatchEvent(new Event('change'));
                     }
                 } else if (key === 'e') {
                     e.preventDefault();
@@ -852,7 +860,8 @@
             const showNames = ui.showNoteNamesToggle.checked;
             const difficulty = ui.difficultySelect.value;
             
-            ui.soundControlContainer.classList.toggle('hidden', !isMelody);
+            // Sound control is always visible now
+            // ui.soundControlContainer.classList.toggle('hidden', !isMelody);
 
             ui.keySigContainer.classList.toggle('hidden', isHarmony);
             if (isHarmony) { state.keySignature = 'C'; ui.keySigSelect.value = 'C'; } 
@@ -1029,6 +1038,7 @@
                 playMetronomeSound(audio.nextNoteTime, state.currentMetronomeCount === 1);
                 
                 let currentNotesForBeat = [];
+                let rootNoteNameForFretboard = null;
 
                 if (state.isPreRoll) {
                     ui.preRollCount.textContent = state.currentMetronomeCount;
@@ -1071,6 +1081,13 @@
                          if(state.notesPerChord === 4) itemIndex = Math.floor(beatIndex / 2);
                          if (itemIndex >= 0 && itemIndex < contentForPlayback.length) {
                              currentNotesForBeat = contentForPlayback[itemIndex];
+                             if (state.soundEnabled && currentNotesForBeat) {
+                                 currentNotesForBeat.forEach(note => playNoteSound(note, audio.nextNoteTime));
+                             }
+                             if (currentNotesForBeat && currentNotesForBeat.length > 1) {
+                                 const chordInfo = getChordName(currentNotesForBeat);
+                                 rootNoteNameForFretboard = chordInfo.root;
+                             }
                          }
                     }
 
@@ -1092,7 +1109,7 @@
 
                 renderStave();
                 updateGuidePosition();
-                updateFretboard(currentNotesForBeat);
+                updateFretboard(currentNotesForBeat, rootNoteNameForFretboard);
                 audio.nextNoteTime += beatDuration;
             }
             state.metronomeTimer = setTimeout(scheduler, audio.lookahead);
@@ -1562,7 +1579,7 @@
         }
         
         function getChordName(notes) {
-            if (!notes || notes.length < 2) return { name: '', figuredBass: [] };
+            if (!notes || notes.length < 2) return { name: '', figuredBass: [], root: null };
             const sortedNotes = [...notes].sort((a, b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
             const bassNote = sortedNotes[0];
             const bassNoteName = bassNote.split('/')[0];
@@ -1609,24 +1626,34 @@
                             }
                         }
                     }
-                    return { name: chordName, figuredBass: figuredBass };
+                    return { name: chordName, figuredBass: figuredBass, root: rootNoteName };
                 }
             }
-            return { name: '', figuredBass: [] };
+            return { name: '', figuredBass: [], root: null };
         }
         
         function getEnharmonicName(midiVal) {
             const names = notesData.midiToEnharmonicName[midiVal % 12];
             if (!names) return '';
             if (names.sharp === names.flat) return names.sharp;
-            return state.preferSharps ? names.sharp : names.flat;
+            
+            if (state.enharmonicPreference === 'sharps') return names.sharp;
+            if (state.enharmonicPreference === 'flats') return names.flat;
+
+            // 'auto' mode
+            const keyInfo = notesData.keySignatures[state.keySignature];
+            return (keyInfo.type === 'flat') ? names.flat : names.sharp;
         }
 
         function drawFretboardWithCurrentSettings() {
-            const scaleNoteNames = notesData.keySignatures[state.keySignature].notes;
-            const range = getNoteRangeForDifficulty();
-            const notesToDraw = range.filter(note => scaleNoteNames.includes(note.split('/')[0]));
-            drawFretboard(notesToDraw);
+            if (state.exerciseType === 'melodia') {
+                const scaleNoteNames = notesData.keySignatures[state.keySignature].notes;
+                const range = getNoteRangeForDifficulty();
+                const notesToDraw = range.filter(note => scaleNoteNames.includes(note.split('/')[0]));
+                drawFretboard(notesToDraw);
+            } else { // Harmony mode
+                drawFretboard([]); // Draw an empty fretboard
+            }
         }
 
         function drawFretboard(staticNotes = []) {
@@ -1760,7 +1787,7 @@
             svg.appendChild(highlightsGroup);
         }
 
-        function updateFretboard(playingNotes) {
+        function updateFretboard(playingNotes, rootNoteName = null) {
             const highlightsGroup = document.getElementById('fretboard-highlights');
             if (!highlightsGroup) return;
             highlightsGroup.innerHTML = '';
@@ -1790,7 +1817,18 @@
                 circle.setAttribute('cx', cx);
                 circle.setAttribute('cy', cy);
                 circle.setAttribute('r', 8);
-                circle.setAttribute('fill', '#34d399'); // Emerald-400 for current playing note
+                
+                if (state.exerciseType === 'armonia' && rootNoteName && playingNotes.length > 1) {
+                    const currentNoteNameOnly = note.split('/')[0];
+                    if (currentNoteNameOnly === rootNoteName) {
+                        circle.setAttribute('fill', '#f87171'); // Red-400 for root
+                    } else {
+                        circle.setAttribute('fill', '#60a5fa'); // Blue-400 for other chord tones
+                    }
+                } else { // Melody mode or no root found
+                    circle.setAttribute('fill', '#34d399'); // Emerald-400 for current playing note
+                }
+
                 highlightsGroup.appendChild(circle);
 
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -2029,7 +2067,7 @@
              { id: 'tempo', text: '<h3><strong>5. Duración y Velocidad</strong></h3><ul><li class="mt-2"><strong>Tempo (BPM):</strong> Establece la velocidad del metrónomo en pulsos por minuto.</li><li class="mt-2"><strong>Compases:</strong> Elige cuántos compases durará el ejercicio. Puedes seleccionar un valor predefinido o "Personalizado" para escribir tu propio número.</li></ul>' },
              { id: 'change-beat-control', text: '<h3><strong>6. Lectura Adelantada</strong></h3><p>Esta es una herramienta clave para forzarte a leer más adelante. Te permite elegir en qué <strong>pulso</strong> del compás actual quieres que aparezcan las notas del <strong>siguiente compás</strong>.</p><p class="mt-2">Por defecto, está en el último pulso, dándote un tiempo para anticipar. Si lo ajustas a un pulso anterior (por ejemplo, al 3 en un 4/4), tendrás menos tiempo, forzando una lectura más rápida y fluida. ¡Es una habilidad crucial!</p>' },
              { id: 'info-aids-container', text: '<h3><strong>7. Ayudas de Lectura</strong></h3><p>Activa estas opciones para facilitar la lectura:</p><ul><li class="mt-2"><strong>Nombres:</strong> Muestra el nombre de las notas o el cifrado de los acordes debajo del pentagrama.</li><li class="mt-2"><strong>Guía:</strong> Muestra una línea vertical que se mueve pulso a pulso, ayudándote a no perderte.</li></ul>' },
-             { id: 'visual-aids-container', text: '<h3><strong>8. Ayudas Interactivas</strong></h3><p>Usa estas herramientas para una práctica más completa:</p><ul><li class="mt-2"><strong>Mástil:</strong> Muestra un diapasón de guitarra que visualiza las notas del ejercicio. Las notas de la escala actual se muestran en el mástil y la nota que suena se resalta en verde.</li><li class="mt-2"><strong>Sonido:</strong> Reproduce cada nota de la melodía a medida que avanza el ejercicio. ¡Ideal para entrenar tu oído! (Disponible solo en modo Melodía).</li><li class="mt-2"><strong>Enarmónicos (♯/♭):</strong> Te permite elegir si prefieres ver las alteraciones como sostenidos o bemoles en el mástil.</li></ul>' },
+             { id: 'visual-aids-container', text: '<h3><strong>8. Ayudas Interactivas</strong></h3><p>Usa estas herramientas para una práctica más completa:</p><ul><li class="mt-2"><strong>Mástil:</strong> Muestra un diapasón de guitarra que visualiza las notas del ejercicio. Las notas de la escala actual se muestran en el mástil y la nota que suena se resalta en verde.</li><li class="mt-2"><strong>Sonido:</strong> Reproduce cada nota o acorde a medida que avanza el ejercicio. ¡Ideal para entrenar tu oído!</li><li class="mt-2"><strong>Enarmónicos (♯/♭):</strong> Te permite elegir si prefieres ver las alteraciones como sostenidos o bemoles en el mástil.</li></ul>' },
              { id: 'startStopButton', text: '<h3><strong>9. Controles y Atajos</strong></h3><p>Usa los botones o atajos para manejar el ejercicio:</p><ul><li class="mt-2"><strong>Botones:</strong> Inicia, pausa o detén el ejercicio.</li><li class="mt-2"><strong>Clics:</strong> Un clic en el pentagrama inicia o pausa, doble clic detiene.</li><li class="mt-2"><strong>Barra Espaciadora:</strong> Inicia/Pausa (un toque) y Detiene (doble toque).</li><li class="mt-2"><strong>E:</strong> Cambia entre Melodía y Armonía.</li><li class="mt-2"><strong>C:</strong> Cambia entre las claves de Sol, Fa y Do.</li><li class="mt-2"><strong>N:</strong> Muestra/Oculta los nombres de las notas.</li><li class="mt-2"><strong>G:</strong> Muestra/Oculta la guía de lectura.</li><li class="mt-2"><strong>M:</strong> Muestra/Oculta el mástil.</li><li class="mt-2"><strong>S:</strong> Activa/Desactiva el sonido.</li><li class="mt-2"><strong>A:</strong> Alterna la vista de enarmónicos (♯/♭) en el mástil.</li><li class="mt-2"><strong>F:</strong> Activa/Desactiva el modo de pantalla completa.</li></ul>' },
              { id: 'main-content', text: '<h2 class="text-2xl font-bold text-emerald-400">¡Todo Listo!</h2><p>Ya conoces todas las funciones. Configura tu ejercicio ideal y ¡a mejorar esa lectura! La práctica constante es la clave.</p>' }
         ];
