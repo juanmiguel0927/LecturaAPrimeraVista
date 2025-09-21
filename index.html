@@ -50,7 +50,7 @@
             transition: all 0.1s ease-in-out;
         }
         .note-text {
-            font-size: 12px;
+            font-size: 10px;
             font-weight: bold;
             fill: white;
             text-anchor: middle;
@@ -64,6 +64,31 @@
             dominant-baseline: central;
             pointer-events: none;
         }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: #27272a;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 100;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
 
     </style>
 </head>
@@ -75,13 +100,15 @@
         <p class="text-zinc-400 text-lg md:text-xl mb-6">Ejercicios para guitarra</p>
         <div id="exercise-type-control" class="flex items-center justify-center space-x-2 mb-6">
             <span class="text-zinc-300 font-bold mr-2">Tipo de Ejercicio:</span>
-            <div>
+            <div class="tooltip">
                 <input type="radio" name="exerciseType" id="type-melodia" value="melodia" class="hidden" checked>
                 <label for="type-melodia" class="radio-label">Melodía</label>
+                <span class="tooltiptext">Atajo: E</span>
             </div>
-            <div>
+            <div class="tooltip">
                 <input type="radio" name="exerciseType" id="type-armonia" value="armonia" class="hidden">
                 <label for="type-armonia" class="radio-label">Armonía</label>
+                <span class="tooltiptext">Atajo: E</span>
             </div>
         </div>
         <div id="controls-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 mb-8">
@@ -130,11 +157,12 @@
                 <label for="tempo" class="text-zinc-300 whitespace-nowrap">Tempo (BPM):</label>
                 <input type="number" id="tempo" value="60" min="1" class="w-full p-2 text-center rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"/>
             </div>
-            <div class="control-item">
+            <div class="control-item tooltip">
                 <label for="clef-select" class="text-zinc-300 whitespace-nowrap">Clave:</label>
                 <select id="clef-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="G" selected>Sol</option><option value="F">Fa</option><option value="C">Do</option>
                 </select>
+                 <span class="tooltiptext">Atajo: C</span>
             </div>
              <div id="key-signature-container" class="control-item">
                 <label for="key-signature-select" class="text-zinc-300 whitespace-nowrap">Armadura:</label>
@@ -182,14 +210,16 @@
                 <label for="custom-measures-input" class="text-zinc-300 whitespace-nowrap">Nº:</label>
                 <input type="number" id="custom-measures-input" value="10" placeholder="Nº" min="1" class="w-full p-2 text-center rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"/>
             </div>
-            <div class="control-item flex-row sm:justify-start gap-4">
-                <div class="flex items-center gap-2">
+            <div id="info-aids-container" class="control-item flex-row sm:justify-start gap-4">
+                <div class="flex items-center gap-2 tooltip">
                     <label for="show-note-names" class="text-zinc-300 whitespace-nowrap">Nombres:</label>
                     <input type="checkbox" id="show-note-names" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                    <span class="tooltiptext">Atajo: N</span>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 tooltip">
                     <label for="show-guide" class="text-zinc-300 whitespace-nowrap">Guía:</label>
                     <input type="checkbox" id="show-guide" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                    <span class="tooltiptext">Atajo: G</span>
                 </div>
             </div>
             <div id="melody-note-name-options-container" class="control-item hidden">
@@ -207,14 +237,16 @@
                     <option value="drops">Drops</option>
                 </select>
             </div>
-             <div class="control-item flex-row sm:justify-start gap-4">
-                <div class="flex items-center gap-2">
+             <div id="visual-aids-container" class="control-item flex-row sm:justify-start gap-4">
+                <div id="fretboard-control-container" class="flex items-center gap-2 tooltip">
                     <label for="show-fretboard" class="text-zinc-300 whitespace-nowrap">Mástil:</label>
                     <input type="checkbox" id="show-fretboard" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                    <span class="tooltiptext">Atajo: M</span>
                 </div>
-                <div class="flex items-center gap-2" id="sound-control-container">
+                <div class="flex items-center gap-2 tooltip" id="sound-control-container">
                     <label for="enable-sound" class="text-zinc-300 whitespace-nowrap">Sonido:</label>
                     <input type="checkbox" id="enable-sound" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                    <span class="tooltiptext">Atajo: S</span>
                 </div>
             </div>
         </div>
@@ -224,16 +256,25 @@
             </select>
         </div>
         <div class="flex justify-center items-center space-x-4 mb-8">
-            <button id="startStopButton" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Comenzar</button>
-            <button id="pauseResumeButton" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Pausar</button>
+             <div class="tooltip">
+                <button id="startStopButton" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Comenzar</button>
+                 <span class="tooltiptext">Atajo: Espacio</span>
+             </div>
+             <div class="tooltip">
+                <button id="pauseResumeButton" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Pausar</button>
+                 <span class="tooltiptext">Atajo: Espacio</span>
+             </div>
             <button id="show-tutorial" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Tutorial</button>
         </div>
         <div id="stave-viewer" class="group relative bg-zinc-700 p-2 md:p-6 rounded-lg shadow-inner mb-8 overflow-x-auto w-full">
             <div id="stave-container" class="stave-container w-full h-80 flex items-center justify-center bg-white rounded-lg shadow-md border border-zinc-600"></div>
-            <button id="fullscreen-toggle" class="absolute z-10 bottom-4 right-4 p-3 rounded-full bg-gray-800 bg-opacity-60 text-white hover:bg-opacity-80 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100" title="Pantalla Completa">
-                <svg id="enter-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
-                <svg id="exit-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
-            </button>
+            <div class="tooltip">
+                <button id="fullscreen-toggle" class="absolute z-10 bottom-4 right-4 p-3 rounded-full bg-gray-800 bg-opacity-60 text-white hover:bg-opacity-80 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100">
+                    <svg id="enter-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                    <svg id="exit-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
+                </button>
+                <span class="tooltiptext">Atajo: F</span>
+            </div>
         </div>
         <div id="displayArea" class="hidden bg-zinc-700 p-6 rounded-lg shadow-inner">
             <div class="flex justify-center items-center space-x-4">
@@ -357,7 +398,8 @@
                 voicingCheckboxes: get('voicing-checkboxes'), cancelVoicingSelectionBtn: get('cancel-voicing-selection'),
                 saveVoicingSelectionBtn: get('save-voicing-selection'),
                 showFretboardToggle: get('show-fretboard'), enableSoundToggle: get('enable-sound'),
-                fretboardContainer: get('fretboard-container'), soundControlContainer: get('sound-control-container')
+                fretboardContainer: get('fretboard-container'), soundControlContainer: get('sound-control-container'),
+                fretboardControlContainer: get('fretboard-control-container')
             };
         }
 
@@ -415,7 +457,7 @@
                 sharpPositions: { 'G': [40, 55, 35, 50, 65, 45, 60], 'F': [50, 65, 45, 60, 75, 55, 70], 'C': [45, 60, 40, 55, 70, 50, 65] },
                 flatPositions: { 'G': [55, 40, 60, 45, 65, 50, 70], 'F': [65, 50, 70, 55, 75, 60, 80], 'C': [60, 45, 65, 50, 70, 55, 75] },
                 chromaticMap: {}, intervalAbbreviations: {}, noteToFrequency: {}, guitarFretboard: {},
-                midiToPreferredName: {}
+                midiToEnharmonicName: {}
             };
         }
 
@@ -438,11 +480,11 @@
             notesData.clefs = { 'G': { symbol: '𝄞', symbolY: 68, yPositions: generateY('G/4', 70) }, 'F': { symbol: '𝄢', symbolY: 70, yPositions: generateY('F/3', 50) }, 'C': { symbol: '𝄡', symbolY: 70, yPositions: generateY('C/4', 60) } };
             
             const baseValues = {'C':0, 'D':2, 'E':4, 'F':5, 'G':7, 'A':9, 'B':11};
-            const preferredNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-
-            for(let midi = 0; midi < 128; midi++) {
-                notesData.midiToPreferredName[midi] = preferredNames[midi % 12];
-            }
+            
+            notesData.midiToEnharmonicName = {
+                0: 'C', 1: 'C♯/D♭', 2: 'D', 3: 'D♯/E♭', 4: 'E', 5: 'F',
+                6: 'F♯/G♭', 7: 'G', 8: 'G♯/A♭', 9: 'A', 10: 'A♯/B♭', 11: 'B'
+            };
 
             notesData.all.forEach(note => {
                 const [name, octaveStr] = note.split('/');
@@ -602,6 +644,7 @@
                     if (state.exerciseStarted) stopExercise();
                     if (el === ui.timeSigSelect) updateChangeBeatOptions();
                     if (el === ui.keySigSelect) state.keySignature = ui.keySigSelect.value;
+                    if (el === ui.clefSelect) updateHarmonyControlsVisibility();
                     state.measuresChangeBeat = parseInt(ui.changeBeatSelect.value, 10);
                     renderStave();
                 });
@@ -635,15 +678,38 @@
                         }
                         state.spacebarPressCount = 0;
                     }, 300);
-                } else if (key === 'n') { e.preventDefault(); ui.showNoteNamesToggle.checked = !ui.showNoteNamesToggle.checked; ui.showNoteNamesToggle.dispatchEvent(new Event('change')); }
-                else if (key === 'g') { e.preventDefault(); ui.showGuideToggle.checked = !ui.showGuideToggle.checked; ui.showGuideToggle.dispatchEvent(new Event('change')); }
-                else if (key === 'c') {
+                } else if (key === 'n') { 
+                    e.preventDefault(); 
+                    ui.showNoteNamesToggle.checked = !ui.showNoteNamesToggle.checked; 
+                    ui.showNoteNamesToggle.dispatchEvent(new Event('change')); 
+                } else if (key === 'g') { 
+                    e.preventDefault(); 
+                    ui.showGuideToggle.checked = !ui.showGuideToggle.checked; 
+                    ui.showGuideToggle.dispatchEvent(new Event('change')); 
+                } else if (key === 'c') {
                     e.preventDefault();
                     const clefs = Array.from(ui.clefSelect.options).filter(opt => !opt.hidden);
                     const currentIndex = clefs.findIndex(opt => opt.value === ui.clefSelect.value);
                     const nextIndex = (currentIndex + 1) % clefs.length;
                     ui.clefSelect.value = clefs[nextIndex].value;
                     ui.clefSelect.dispatchEvent(new Event('change'));
+                } else if (key === 'm') { 
+                    e.preventDefault(); 
+                    ui.showFretboardToggle.checked = !ui.showFretboardToggle.checked; 
+                    ui.showFretboardToggle.dispatchEvent(new Event('change')); 
+                } else if (key === 's') { 
+                    e.preventDefault(); 
+                    ui.enableSoundToggle.checked = !ui.enableSoundToggle.checked; 
+                    ui.enableSoundToggle.dispatchEvent(new Event('change')); 
+                } else if (key === 'e') {
+                    e.preventDefault();
+                    const currentType = state.exerciseType;
+                    const nextType = currentType === 'melodia' ? 'armonia' : 'melodia';
+                    const radioToSelect = document.getElementById(`type-${nextType}`);
+                    if (radioToSelect) {
+                        radioToSelect.checked = true;
+                        radioToSelect.dispatchEvent(new Event('change'));
+                    }
                 }
             });
         }
@@ -797,6 +863,13 @@
             const basicOption = ui.difficultySelect.querySelector('option[value="basico"]');
             if (basicOption) basicOption.disabled = isQuad;
             if (isQuad && ui.difficultySelect.value === 'basico') { ui.difficultySelect.value = 'medium'; ui.difficultySelect.dispatchEvent(new Event('change')); }
+        
+            const isGClef = ui.clefSelect.value === 'G';
+            ui.fretboardControlContainer.classList.toggle('hidden', !isGClef);
+            if (!isGClef && state.showFretboard) {
+                ui.showFretboardToggle.checked = false;
+                ui.showFretboardToggle.dispatchEvent(new Event('change'));
+            }
         }
 
         function updateDropVoicingOptions() {
@@ -1005,11 +1078,11 @@
                 case 'medium':
                     if (ui.clefSelect.value === 'G') return notesData.all.slice(notesData.all.indexOf('E/3'), notesData.all.indexOf('A/5') + 1);
                     if (ui.clefSelect.value === 'F') return notesData.all.slice(notesData.all.indexOf('E/2'), notesData.all.indexOf('C/4') + 1);
-                    return notesData.all.slice(notesData.all.indexOf('D/2'), notesData.all.indexOf('B/4') + 1);
+                    return notesData.all.slice(notesData.all.indexOf('D/3'), notesData.all.indexOf('B/4') + 1);
                 default: // 'advanced'
                     if (ui.clefSelect.value === 'G') return notesData.all.slice(notesData.all.indexOf('E/3'), notesData.all.indexOf('E/6') + 1);
                     if (ui.clefSelect.value === 'F') return notesData.all.slice(notesData.all.indexOf('C/2'), notesData.all.indexOf('F/4') + 1);
-                    return notesData.all.slice(notesData.all.indexOf('B/1'), notesData.all.indexOf('B/4') + 1);
+                    return notesData.all.slice(notesData.all.indexOf('A/2'), notesData.all.indexOf('D/5') + 1);
             }
         }
 
@@ -1498,14 +1571,16 @@
         }
         
         function drawFretboardWithCurrentSettings() {
-            const notePool = (state.exerciseType === 'melodia') ? getNoteRangeForDifficulty() : [];
-            drawFretboard(notePool);
+            const scaleNoteNames = notesData.keySignatures[state.keySignature].notes;
+            const range = getNoteRangeForDifficulty();
+            const notesToDraw = range.filter(note => scaleNoteNames.includes(note.split('/')[0]));
+            drawFretboard(notesToDraw);
         }
 
-        function drawFretboard(notePool = []) {
+        function drawFretboard(staticNotes = []) {
             const container = ui.fretboardContainer;
             container.innerHTML = '';
-            const NUM_FRETS = 16;
+            const NUM_FRETS = 12;
             const NUM_STRINGS = 6;
             const tuning = ['E/5', 'B/4', 'G/4', 'D/4', 'A/3', 'E/3']; // Custom tuning for exercise range
 
@@ -1541,6 +1616,7 @@
 
             const markers = [3, 5, 7, 9, 15];
             markers.forEach(fret => {
+                if (fret > NUM_FRETS) return;
                 const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 marker.setAttribute('cx', 30 + (fret * 50) - 25);
                 marker.setAttribute('cy', (NUM_STRINGS * 20 + 10) / 2);
@@ -1550,6 +1626,7 @@
             });
             const doubleMarkers = [12];
             doubleMarkers.forEach(fret => {
+                 if (fret > NUM_FRETS) return;
                  const marker1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 marker1.setAttribute('cx', 30 + (fret * 50) - 25);
                 marker1.setAttribute('cy', (NUM_STRINGS * 20 + 10) / 2 - 20);
@@ -1567,6 +1644,7 @@
             // Fret Numbers
             const fretNumbers = [3, 5, 7, 9, 12];
             fretNumbers.forEach(fret => {
+                if (fret > NUM_FRETS) return;
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('x', 30 + (fret * 50) - 25);
                 text.setAttribute('y', NUM_STRINGS * 20 + 30);
@@ -1581,56 +1659,22 @@
             staticNotesGroup.setAttribute('id', 'fretboard-static-notes');
             svg.appendChild(staticNotesGroup);
             
-            // Draw all chromatic notes as background text
-            for(let string = 0; string < NUM_STRINGS; string++) {
-                for (let fret = 0; fret <= NUM_FRETS; fret++) {
-                     const openNoteValue = notesData.chromaticMap[tuning[string]];
-                     const noteValue = openNoteValue + fret;
-                     const noteName = notesData.midiToPreferredName[noteValue] || '';
-                     if (noteName) {
-                         const cx = 30 + (fret * 50) - 25;
-                         const cy = 10 + (string * 20) + 10;
-                         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                         text.setAttribute('class', 'static-note-text');
-                         text.setAttribute('x', cx);
-                         text.setAttribute('y', cy);
-                         text.textContent = noteName.replace('#', '♯');
-                         staticNotesGroup.appendChild(text);
-                     }
-                }
-            }
-
-
-            const highlightsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            highlightsGroup.setAttribute('id', 'fretboard-highlights');
-            svg.appendChild(highlightsGroup);
-        }
-
-        function updateFretboard(notes) {
-            const highlightsGroup = document.getElementById('fretboard-highlights');
-            if (!highlightsGroup) return;
-            highlightsGroup.innerHTML = '';
-            
-            if (!Array.isArray(notes) || notes.length === 0) return;
-            
             const notePositions = [];
             const processedNotes = new Set();
-
-            notes.forEach(note => {
-                const noteNameOnly = note.split('/')[0];
-                if(processedNotes.has(noteNameOnly)) return;
-
+            staticNotes.forEach(note => {
                 if (notesData.guitarFretboard[note]) {
-                    const allPositions = notesData.guitarFretboard[note];
-                    allPositions.forEach(pos => {
-                        notePositions.push({note, ...pos});
+                     notesData.guitarFretboard[note].forEach(pos => {
+                        if (pos.fret <= NUM_FRETS && !processedNotes.has(`${pos.string}-${pos.fret}`)) {
+                            notePositions.push({note, ...pos});
+                            processedNotes.add(`${pos.string}-${pos.fret}`);
+                        }
                     });
                 }
-                processedNotes.add(noteNameOnly);
             });
 
             notePositions.forEach(({note, string, fret}) => {
-                const noteName = note.split('/')[0].replace(/b/g, '♭').replace(/#/g, '♯');
+                const midiVal = notesData.chromaticMap[note];
+                const noteName = notesData.midiToEnharmonicName[midiVal % 12].replace(/([♯♭])/g, '$1\n');
                 const cx = 30 + (fret * 50) - 25;
                 const cy = 10 + (string * 20) + 10;
                 
@@ -1642,19 +1686,66 @@
                 
                 const keyNotes = notesData.keySignatures[state.keySignature].notes;
                 const rootNoteName = keyNotes[0];
-                if (noteName.startsWith(rootNoteName[0]) && noteName.length === rootNoteName.length) {
-                     circle.setAttribute('fill', '#ef4444'); // Red for root
+                if (note.startsWith(rootNoteName)) {
+                     circle.setAttribute('fill', '#f87171'); // Red-400 for root
                 } else {
-                     circle.setAttribute('fill', '#3b82f6'); // Blue for other scale tones
+                     circle.setAttribute('fill', '#60a5fa'); // Blue-400 for other scale tones
                 }
 
+                staticNotesGroup.appendChild(circle);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('class', 'note-text');
+                text.setAttribute('x', cx);
+                text.setAttribute('y', cy);
+                text.textContent = noteName.split('/')[0];
+                staticNotesGroup.appendChild(text);
+            });
+
+
+            const highlightsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            highlightsGroup.setAttribute('id', 'fretboard-highlights');
+            svg.appendChild(highlightsGroup);
+        }
+
+        function updateFretboard(playingNotes) {
+            const highlightsGroup = document.getElementById('fretboard-highlights');
+            if (!highlightsGroup) return;
+            highlightsGroup.innerHTML = '';
+            
+            if (!Array.isArray(playingNotes) || playingNotes.length === 0) return;
+            
+            const notePositions = [];
+            
+            playingNotes.forEach(note => {
+                if (notesData.guitarFretboard[note]) {
+                    notesData.guitarFretboard[note].forEach(pos => {
+                         if (pos.fret <= 12) {
+                            notePositions.push({note, ...pos});
+                        }
+                    });
+                }
+            });
+
+            notePositions.forEach(({note, string, fret}) => {
+                const midiVal = notesData.chromaticMap[note];
+                const noteName = notesData.midiToEnharmonicName[midiVal % 12];
+                const cx = 30 + (fret * 50) - 25;
+                const cy = 10 + (string * 20) + 10;
+                
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('class', 'note-marker');
+                circle.setAttribute('cx', cx);
+                circle.setAttribute('cy', cy);
+                circle.setAttribute('r', 8);
+                circle.setAttribute('fill', '#34d399'); // Emerald-400 for current playing note
                 highlightsGroup.appendChild(circle);
 
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('class', 'note-text');
                 text.setAttribute('x', cx);
                 text.setAttribute('y', cy);
-                text.textContent = noteName;
+                text.textContent = noteName.split('/')[0];
                 highlightsGroup.appendChild(text);
             });
         }
@@ -1885,8 +1976,9 @@
              { id: 'clef-select', text: `<h3><strong>4. Configuración del Pentagrama</strong></h3><p>Personaliza la escritura musical:</p><ul><li class="mt-2"><strong>Clave:</strong> Elige entre Sol, Fa y Do.</li><li class="mt-2"><strong>Armadura:</strong> Selecciona la tonalidad del ejercicio (disponible solo en modo Melodía).</li><li class="mt-2"><strong>Compás:</strong> Define el compás (4/4, 3/4, 2/4).</li></ul><div class="mt-4 p-2 bg-sky-800 rounded-md text-sm"><p><strong>🧠 Trabajo Mental en Armonía:</strong></p><p class="mt-1">El modo <strong>Armonía</strong> siempre se muestra sin armadura (Do Mayor), pero el verdadero ejercicio es mental. Imagina que estás en otra tonalidad. Por ejemplo, si decides practicar en <strong>Re Mayor</strong>, debes leer todas las notas F y C como si fueran F♯ y C♯. Si piensas en <strong>Mi♭ Mayor</strong>, las notas B, E y A se convierten en Si♭, Mi♭ y La♭. ¡Este es el núcleo del entrenamiento!</p></div><p class="mt-4 p-2 bg-zinc-600 rounded-md text-sm"><strong>Nota Importante:</strong> La app está optimizada para móviles y tablets. Si en tu computadora las claves no se ven en la línea correcta (Sol en 2ª, Fa en 4ª, Do en 3ª), es debido a diferencias de renderizado de fuentes entre sistemas operativos.</p>` },
              { id: 'tempo', text: '<h3><strong>5. Duración y Velocidad</strong></h3><ul><li class="mt-2"><strong>Tempo (BPM):</strong> Establece la velocidad del metrónomo en pulsos por minuto.</li><li class="mt-2"><strong>Compases:</strong> Elige cuántos compases durará el ejercicio. Puedes seleccionar un valor predefinido o "Personalizado" para escribir tu propio número.</li></ul>' },
              { id: 'change-beat-control', text: '<h3><strong>6. Lectura Adelantada</strong></h3><p>Esta es una herramienta clave para forzarte a leer más adelante. Te permite elegir en qué <strong>pulso</strong> del compás actual quieres que aparezcan las notas del <strong>siguiente compás</strong>.</p><p class="mt-2">Por defecto, está en el último pulso, dándote un tiempo para anticipar. Si lo ajustas a un pulso anterior (por ejemplo, al 3 en un 4/4), tendrás menos tiempo, forzando una lectura más rápida y fluida. ¡Es una habilidad crucial!</p>' },
-             { id: 'show-note-names', text: '<h3><strong>7. Ayudas Visuales</strong></h3><p>Activa estas opciones para facilitar la lectura:</p><ul><li class="mt-2"><strong>Nombres:</strong> Muestra el nombre de las notas o el cifrado de los acordes debajo del pentagrama.</li><li class="mt-2"><strong>Guía:</strong> Muestra una línea vertical que se mueve pulso a pulso, ayudándote a no perderte.</li></ul>' },
-             { id: 'startStopButton', text: '<h3><strong>8. Controles y Atajos</strong></h3><p>Usa los botones o atajos para manejar el ejercicio:</p><ul><li class="mt-2"><strong>Botones:</strong> Inicia, pausa o detén el ejercicio.</li><li class="mt-2"><strong>Clics:</strong> Un clic en el pentagrama inicia o pausa, doble clic detiene.</li><li class="mt-2"><strong>Barra Espaciadora:</strong> Inicia/Pausa (un toque) y Detiene (doble toque).</li><li class="mt-2"><strong>F:</strong> Activa/Desactiva el modo de pantalla completa.</li><li class="mt-2"><strong>N:</strong> Muestra/Oculta los nombres de las notas.</li><li class="mt-2"><strong>G:</strong> Muestra/Oculta la guía de lectura.</li><li class="mt-2"><strong>C:</strong> Cambia entre las claves de Sol, Fa y Do.</li></ul>' },
+             { id: 'info-aids-container', text: '<h3><strong>7. Ayudas de Lectura</strong></h3><p>Activa estas opciones para facilitar la lectura:</p><ul><li class="mt-2"><strong>Nombres:</strong> Muestra el nombre de las notas o el cifrado de los acordes debajo del pentagrama.</li><li class="mt-2"><strong>Guía:</strong> Muestra una línea vertical que se mueve pulso a pulso, ayudándote a no perderte.</li></ul>' },
+             { id: 'visual-aids-container', text: '<h3><strong>8. Ayudas Interactivas</strong></h3><p>Usa estas herramientas para una práctica más completa:</p><ul><li class="mt-2"><strong>Mástil:</strong> Muestra un diapasón de guitarra que visualiza las notas del ejercicio. Las notas de la escala actual se muestran en el mástil y la nota que suena se resalta en verde.</li><li class="mt-2"><strong>Sonido:</strong> Reproduce cada nota de la melodía a medida que avanza el ejercicio. ¡Ideal para entrenar tu oído! (Disponible solo en modo Melodía).</li></ul>' },
+             { id: 'startStopButton', text: '<h3><strong>9. Controles y Atajos</strong></h3><p>Usa los botones o atajos para manejar el ejercicio:</p><ul><li class="mt-2"><strong>Botones:</strong> Inicia, pausa o detén el ejercicio.</li><li class="mt-2"><strong>Clics:</strong> Un clic en el pentagrama inicia o pausa, doble clic detiene.</li><li class="mt-2"><strong>Barra Espaciadora:</strong> Inicia/Pausa (un toque) y Detiene (doble toque).</li><li class="mt-2"><strong>E:</strong> Cambia entre Melodía y Armonía.</li><li class="mt-2"><strong>C:</strong> Cambia entre las claves de Sol, Fa y Do.</li><li class="mt-2"><strong>N:</strong> Muestra/Oculta los nombres de las notas.</li><li class="mt-2"><strong>G:</strong> Muestra/Oculta la guía de lectura.</li><li class="mt-2"><strong>M:</strong> Muestra/Oculta el mástil.</li><li class="mt-2"><strong>S:</strong> Activa/Desactiva el sonido.</li><li class="mt-2"><strong>F:</strong> Activa/Desactiva el modo de pantalla completa.</li></ul>' },
              { id: 'main-content', text: '<h2 class="text-2xl font-bold text-emerald-400">¡Todo Listo!</h2><p>Ya conoces todas las funciones. Configura tu ejercicio ideal y ¡a mejorar esa lectura! La práctica constante es la clave.</p>' }
         ];
         let currentTutorialStep = 0;
@@ -1913,7 +2005,4 @@
     </script>
 </body>
 </html>
-
-
-
 
