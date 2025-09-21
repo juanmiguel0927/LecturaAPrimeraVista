@@ -1053,24 +1053,21 @@
                         state.isPreRoll = false;
                         ui.preRollMessage.classList.add('hidden');
                         ui.displayArea.classList.remove('hidden');
-                        state.currentMeasureIndex = 0;
-                        state.currentMeasureContent = state.exerciseMeasures[0];
-                        state.displayedMeasureContent = state.currentMeasureContent;
-                        ui.measuresCount.textContent = `1 / ${state.measuresPerExercise}`;
                     }
                 } else {
-                     if (state.currentMetronomeCount === 1 && state.currentMeasureIndex > -1) { 
-                        state.currentMeasureIndex++; 
+                    if (state.currentMetronomeCount === 1) {
+                         if (state.currentMeasureIndex === -1) { // First measure after pre-roll
+                            state.currentMeasureIndex = 0;
+                        } else {
+                            state.currentMeasureIndex++;
+                        }
+                        
                         if (state.currentMeasureIndex >= state.measuresPerExercise) {
                             stopExercise();
                             return;
                         }
                         state.currentMeasureContent = state.exerciseMeasures[state.currentMeasureIndex];
                         ui.measuresCount.textContent = `${state.currentMeasureIndex + 1} / ${state.measuresPerExercise}`;
-                    } else if (state.currentMeasureIndex === -1 && state.currentMetronomeCount === 1) { 
-                        state.currentMeasureIndex = 0;
-                        state.currentMeasureContent = state.exerciseMeasures[0];
-                         ui.measuresCount.textContent = `1 / ${state.measuresPerExercise}`;
                     }
 
                     // --- Playback Logic (Sound & Fretboard) ---
@@ -1079,7 +1076,7 @@
                     
                     const beatIndex = beatIndexForPlayback;
                     if(state.exerciseType === 'melodia'){
-                         if (beatIndex >= 0 && beatIndex < contentForPlayback.length) {
+                         if (beatIndex >= 0 && contentForPlayback && beatIndex < contentForPlayback.length) {
                             const note = contentForPlayback[beatIndex];
                             currentNotesForBeat.push(note);
                             if(state.soundEnabled) playNoteSound(note, audio.nextNoteTime);
@@ -1087,7 +1084,7 @@
                     } else { // armonia
                          let itemIndex = beatIndex;
                          if(state.notesPerChord === 4) itemIndex = Math.floor(beatIndex / 2);
-                         if (itemIndex >= 0 && itemIndex < contentForPlayback.length) {
+                         if (itemIndex >= 0 && contentForPlayback && itemIndex < contentForPlayback.length) {
                              currentNotesForBeat = contentForPlayback[itemIndex];
                              if (state.soundEnabled && currentNotesForBeat) {
                                  currentNotesForBeat.forEach(note => playNoteSound(note, audio.nextNoteTime));
