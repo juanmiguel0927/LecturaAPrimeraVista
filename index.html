@@ -669,7 +669,7 @@
             ui.keySigSelect.addEventListener('change', () => {
                 state.keySignature = ui.keySigSelect.value;
                 const keyInfo = notesData.keySignatures[state.keySignature];
-                state.enharmonicPreference = (keyInfo.type === 'flat') ? 'flats' : 'sharps';
+                state.enharmonicPreference = 'auto';
                 ui.enharmonicSelect.value = 'auto'; // Reset to auto
                 if (state.showFretboard) {
                     drawFretboardWithCurrentSettings();
@@ -1053,9 +1053,13 @@
                         state.isPreRoll = false;
                         ui.preRollMessage.classList.add('hidden');
                         ui.displayArea.classList.remove('hidden');
+                        state.currentMeasureIndex = 0;
+                        state.currentMeasureContent = state.exerciseMeasures[0];
+                        state.displayedMeasureContent = state.currentMeasureContent;
+                        ui.measuresCount.textContent = `1 / ${state.measuresPerExercise}`;
                     }
                 } else {
-                    if (state.currentMetronomeCount === 1) {
+                     if (state.currentMetronomeCount === 1 && state.currentMeasureIndex > -1) { 
                         state.currentMeasureIndex++; 
                         if (state.currentMeasureIndex >= state.measuresPerExercise) {
                             stopExercise();
@@ -1063,6 +1067,10 @@
                         }
                         state.currentMeasureContent = state.exerciseMeasures[state.currentMeasureIndex];
                         ui.measuresCount.textContent = `${state.currentMeasureIndex + 1} / ${state.measuresPerExercise}`;
+                    } else if (state.currentMeasureIndex === -1 && state.currentMetronomeCount === 1) { 
+                        state.currentMeasureIndex = 0;
+                        state.currentMeasureContent = state.exerciseMeasures[0];
+                         ui.measuresCount.textContent = `1 / ${state.measuresPerExercise}`;
                     }
 
                     // --- Playback Logic (Sound & Fretboard) ---
@@ -1538,11 +1546,19 @@
             gain.connect(audio.context.destination);
 
             osc.frequency.value = freq;
-            osc.type = 'sine';
-
-            gain.gain.setValueAtTime(0, time);
-            gain.gain.linearRampToValueAtTime(0.3, time + 0.02); 
-            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+            
+            const currentClef = ui.clefSelect.value;
+            if (currentClef === 'F' || currentClef === 'C') {
+                osc.type = 'triangle'; // Warmer than square
+                gain.gain.setValueAtTime(0, time);
+                gain.gain.linearRampToValueAtTime(0.25, time + 0.02); 
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+            } else { // For G clef
+                osc.type = 'sine'; 
+                gain.gain.setValueAtTime(0, time);
+                gain.gain.linearRampToValueAtTime(0.3, time + 0.02); 
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+            }
 
             osc.start(time);
             osc.stop(time + 0.5);
