@@ -429,7 +429,10 @@
             ui.saveTriadSelectionBtn.addEventListener('click', () => saveCustomSelection('triad'));
             ui.closeVoicingModalBtn.addEventListener('click', () => hideCustomSelectionModal('voicing'));
             ui.cancelVoicingSelectionBtn.addEventListener('click', () => hideCustomSelectionModal('voicing'));
-            ui.saveVoicingSelectionBtn.addEventListener('click', () => saveCustomSelection('voicing'));
+            ui.saveVoicingSelectionBtn.addEventListener('click', () => {
+                saveCustomSelection('voicing');
+                if(state.exerciseStarted) stopExercise();
+            });
 
             let staveClickTimer = null;
             let staveClickCount = 0;
@@ -1137,19 +1140,22 @@
                         const closePositionChord = buildConcreteChord(currentRoot, baseChordData.notes);
                         if (!closePositionChord || !closePositionChord.every(n => noteRange.includes(n))) continue;
                         
+                        const currentSelection = ui.quadVoicingSelect.value;
                         let voicingOptionsPool = [];
-                        const allVoicingTypes = Object.keys(notesData.voicingsByDifficulty.advanced).filter(v => v !== 'all');
 
-                        if (state.selectedQuadVoicing === 'all') {
-                            voicingOptionsPool = allVoicingTypes;
-                        } else if (state.selectedQuadVoicing === 'custom') {
-                            if (state.selectedCustomVoicings.size === 0) continue;
+                        if (currentSelection === 'all') {
+                            voicingOptionsPool = Object.keys(notesData.voicingsByDifficulty.advanced).filter(v => v !== 'all');
+                        } else if (currentSelection === 'custom') {
                             voicingOptionsPool = Array.from(state.selectedCustomVoicings);
                         } else {
-                            voicingOptionsPool = [state.selectedQuadVoicing];
+                            voicingOptionsPool = [currentSelection];
                         }
 
-                        if (voicingOptionsPool.length === 0) continue;
+                        if (voicingOptionsPool.length === 0) {
+                            // Si 'Personalizado' está seleccionado pero no hay nada elegido, se usan todos como fallback.
+                            voicingOptionsPool = Object.keys(notesData.voicingsByDifficulty.advanced).filter(v => v !== 'all');
+                        }
+
                         const voicingToApply = voicingOptionsPool[Math.floor(Math.random() * voicingOptionsPool.length)];
 
                         const notesInOrder = [...closePositionChord]; // [lowest, ..., highest]
@@ -1168,36 +1174,48 @@
                         // Voice 3 = notesInOrder[1]
                         // Voice 4 = notesInOrder[0]
                         
-                        if (voicingToApply === 'drop2') {
-                            const dropped = dropNote(notesInOrder[2], 1); // Drop voice 2
-                            if (!dropped) { isValidVoicing = false; }
-                            else { finalVoicingNotes = [notesInOrder[0], notesInOrder[1], notesInOrder[3], dropped]; }
-                        } else if (voicingToApply === 'drop3') {
-                            const dropped = dropNote(notesInOrder[1], 1); // Drop voice 3
-                             if (!dropped) { isValidVoicing = false; }
-                            else { finalVoicingNotes = [notesInOrder[0], notesInOrder[2], notesInOrder[3], dropped]; }
-                        } else if (voicingToApply === 'drop24') {
-                            const dropped2 = dropNote(notesInOrder[2], 1); // Drop voice 2
-                            const dropped4 = dropNote(notesInOrder[0], 1); // Drop voice 4
-                             if (!dropped2 || !dropped4) { isValidVoicing = false; }
-                            else { finalVoicingNotes = [notesInOrder[1], notesInOrder[3], dropped2, dropped4]; }
-                        } else if (voicingToApply === 'drop23') {
-                             const dropped2 = dropNote(notesInOrder[2], 1); // Drop voice 2
-                             const dropped3 = dropNote(notesInOrder[1], 1); // Drop voice 3
-                             if (!dropped2 || !dropped3) { isValidVoicing = false; }
-                             else { finalVoicingNotes = [notesInOrder[0], notesInOrder[3], dropped2, dropped3]; }
-                        } else if (voicingToApply === 'doubleDrop23') {
-                            const dropped3 = dropNote(notesInOrder[1], 1); // Drop voice 3 (1 octave)
-                            const dropped2 = dropNote(notesInOrder[2], 2); // Drop voice 2 (2 octaves)
-                             if (!dropped2 || !dropped3) { isValidVoicing = false; }
-                             else { finalVoicingNotes = [notesInOrder[0], notesInOrder[3], dropped2, dropped3]; }
-                        } else {
-                            isValidVoicing = false;
+                        switch (voicingToApply) {
+                            case 'drop2': {
+                                const dropped = dropNote(notesInOrder[2], 1); // Drop voice 2
+                                if (!dropped) { isValidVoicing = false; }
+                                else { finalVoicingNotes = [notesInOrder[0], notesInOrder[1], notesInOrder[3], dropped]; }
+                                break;
+                            }
+                            case 'drop3': {
+                                const dropped = dropNote(notesInOrder[1], 1); // Drop voice 3
+                                if (!dropped) { isValidVoicing = false; }
+                                else { finalVoicingNotes = [notesInOrder[0], notesInOrder[2], notesInOrder[3], dropped]; }
+                                break;
+                            }
+                            case 'drop24': {
+                                const dropped2 = dropNote(notesInOrder[2], 1); // Drop voice 2
+                                const dropped4 = dropNote(notesInOrder[0], 1); // Drop voice 4
+                                if (!dropped2 || !dropped4) { isValidVoicing = false; }
+                                else { finalVoicingNotes = [notesInOrder[1], notesInOrder[3], dropped2, dropped4]; }
+                                break;
+                            }
+                            case 'drop23': {
+                                const dropped2 = dropNote(notesInOrder[2], 1); // Drop voice 2
+                                const dropped3 = dropNote(notesInOrder[1], 1); // Drop voice 3
+                                if (!dropped2 || !dropped3) { isValidVoicing = false; }
+                                else { finalVoicingNotes = [notesInOrder[0], notesInOrder[3], dropped2, dropped3]; }
+                                break;
+                            }
+                            case 'doubleDrop23': {
+                                const dropped3 = dropNote(notesInOrder[1], 1); // Drop voice 3 (1 octave)
+                                const dropped2 = dropNote(notesInOrder[2], 2); // Drop voice 2 (2 octaves)
+                                if (!dropped2 || !dropped3) { isValidVoicing = false; }
+                                else { finalVoicingNotes = [notesInOrder[0], notesInOrder[3], dropped2, dropped3]; }
+                                break;
+                            }
+                            default:
+                                isValidVoicing = false;
                         }
                         
                         if(!isValidVoicing) continue;
 
                         finalNotes = finalVoicingNotes;
+                        finalNotes.sort((a, b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
                         finalNotes.voicingApplied = voicingToApply;
                     }
                     
@@ -1587,6 +1605,9 @@
     </script>
 </body>
 </html>
+
+
+
 
 
 
