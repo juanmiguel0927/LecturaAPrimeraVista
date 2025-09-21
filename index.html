@@ -237,20 +237,22 @@
                     <option value="drops">Drops</option>
                 </select>
             </div>
-             <div id="visual-aids-container" class="control-item flex-row sm:justify-start gap-4">
-                <div id="fretboard-control-container" class="flex items-center gap-2 tooltip">
-                    <label for="show-fretboard" class="text-zinc-300 whitespace-nowrap">Mástil:</label>
-                    <input type="checkbox" id="show-fretboard" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
-                    <span class="tooltiptext">Atajo: M</span>
+             <div id="visual-aids-container" class="control-item flex-col items-start gap-2">
+                <div class="flex flex-row items-center gap-4">
+                    <div id="fretboard-control-container" class="flex items-center gap-2 tooltip">
+                        <label for="show-fretboard" class="text-zinc-300 whitespace-nowrap">Mástil:</label>
+                        <input type="checkbox" id="show-fretboard" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                        <span class="tooltiptext">Atajo: M</span>
+                    </div>
+                    <div class="flex items-center gap-2 tooltip" id="sound-control-container">
+                        <label for="enable-sound" class="text-zinc-300 whitespace-nowrap">Sonido:</label>
+                        <input type="checkbox" id="enable-sound" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                        <span class="tooltiptext">Atajo: S</span>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2 tooltip" id="sound-control-container">
-                    <label for="enable-sound" class="text-zinc-300 whitespace-nowrap">Sonido:</label>
-                    <input type="checkbox" id="enable-sound" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
-                    <span class="tooltiptext">Atajo: S</span>
-                </div>
-                 <div id="enharmonic-control-container" class="flex items-center gap-2 tooltip hidden">
-                    <label for="enharmonic-toggle" class="text-zinc-300 whitespace-nowrap">Enarmónicos (♯/♭):</label>
-                    <select id="enharmonic-select" class="p-1 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                 <div id="enharmonic-control-container" class="w-full flex items-center justify-between tooltip hidden">
+                    <label for="enharmonic-select" class="text-zinc-300 whitespace-nowrap">Enarmónicos (♯/♭):</label>
+                    <select id="enharmonic-select" class="p-1 w-24 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                         <option value="auto" selected>Auto</option>
                         <option value="sharps">♯</option>
                         <option value="flats">♭</option>
@@ -2095,4 +2097,5 @@
     </script>
 </body>
 </html>
+
 
