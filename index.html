@@ -265,6 +265,23 @@
                     <span class="tooltiptext">Atajo: A</span>
                 </div>
             </div>
+             <div id="audio-controls-container" class="control-item flex-col items-start gap-2 pt-2 mt-2 border-t border-zinc-700">
+                <div class="flex flex-row items-center justify-between w-full">
+                    <div class="flex items-center gap-2 tooltip">
+                        <label for="enable-metronome" class="text-zinc-300 whitespace-nowrap">Metrónomo:</label>
+                        <input type="checkbox" id="enable-metronome" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2" checked/>
+                        <span class="tooltiptext">Atajo: K</span>
+                    </div>
+                </div>
+                <div class="flex flex-row items-center justify-between w-full gap-2">
+                     <label for="note-volume" class="text-zinc-300 whitespace-nowrap text-sm">Vol. Sonido:</label>
+                     <input type="range" id="note-volume" min="0" max="1" step="0.01" value="0.3" class="w-full h-2 bg-zinc-600 rounded-lg appearance-none cursor-pointer">
+                </div>
+                <div class="flex flex-row items-center justify-between w-full gap-2">
+                     <label for="metronome-volume" class="text-zinc-300 whitespace-nowrap text-sm">Vol. Metrónomo:</label>
+                     <input type="range" id="metronome-volume" min="0" max="1" step="0.01" value="0.2" class="w-full h-2 bg-zinc-600 rounded-lg appearance-none cursor-pointer">
+                </div>
+            </div>
         </div>
         <div id="change-beat-control" class="flex items-center justify-center space-x-2 mb-8">
             <label for="change-beat-select" class="text-zinc-300">Adelantar Compás (Pulso):</label>
@@ -416,7 +433,8 @@
                 showFretboardToggle: get('show-fretboard'), enableSoundToggle: get('enable-sound'),
                 fretboardContainer: get('fretboard-container'), soundControlContainer: get('sound-control-container'),
                 fretboardControlContainer: get('fretboard-control-container'),
-                enharmonicSelect: get('enharmonic-select'), enharmonicControlContainer: get('enharmonic-control-container')
+                enharmonicSelect: get('enharmonic-select'), enharmonicControlContainer: get('enharmonic-control-container'),
+                enableMetronome: get('enable-metronome'), noteVolume: get('note-volume'), metronomeVolume: get('metronome-volume')
             };
         }
 
@@ -431,10 +449,11 @@
                 selectedCustomIntervals: new Set(['2', '3', '4', '5', '6', '7']),
                 selectedCustomTriads: new Set(['triad_fundamental', 'triad_inv1', 'triad_inv2']),
                 selectedCustomVoicings: new Set(['drop2', 'drop3']),
-                lastMelodicNote: null, showFretboard: false, soundEnabled: false,
+                lastMelodicNote: null, showFretboard: false, soundEnabled: false, metronomeEnabled: true,
+                noteVolume: 0.3, metronomeVolume: 0.2,
                 displayedMeasureContent: [], enharmonicPreference: 'auto' // auto, sharps, flats
             };
-            audio = { context: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0 };
+            audio = { context: null, noteGain: null, metronomeGain: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0 };
             notesData = {
                 all: [], natural: [], noteToLatin: {'C':'Do','D':'Re','E':'Mi','F':'Fa','G':'Sol','A':'La','B':'Si'},
                 letterToDiatonic: {'C':0,'D':1,'E':2,'F':3,'G':4,'A':5,'B':6}, clefs: {},
@@ -608,6 +627,19 @@
             ui.enableSoundToggle.addEventListener('change', (e) => {
                 state.soundEnabled = e.target.checked;
             });
+            
+            ui.enableMetronome.addEventListener('change', (e) => {
+                state.metronomeEnabled = e.target.checked;
+            });
+            
+            ui.noteVolume.addEventListener('input', (e) => {
+                state.noteVolume = parseFloat(e.target.value);
+            });
+
+            ui.metronomeVolume.addEventListener('input', (e) => {
+                state.metronomeVolume = parseFloat(e.target.value);
+            });
+
 
              ui.enharmonicSelect.addEventListener('change', (e) => {
                 state.enharmonicPreference = e.target.value;
@@ -751,6 +783,10 @@
                     e.preventDefault(); 
                     ui.enableSoundToggle.checked = !ui.enableSoundToggle.checked; 
                     ui.enableSoundToggle.dispatchEvent(new Event('change')); 
+                } else if (key === 'k') { 
+                    e.preventDefault(); 
+                    ui.enableMetronome.checked = !ui.enableMetronome.checked; 
+                    ui.enableMetronome.dispatchEvent(new Event('change')); 
                 } else if (key === 'a') {
                     if (state.showFretboard) {
                         e.preventDefault();
@@ -985,7 +1021,13 @@
 
         async function startExercise() {
             try {
-                if (!audio.context) audio.context = new (window.AudioContext || window.webkitAudioContext)();
+                if (!audio.context) {
+                    audio.context = new (window.AudioContext || window.webkitAudioContext)();
+                    audio.noteGain = audio.context.createGain();
+                    audio.metronomeGain = audio.context.createGain();
+                    audio.noteGain.connect(audio.context.destination);
+                    audio.metronomeGain.connect(audio.context.destination);
+                }
                 if (audio.context.state === 'suspended') await audio.context.resume();
                 
                 state.keySignature = ui.keySigSelect.value;
@@ -1059,7 +1101,7 @@
                          if (state.currentMeasureIndex === -1) { // First measure after pre-roll
                             state.currentMeasureIndex = 0;
                         } else {
-                            state.currentMeasureIndex++;
+                            state.currentMeasureIndex++; 
                         }
                         
                         if (state.currentMeasureIndex >= state.measuresPerExercise) {
@@ -1538,23 +1580,23 @@
             if (!freq) return;
 
             const osc = audio.context.createOscillator();
-            const gain = audio.context.createGain();
-            osc.connect(gain);
-            gain.connect(audio.context.destination);
+            osc.connect(audio.noteGain);
 
             osc.frequency.value = freq;
             
             const currentClef = ui.clefSelect.value;
-            if (currentClef === 'F' || currentClef === 'C') {
+             if (currentClef === 'F' || currentClef === 'C') {
                 osc.type = 'triangle'; // Warmer than square
-                gain.gain.setValueAtTime(0, time);
-                gain.gain.linearRampToValueAtTime(0.25, time + 0.02); 
-                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+                audio.noteGain.gain.cancelScheduledValues(time);
+                audio.noteGain.gain.setValueAtTime(0, time);
+                audio.noteGain.gain.linearRampToValueAtTime(state.noteVolume * 0.8, time + 0.02); 
+                audio.noteGain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
             } else { // For G clef
                 osc.type = 'sine'; 
-                gain.gain.setValueAtTime(0, time);
-                gain.gain.linearRampToValueAtTime(0.3, time + 0.02); 
-                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+                audio.noteGain.gain.cancelScheduledValues(time);
+                audio.noteGain.gain.setValueAtTime(0, time);
+                audio.noteGain.gain.linearRampToValueAtTime(state.noteVolume, time + 0.02); 
+                audio.noteGain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
             }
 
             osc.start(time);
@@ -1562,12 +1604,20 @@
         }
 
         function playMetronomeSound(time, isAccent) {
-            if (!audio.context) return;
-            const osc = audio.context.createOscillator(); const gain = audio.context.createGain();
-            osc.connect(gain); gain.connect(audio.context.destination);
-            osc.frequency.value = isAccent ? 880 : 440; osc.type = 'square';
-            gain.gain.setValueAtTime(isAccent ? 0.3 : 0.2, time);
-            osc.start(time); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05); osc.stop(time + 0.1);
+            if (!audio.context || !state.metronomeEnabled) return;
+            const osc = audio.context.createOscillator(); 
+            osc.connect(audio.metronomeGain);
+            
+            osc.frequency.value = isAccent ? 880 : 440; 
+            osc.type = 'square';
+            
+            const volume = isAccent ? state.metronomeVolume * 1.5 : state.metronomeVolume;
+            audio.metronomeGain.gain.cancelScheduledValues(time);
+            audio.metronomeGain.gain.setValueAtTime(Math.min(1.0, volume), time);
+            audio.metronomeGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05); 
+            
+            osc.start(time); 
+            osc.stop(time + 0.1);
         }
         
         function getIntervalAbbreviation(notes) {
@@ -2080,7 +2130,8 @@
              { id: 'change-beat-control', text: '<h3><strong>6. Lectura Adelantada</strong></h3><p>Esta es una herramienta clave para forzarte a leer más adelante. Te permite elegir en qué <strong>pulso</strong> del compás actual quieres que aparezcan las notas del <strong>siguiente compás</strong>.</p><p class="mt-2">Por defecto, está en el último pulso, dándote un tiempo para anticipar. Si lo ajustas a un pulso anterior (por ejemplo, al 3 en un 4/4), tendrás menos tiempo, forzando una lectura más rápida y fluida. ¡Es una habilidad crucial!</p>' },
              { id: 'info-aids-container', text: '<h3><strong>7. Ayudas de Lectura</strong></h3><p>Activa estas opciones para facilitar la lectura:</p><ul><li class="mt-2"><strong>Nombres:</strong> Muestra el nombre de las notas o el cifrado de los acordes debajo del pentagrama.</li><li class="mt-2"><strong>Guía:</strong> Muestra una línea vertical que se mueve pulso a pulso, ayudándote a no perderte.</li></ul>' },
              { id: 'visual-aids-container', text: '<h3><strong>8. Ayudas Interactivas</strong></h3><p>Usa estas herramientas para una práctica más completa:</p><ul><li class="mt-2"><strong>Mástil:</strong> Muestra un diapasón de guitarra que visualiza las notas del ejercicio. Las notas de la escala actual se muestran en el mástil y la nota que suena se resalta en verde.</li><li class="mt-2"><strong>Sonido:</strong> Reproduce cada nota o acorde a medida que avanza el ejercicio. ¡Ideal para entrenar tu oído!</li><li class="mt-2"><strong>Enarmónicos (♯/♭):</strong> Te permite elegir si prefieres ver las alteraciones como sostenidos o bemoles en el mástil.</li></ul>' },
-             { id: 'startStopButton', text: '<h3><strong>9. Controles y Atajos</strong></h3><p>Usa los botones o atajos para manejar el ejercicio:</p><ul><li class="mt-2"><strong>Botones:</strong> Inicia, pausa o detén el ejercicio.</li><li class="mt-2"><strong>Clics:</strong> Un clic en el pentagrama inicia o pausa, doble clic detiene.</li><li class="mt-2"><strong>Barra Espaciadora:</strong> Inicia/Pausa (un toque) y Detiene (doble toque).</li><li class="mt-2"><strong>E:</strong> Cambia entre Melodía y Armonía.</li><li class="mt-2"><strong>C:</strong> Cambia entre las claves de Sol, Fa y Do.</li><li class="mt-2"><strong>N:</strong> Muestra/Oculta los nombres de las notas.</li><li class="mt-2"><strong>G:</strong> Muestra/Oculta la guía de lectura.</li><li class="mt-2"><strong>M:</strong> Muestra/Oculta el mástil.</li><li class="mt-2"><strong>S:</strong> Activa/Desactiva el sonido.</li><li class="mt-2"><strong>A:</strong> Alterna la vista de enarmónicos (♯/♭) en el mástil.</li><li class="mt-2"><strong>F:</strong> Activa/Desactiva el modo de pantalla completa.</li></ul>' },
+             { id: 'audio-controls-container', text: '<h3><strong>9. Controles de Audio</strong></h3><p>Personaliza el sonido a tu gusto:</p><ul><li class="mt-2"><strong>Metrónomo:</strong> Activa o desactiva el clic del metrónomo.</li><li class="mt-2"><strong>Vol. Sonido:</strong> Ajusta el volumen de las notas del ejercicio.</li><li class="mt-2"><strong>Vol. Metrónomo:</strong> Ajusta el volumen del clic del metrónomo.</li></ul>' },
+             { id: 'startStopButton', text: '<h3><strong>10. Controles y Atajos</strong></h3><p>Usa los botones o atajos para manejar el ejercicio:</p><ul><li class="mt-2"><strong>Botones:</strong> Inicia, pausa o detén el ejercicio.</li><li class="mt-2"><strong>Clics:</strong> Un clic en el pentagrama inicia o pausa, doble clic detiene.</li><li class="mt-2"><strong>Barra Espaciadora:</strong> Inicia/Pausa (un toque) y Detiene (doble toque).</li><li class="mt-2"><strong>E:</strong> Cambia entre Melodía y Armonía.</li><li class="mt-2"><strong>C:</strong> Cambia entre las claves de Sol, Fa y Do.</li><li class="mt-2"><strong>N:</strong> Muestra/Oculta los nombres.</li><li class="mt-2"><strong>G:</strong> Muestra/Oculta la guía.</li><li class="mt-2"><strong>M:</strong> Muestra/Oculta el mástil.</li><li class="mt-2"><strong>S:</strong> Activa/Desactiva el sonido.</li><li class="mt-2"><strong>K:</strong> Activa/Desactiva el metrónomo.</li><li class="mt-2"><strong>A:</strong> Alterna la vista de enarmónicos.</li><li class="mt-2"><strong>F:</strong> Activa/Desactiva la pantalla completa.</li></ul>' },
              { id: 'main-content', text: '<h2 class="text-2xl font-bold text-emerald-400">¡Todo Listo!</h2><p>Ya conoces todas las funciones. Configura tu ejercicio ideal y ¡a mejorar esa lectura! La práctica constante es la clave.</p>' }
         ];
         let currentTutorialStep = 0;
