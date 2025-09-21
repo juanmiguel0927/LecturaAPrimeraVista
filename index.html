@@ -89,6 +89,11 @@
             visibility: visible;
             opacity: 1;
         }
+        /* Hide tooltip on focus if not hovering */
+        .tooltip:has(input:focus, select:focus, button:focus):not(:hover) .tooltiptext {
+            visibility: hidden;
+            opacity: 0;
+        }
 
     </style>
 </head>
@@ -665,7 +670,7 @@
                 state.keySignature = ui.keySigSelect.value;
                 const keyInfo = notesData.keySignatures[state.keySignature];
                 state.enharmonicPreference = (keyInfo.type === 'flat') ? 'flats' : 'sharps';
-                ui.enharmonicSelect.value = state.enharmonicPreference;
+                ui.enharmonicSelect.value = 'auto'; // Reset to auto
                 if (state.showFretboard) {
                     drawFretboardWithCurrentSettings();
                 }
@@ -988,7 +993,7 @@
                 handleMeasuresChange();
                 state.exerciseMeasures = generateExercise();
                 if (state.exerciseMeasures.length === 0) { console.error("Failed to generate measures."); stopExercise(); return; }
-                Object.assign(state, { exerciseStarted: true, isPlaying: true, isPaused: false, isPreRoll: true, currentMetronomeCount: 0 });
+                Object.assign(state, { exerciseStarted: true, isPlaying: true, isPaused: false, isPreRoll: true, currentMetronomeCount: 0, currentMeasureIndex: -1 });
                 ui.preRollMessage.classList.remove('hidden');
                 ui.displayArea.classList.add('hidden');
                 ui.startStopButton.textContent = 'Detener';
@@ -1048,26 +1053,19 @@
                         state.isPreRoll = false;
                         ui.preRollMessage.classList.add('hidden');
                         ui.displayArea.classList.remove('hidden');
-                        state.currentMeasureIndex = 0;
-                        state.currentMeasureContent = state.exerciseMeasures[0];
-                        state.displayedMeasureContent = state.currentMeasureContent;
-                        ui.measuresCount.textContent = `1 / ${state.measuresPerExercise}`;
                     }
                 } else {
-                    // Official measure change happens on beat 1.
                     if (state.currentMetronomeCount === 1) {
-                        state.currentMeasureIndex++;
+                        state.currentMeasureIndex++; 
                         if (state.currentMeasureIndex >= state.measuresPerExercise) {
                             stopExercise();
                             return;
                         }
-                        // This is the measure being played, but not necessarily displayed.
                         state.currentMeasureContent = state.exerciseMeasures[state.currentMeasureIndex];
                         ui.measuresCount.textContent = `${state.currentMeasureIndex + 1} / ${state.measuresPerExercise}`;
                     }
 
                     // --- Playback Logic (Sound & Fretboard) ---
-                    // This is always based on the actual current measure and beat.
                     const beatIndexForPlayback = state.currentMetronomeCount - 1;
                     const contentForPlayback = state.currentMeasureContent;
                     
@@ -1094,7 +1092,6 @@
                     }
 
                     // --- Display Logic (Stave) ---
-                    // This logic looks ahead based on measuresChangeBeat.
                     if (state.currentMetronomeCount >= state.measuresChangeBeat) {
                         const nextMeasureIndex = state.currentMeasureIndex + 1;
                         if (nextMeasureIndex < state.measuresPerExercise) {
@@ -2097,5 +2094,4 @@
     </script>
 </body>
 </html>
-
 
