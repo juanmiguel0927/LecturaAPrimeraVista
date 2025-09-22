@@ -141,6 +141,7 @@
                     <option value="triad_inv2">Tríada 2da Inv.</option>
                     <option value="sus2_fundamental">Acordes Sus2</option>
                     <option value="sus4_fundamental">Acordes Sus4</option>
+                    <option value="shell_voicing">Shell Voicing</option>
                     <option value="custom">Personalizado</option>
                 </select>
             </div>
@@ -434,7 +435,8 @@
                 fretboardContainer: get('fretboard-container'), soundControlContainer: get('sound-control-container'),
                 fretboardControlContainer: get('fretboard-control-container'),
                 enharmonicSelect: get('enharmonic-select'), enharmonicControlContainer: get('enharmonic-control-container'),
-                enableMetronome: get('enable-metronome'), noteVolume: get('note-volume'), metronomeVolume: get('metronome-volume')
+                enableMetronome: get('enable-metronome'), noteVolume: get('note-volume'), metronomeVolume: get('metronome-volume'),
+                audioControlsContainer: get('audio-controls-container')
             };
         }
 
@@ -447,7 +449,7 @@
                 measuresPerExercise: 10, isPreRoll: false, isPlaying: false, showNoteNames: false, keySignature: 'C',
                 showGuide: false, noteStartX: 0, noteSpacing: 0, spacebarPressCount: 0, spacebarTimeout: null,
                 selectedCustomIntervals: new Set(['2', '3', '4', '5', '6', '7']),
-                selectedCustomTriads: new Set(['triad_fundamental', 'triad_inv1', 'triad_inv2']),
+                selectedCustomTriads: new Set(['triad_fundamental', 'triad_inv1', 'triad_inv2', 'shell_voicing']),
                 selectedCustomVoicings: new Set(['drop2', 'drop3']),
                 lastMelodicNote: null, showFretboard: false, soundEnabled: false, metronomeEnabled: true,
                 noteVolume: 0.3, metronomeVolume: 0.2,
@@ -461,6 +463,11 @@
                     'C': ['C', 'E', 'G'], 'D': ['D', 'F', 'A'], 'E': ['E', 'G', 'B'],
                     'F': ['F', 'A', 'C'], 'G': ['G', 'B', 'D'], 'A': ['A', 'C', 'E'],
                     'B': ['B', 'D', 'F']
+                },
+                diatonicShellVoicings: {
+                    'C': ['C', 'E', 'B'], 'D': ['D', 'F', 'C'], 'E': ['E', 'G', 'D'],
+                    'F': ['F', 'A', 'E'], 'G': ['G', 'B', 'F'], 'A': ['A', 'C', 'G'],
+                    'B': ['B', 'D', 'A']
                 },
                 allowedFourNoteChords: {
                   "C": [ { "name": "Cmaj7", "notes": ["C", "E", "G", "B"] }, { "name": "Cm7", "notes": ["C", "Eb", "G", "Bb"] }, { "name": "C7", "notes": ["C", "E", "G", "Bb"] }, { "name": "Cm7b5", "notes": ["C", "Eb", "Gb", "Bb"] }, { "name": "C°7", "notes": ["C", "Eb", "Gb", "A"] } ],
@@ -1387,7 +1394,9 @@
                         const rootName = currentRoot.split('/')[0];
                         
                         let fundamentalNoteNames;
-                        if (chordFamily.startsWith('sus')) {
+                        if (chordFamily === 'shell') {
+                             fundamentalNoteNames = notesData.diatonicShellVoicings[rootName];
+                        } else if (chordFamily.startsWith('sus')) {
                             const scale = notesData.keySignatures['C'].notes;
                             const rootIndex = scale.indexOf(rootName);
                             const secondIndex = (rootIndex + 1) % 7;
@@ -1405,8 +1414,16 @@
                         let chordInProgress = findClosestNotes(currentRoot, fundamentalNoteNames, noteRange);
                         if (!chordInProgress || chordInProgress.length !== 3) continue;
 
-                        // Apply inversion based directly on the chosen chord type
-                        if (chosenChordType === 'triad_inv1') {
+                        if(chordFamily === 'shell') {
+                            if (Math.random() > 0.5) { // 1-7-3 voicing
+                                const third = chordInProgress[1];
+                                const thirdUp = alterNote(third, 12);
+                                if (thirdUp && noteRange.includes(thirdUp)) {
+                                    chordInProgress = [chordInProgress[0], chordInProgress[2], thirdUp];
+                                }
+                            }
+                            // Otherwise, it remains 1-3-7
+                        } else if (chosenChordType === 'triad_inv1') {
                             const newRoot = alterNote(chordInProgress[0], 12);
                             if (!newRoot || !noteRange.includes(newRoot)) continue;
                             chordInProgress = [chordInProgress[1], chordInProgress[2], newRoot];
@@ -1424,7 +1441,7 @@
                         finalNotes.sort((a, b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
                         
                         let targetPosition = state.triadPosition;
-                        if (chosenChordType.startsWith('sus')) {
+                        if (chosenChordType.startsWith('sus') || chosenChordType === 'shell_voicing') {
                             targetPosition = 'cerrada';
                         } else if (targetPosition === 'all') {
                             targetPosition = ['cerrada', 'abierta'][Math.floor(Math.random() * 2)];
