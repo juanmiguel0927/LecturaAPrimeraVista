@@ -10,7 +10,7 @@
         @import url('https://fonts.googleapis.com/css?family=Inter:wght@400;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #111827; }
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1000; background-color: #1f2937; color: white; padding: 2rem; border-radius: 0.75rem; font-size: 1.5rem; font-weight: bold; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 100; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.3s ease-in-out; }
         .modal-content { background-color: #374151; color: #d1d5db; padding: 2rem; border-radius: 1rem; max-width: 90%; width: 500px; max-height: 90%; overflow-y: auto; position: relative; }
         .modal-content h2, .modal-content h3 { margin-bottom: 1.5rem; }
         .modal-content p, .modal-content ul { line-height: 1.6; }
@@ -98,11 +98,81 @@
     </style>
 </head>
 <body class="bg-zinc-900 text-white flex flex-col items-center p-4 min-h-screen">
-    <div id="loading-message">Cargando...</div>
+    
+    <!-- Welcome Modal -->
+    <div id="welcome-modal" class="modal-overlay">
+        <div class="modal-content text-center bg-zinc-800 border-2 border-emerald-500 shadow-2xl">
+            <h2 class="text-3xl font-extrabold text-emerald-400 mb-4">Bienvenido a Lectura a Primera Vista</h2>
+            <p class="text-zinc-400 mb-6">Selecciona tu perfil o crea uno nuevo para guardar tu progreso.</p>
+
+            <div class="space-y-4">
+                <div>
+                    <label for="profile-select" class="block text-left text-zinc-300 mb-2">Seleccionar un Perfil Existente:</label>
+                    <div class="flex items-center gap-2">
+                        <select id="profile-select" class="p-3 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="">-- Cargar Perfil --</option>
+                        </select>
+                        <button id="delete-profile-button" class="p-3 bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative flex items-center">
+                  <div class="flex-grow border-t border-zinc-600"></div>
+                  <span class="flex-shrink mx-4 text-zinc-500">o</span>
+                  <div class="flex-grow border-t border-zinc-600"></div>
+                </div>
+
+                <div>
+                    <label for="new-profile-name" class="block text-left text-zinc-300 mb-2">Crear un Nuevo Perfil:</label>
+                    <input type="text" id="new-profile-name" placeholder="Escribe tu nombre" class="p-3 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"/>
+                </div>
+            </div>
+
+            <div class="mt-8 flex flex-col sm:flex-row gap-4">
+                <button id="login-button" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">
+                    Iniciar Sesión
+                </button>
+                <button id="guest-button" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">
+                    Entrar como Invitado
+                </button>
+            </div>
+             <p id="login-error" class="text-red-400 mt-4 h-5"></p>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="modal-overlay hidden">
+        <div class="modal-content text-center bg-zinc-800 border-2 border-red-500">
+            <h2 class="text-2xl font-bold text-red-400">Confirmar Eliminación</h2>
+            <p class="my-4">¿Estás seguro de que quieres eliminar el perfil <strong id="profile-to-delete" class="text-white"></strong>? Esta acción no se puede deshacer.</p>
+            <div class="flex justify-center gap-4 mt-6">
+                <button id="cancel-delete-button" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-full">Cancelar</button>
+                <button id="confirm-delete-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="loading-message" class="hidden">Cargando...</div>
     <div id="main-content" class="hidden bg-zinc-800 rounded-2xl text-center border-2 shadow-2xl p-6 md:p-10 w-full max-w-5xl border-emerald-500">
-        <h1 class="text-4xl md:text-5xl font-extrabold text-emerald-400 mb-2 drop-shadow-md">Lectura a Primera Vista</h1>
-        <p class="text-zinc-500 text-sm mb-4">Aplicación realizada por Juan Miguel Rios Redondo</p>
-        <p class="text-zinc-400 text-lg md:text-xl mb-6">Ejercicios para guitarra</p>
+        <div class="relative mb-2">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-emerald-400 drop-shadow-md">Lectura a Primera Vista</h1>
+                <p class="text-zinc-500 text-sm">Aplicación realizada por Juan Miguel Rios Redondo</p>
+            </div>
+            <div class="absolute top-0 right-0 text-right">
+                <div id="user-display" class="text-emerald-400 font-semibold"></div>
+                <div id="streak-display" class="text-amber-400 text-sm"></div>
+                <div class="flex flex-col items-end gap-2 mt-2">
+                    <button id="history-button" class="text-sm bg-sky-600 hover:bg-sky-500 text-white font-bold py-1 px-3 rounded-full shadow-lg text-xs">Ver Historial</button>
+                    <button id="change-user-button" class="text-sm bg-zinc-600 hover:bg-zinc-500 text-white font-bold py-1 px-3 rounded-full shadow-lg text-xs">Cambiar Usuario</button>
+                </div>
+            </div>
+        </div>
+        
+        <p class="text-zinc-400 text-lg md:text-xl my-6">Ejercicios para guitarra</p>
         <div id="exercise-type-control" class="flex items-center justify-center space-x-2 mb-6">
             <span class="text-zinc-300 font-bold mr-2">Tipo de Ejercicio:</span>
             <div class="tooltip">
@@ -336,6 +406,27 @@
             </div>
         </div>
     </div>
+    <div id="history-modal" class="modal-overlay hidden">
+        <div class="modal-content text-left bg-zinc-800 border-2 border-sky-500">
+             <span class="modal-close" id="close-history-modal">×</span>
+            <h2 class="text-2xl font-bold text-sky-400">Historial de Práctica</h2>
+            <div class="mt-4 max-h-96 overflow-y-auto">
+                <table class="w-full text-sm text-left text-zinc-300">
+                    <thead class="text-xs text-sky-300 uppercase bg-zinc-700">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Fecha</th>
+                            <th scope="col" class="px-6 py-3">Hora</th>
+                            <th scope="col" class="px-6 py-3">Duración</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <!-- Rows will be injected by JS -->
+                    </tbody>
+                </table>
+                 <p id="no-history-message" class="text-center text-zinc-400 p-8 hidden">Aún no hay historial de práctica.</p>
+            </div>
+        </div>
+    </div>
     <div id="custom-interval-modal" class="modal-overlay hidden">
         <div class="modal-content text-left">
             <span class="modal-close" id="close-interval-modal">×</span>
@@ -374,11 +465,216 @@
     </div>
     <div id="tutorial-highlight-overlay" class="tutorial-highlight-overlay hidden"></div>
     <script>
+        // --- AUTH & DATA KEYS ---
+        const USERS_KEY = 'harmonicBlockProUsers';
+        const USER_DATA_PREFIX = 'harmonicBlockProData_';
+
         // --- GLOBAL SCOPE ---
-        let ui, state, audio, notesData;
+        let ui, state, audio, notesData, currentUser, userData;
         
         // --- INITIALIZATION ---
-        window.onload = () => {
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeLogin();
+        });
+
+        // --- USER DATA & PROFILE MANAGEMENT ---
+
+        function getInitialUserData() {
+            return {
+                stats: {
+                    totalExercises: 0,
+                    totalCorrect: 0,
+                    totalIncorrect: 0,
+                    currentStreak: 0, 
+                    lastPracticeDate: null,
+                    hintsUsed: 0,
+                    answersUsed: 0
+                },
+                customPractice: {
+                    basic: { isActive: false, allowedChords: [] },
+                    intermediate: { isActive: false, allowedChords: [] },
+                    advanced: { isActive: false, allowedChords: [], allowedLeads: [] }
+                },
+                practiceHistory: []
+            };
+        }
+
+        function loadUserData(username) {
+            if (username === 'Invitado') {
+                userData = getInitialUserData();
+                return;
+            }
+            const dataString = localStorage.getItem(`${USER_DATA_PREFIX}${username}`);
+            if (dataString) {
+                userData = JSON.parse(dataString);
+                // Ensure data structure is complete for older profiles
+                if (!userData.stats) userData.stats = getInitialUserData().stats;
+                if (!userData.customPractice) userData.customPractice = getInitialUserData().customPractice;
+                if (!userData.practiceHistory) userData.practiceHistory = [];
+            } else {
+                // If it's a new user who has just been created but has no data, initialize it.
+                userData = getInitialUserData();
+                saveUserData();
+            }
+            checkStreak();
+        }
+
+        function saveUserData() {
+            if (currentUser && currentUser !== 'Invitado') {
+                localStorage.setItem(`${USER_DATA_PREFIX}${currentUser}`, JSON.stringify(userData));
+            }
+        }
+        
+        function deleteUser(username) {
+            let users = JSON.parse(localStorage.getItem(USERS_KEY)) || [];
+            users = users.filter(u => u !== username);
+            localStorage.setItem(USERS_KEY, JSON.stringify(users));
+            localStorage.removeItem(`${USER_DATA_PREFIX}${username}`);
+        }
+        
+        function checkStreak() {
+            if (!userData || !userData.stats) return;
+
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const toISODate = (date) => date.toISOString().split('T')[0];
+
+            const lastPractice = userData.stats.lastPracticeDate;
+            if (lastPractice && lastPractice !== toISODate(today) && lastPractice !== toISODate(yesterday)) {
+                userData.stats.currentStreak = 0;
+            }
+            updateStreakDisplay();
+        }
+
+        function updateStreakDisplay() {
+            if (ui && ui.streakDisplay) {
+                const streak = userData?.stats?.currentStreak || 0;
+                 ui.streakDisplay.textContent = `Racha: ${streak} día(s) 🔥`;
+            }
+        }
+        
+        function showHistoryModal() {
+            ui.historyTableBody.innerHTML = ''; // Clear previous entries
+            
+            const history = userData.practiceHistory || [];
+
+            if (history.length === 0) {
+                ui.noHistoryMessage.classList.remove('hidden');
+                ui.historyTableBody.parentElement.classList.add('hidden');
+            } else {
+                ui.noHistoryMessage.classList.add('hidden');
+                ui.historyTableBody.parentElement.classList.remove('hidden');
+                // Show newest first
+                [...history].reverse().forEach(entry => {
+                    const row = document.createElement('tr');
+                    row.className = 'bg-zinc-800 border-b border-zinc-700 hover:bg-zinc-600';
+                    row.innerHTML = `
+                        <td class="px-6 py-4">${entry.date}</td>
+                        <td class="px-6 py-4">${entry.time}</td>
+                        <td class="px-6 py-4">${entry.duration}</td>
+                    `;
+                    ui.historyTableBody.appendChild(row);
+                });
+            }
+            
+            ui.historyModal.classList.remove('hidden');
+        }
+
+        function initializeLogin() {
+            // Referencias a elementos del DOM
+            const profileSelect = document.getElementById('profile-select');
+            const newProfileInput = document.getElementById('new-profile-name');
+            const loginButton = document.getElementById('login-button');
+            const guestButton = document.getElementById('guest-button');
+            const loginError = document.getElementById('login-error');
+            const welcomeModal = document.getElementById('welcome-modal');
+            const deleteProfileButton = document.getElementById('delete-profile-button');
+            const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+            const cancelDeleteButton = document.getElementById('cancel-delete-button');
+            const confirmDeleteButton = document.getElementById('confirm-delete-button');
+            const profileToDeleteSpan = document.getElementById('profile-to-delete');
+
+            // Función para poblar la lista de perfiles
+            function populateProfiles() {
+                const users = JSON.parse(localStorage.getItem(USERS_KEY)) || [];
+                profileSelect.innerHTML = '<option value="">-- Cargar Perfil --</option>'; // Reset
+                if (users.length > 0) {
+                    profileSelect.disabled = false;
+                    users.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user;
+                        option.textContent = user;
+                        profileSelect.appendChild(option);
+                    });
+                } else {
+                    profileSelect.disabled = true;
+                }
+                 deleteProfileButton.disabled = true;
+            }
+
+            populateProfiles(); // Carga inicial
+
+            profileSelect.addEventListener('change', () => {
+                deleteProfileButton.disabled = !profileSelect.value;
+            });
+
+            const startApp = (user) => {
+                currentUser = user;
+                loadUserData(user); // Cargar datos del usuario
+                welcomeModal.style.opacity = '0';
+                setTimeout(() => {
+                    welcomeModal.classList.add('hidden');
+                    initializeApp();
+                }, 300);
+            };
+            
+            loginButton.addEventListener('click', () => {
+                loginError.textContent = '';
+                const newProfileName = newProfileInput.value.trim();
+                const selectedProfile = profileSelect.value;
+                const existingUsers = JSON.parse(localStorage.getItem(USERS_KEY)) || [];
+
+                if (newProfileName) {
+                    if (existingUsers.includes(newProfileName)) {
+                        loginError.textContent = 'Ese nombre de perfil ya existe.';
+                        return;
+                    }
+                    existingUsers.push(newProfileName);
+                    localStorage.setItem(USERS_KEY, JSON.stringify(existingUsers));
+                    startApp(newProfileName);
+                } else if (selectedProfile) {
+                    startApp(selectedProfile);
+                } else {
+                    loginError.textContent = 'Por favor, selecciona un perfil o crea uno nuevo.';
+                }
+            });
+
+            guestButton.addEventListener('click', () => startApp('Invitado'));
+
+            // Lógica de eliminación
+            deleteProfileButton.addEventListener('click', () => {
+                const selectedProfile = profileSelect.value;
+                if (selectedProfile) {
+                    profileToDeleteSpan.textContent = selectedProfile;
+                    deleteConfirmModal.classList.remove('hidden');
+                }
+            });
+
+            cancelDeleteButton.addEventListener('click', () => {
+                deleteConfirmModal.classList.add('hidden');
+            });
+
+            confirmDeleteButton.addEventListener('click', () => {
+                const profileToDelete = profileToDeleteSpan.textContent;
+                deleteUser(profileToDelete);
+                populateProfiles(); // Actualizar la lista
+                deleteConfirmModal.classList.add('hidden');
+            });
+        }
+
+        function initializeApp() {
             try {
                 initializeElements();
                 initializeAppState();
@@ -390,8 +686,18 @@
                 populateAllModals();
                 drawFretboard();
                 renderStave();
-                ui.loadingMessage.style.display = 'none';
+                
+                ui.loadingMessage.classList.add('hidden');
                 ui.mainContent.classList.remove('hidden');
+
+                if (currentUser) {
+                    ui.userDisplay.textContent = `Usuario: ${currentUser}`;
+                }
+                updateStreakDisplay(); // Mostrar la racha al iniciar
+
+                // Guardar datos al salir
+                window.addEventListener('beforeunload', saveUserData);
+
             } catch (e) {
                 console.error('Fatal error during initialization:', e);
                 ui.loadingMessage.textContent = "Error al cargar. Refresca la página.";
@@ -436,12 +742,17 @@
                 fretboardControlContainer: get('fretboard-control-container'),
                 enharmonicSelect: get('enharmonic-select'), enharmonicControlContainer: get('enharmonic-control-container'),
                 enableMetronome: get('enable-metronome'), noteVolume: get('note-volume'), metronomeVolume: get('metronome-volume'),
-                audioControlsContainer: get('audio-controls-container')
+                audioControlsContainer: get('audio-controls-container'), userDisplay: get('user-display'),
+                streakDisplay: get('streak-display'), changeUserButton: get('change-user-button'),
+                historyButton: get('history-button'), historyModal: get('history-modal'),
+                closeHistoryModal: get('close-history-modal'), historyTableBody: get('history-table-body'),
+                noHistoryMessage: get('no-history-message')
             };
         }
 
         function initializeAppState() {
             state = { 
+                exerciseStartTime: null,
                 exerciseType: 'melodia', notesPerChord: 3, selectedInterval: 0, selectedTriad: 'all', triadPosition: 'all',
                 selectedQuadVoicing: 'all', cipherType: 'todos', melodyNoteNameStyle: 'con-alteracion',
                 exerciseStarted: false, isPaused: false, metronomeTimer: null, exerciseMeasures: [], currentMeasureContent: [], 
@@ -569,9 +880,23 @@
         }
         
         function attachEventListeners() {
-            ui.startStopButton.addEventListener('click', () => state.exerciseStarted ? stopExercise() : startExercise());
+            ui.startStopButton.addEventListener('click', () => state.exerciseStarted ? stopExercise(false) : startExercise());
             ui.pauseResumeButton.addEventListener('click', togglePause);
             
+            ui.changeUserButton.addEventListener('click', () => {
+                saveUserData();
+                location.reload();
+            });
+
+            // History Modal Listeners
+            ui.historyButton.addEventListener('click', showHistoryModal);
+            ui.closeHistoryModal.addEventListener('click', () => ui.historyModal.classList.add('hidden'));
+            ui.historyModal.addEventListener('click', (e) => {
+                if (e.target === ui.historyModal) {
+                    ui.historyModal.classList.add('hidden');
+                }
+            });
+
             // Tutorial Modal
             ui.showTutorialBtn.addEventListener('click', showTutorial);
             ui.closeModalBtn.addEventListener('click', hideTutorial);
@@ -590,7 +915,7 @@
             ui.cancelVoicingSelectionBtn.addEventListener('click', () => hideCustomSelectionModal('voicing'));
             ui.saveVoicingSelectionBtn.addEventListener('click', () => {
                 saveCustomSelection('voicing');
-                if(state.exerciseStarted) stopExercise();
+                if(state.exerciseStarted) stopExercise(false);
             });
 
             let staveClickTimer = null;
@@ -603,7 +928,7 @@
                         if (!state.exerciseStarted) startExercise();
                         else togglePause();
                     } else if (staveClickCount >= 2) {
-                        if (state.exerciseStarted) stopExercise();
+                        if (state.exerciseStarted) stopExercise(false);
                     }
                     staveClickCount = 0;
                 }, 300);
@@ -661,14 +986,14 @@
                 state.exerciseType = e.target.value;
                 updateHarmonyControlsVisibility();
                  if(state.showFretboard) drawFretboardWithCurrentSettings();
-                if(state.exerciseStarted) stopExercise();
+                if(state.exerciseStarted) stopExercise(false);
                 renderStave();
             }));
 
             ui.notesPerChordSelect.addEventListener('change', (e) => { 
                 state.notesPerChord = parseInt(e.target.value, 10);
                 updateHarmonyControlsVisibility();
-                if(state.exerciseStarted) stopExercise();
+                if(state.exerciseStarted) stopExercise(false);
                 renderStave(); 
             });
 
@@ -679,14 +1004,14 @@
                     if (e.target.value === 'custom') {
                         showCustomSelectionModal(type);
                     }
-                    if(state.exerciseStarted) stopExercise(); 
+                    if(state.exerciseStarted) stopExercise(false); 
                 });
             };
             setupCustomSelection(ui.intervalSelect, 'interval');
             setupCustomSelection(ui.triadSelect, 'triad');
             setupCustomSelection(ui.quadVoicingSelect, 'voicing');
             
-            ui.triadPositionSelect.addEventListener('change', e => { state.triadPosition = e.target.value; if(state.exerciseStarted) stopExercise(); });
+            ui.triadPositionSelect.addEventListener('change', e => { state.triadPosition = e.target.value; if(state.exerciseStarted) stopExercise(false); });
             
             ui.melodyNoteNameStyleSelect.addEventListener('change', (e) => {
                 state.melodyNoteNameStyle = e.target.value;
@@ -700,7 +1025,7 @@
                 updateHarmonyControlsVisibility();
                 updateDropVoicingOptions();
                  if(state.showFretboard) drawFretboardWithCurrentSettings();
-                if (state.exerciseStarted) stopExercise();
+                if (state.exerciseStarted) stopExercise(false);
                 renderStave();
             });
 
@@ -713,14 +1038,14 @@
                 if (state.showFretboard) {
                     drawFretboardWithCurrentSettings();
                 }
-                if (state.exerciseStarted) stopExercise();
+                if (state.exerciseStarted) stopExercise(false);
                 renderStave();
             });
 
             // Listeners for other stave-related controls
             [ui.clefSelect, ui.timeSigSelect, ui.changeBeatSelect].forEach(el => {
                 el.addEventListener('change', () => {
-                    if (state.exerciseStarted) stopExercise();
+                    if (state.exerciseStarted) stopExercise(false);
                     
                     if (el === ui.timeSigSelect) {
                         updateChangeBeatOptions();
@@ -763,7 +1088,7 @@
                         if (state.spacebarPressCount === 1) {
                             if (!state.exerciseStarted) startExercise(); else togglePause();
                         } else if (state.spacebarPressCount >= 2) {
-                            if (state.exerciseStarted) stopExercise();
+                            if (state.exerciseStarted) stopExercise(false);
                         }
                         state.spacebarPressCount = 0;
                     }, 300);
@@ -1038,10 +1363,11 @@
                 if (audio.context.state === 'suspended') await audio.context.resume();
                 
                 state.keySignature = ui.keySigSelect.value;
+                state.exerciseStartTime = new Date();
 
                 handleMeasuresChange();
                 state.exerciseMeasures = generateExercise();
-                if (state.exerciseMeasures.length === 0) { console.error("Failed to generate measures."); stopExercise(); return; }
+                if (state.exerciseMeasures.length === 0) { console.error("Failed to generate measures."); stopExercise(false); return; }
                 Object.assign(state, { exerciseStarted: true, isPlaying: true, isPaused: false, isPreRoll: true, currentMetronomeCount: 0, currentMeasureIndex: -1 });
                 ui.preRollMessage.classList.remove('hidden');
                 ui.displayArea.classList.add('hidden');
@@ -1051,11 +1377,41 @@
                 audio.nextNoteTime = audio.context.currentTime + 0.5;
                 scheduler();
                 renderStave();
-            } catch (e) { console.error("Error starting exercise:", e); stopExercise(); }
+            } catch (e) { console.error("Error starting exercise:", e); stopExercise(false); }
         }
 
-        function stopExercise() {
-            Object.assign(state, { exerciseStarted: false, isPlaying: false, isPaused: false, isPreRoll: false, currentMeasureIndex: -1, currentMetronomeCount: 0, currentMeasureContent: [], lastMelodicNote: null, displayedMeasureContent: [] });
+        function stopExercise(completedSuccessfully) {
+             if (completedSuccessfully && userData) {
+                userData.stats.totalExercises++;
+                userData.stats.totalCorrect++; 
+
+                if (state.exerciseStartTime) {
+                    const endTime = new Date();
+                    const durationMs = endTime - state.exerciseStartTime;
+                    const durationMinutes = Math.floor(durationMs / 60000);
+                    const durationString = durationMinutes < 1 ? "< 1 minuto" : `${durationMinutes} minuto(s)`;
+
+                    const historyEntry = {
+                        date: endTime.toLocaleDateString('es-ES'),
+                        time: endTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+                        duration: durationString
+                    };
+                    
+                    if (!userData.practiceHistory) userData.practiceHistory = [];
+                    userData.practiceHistory.push(historyEntry);
+                }
+
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (userData.stats.lastPracticeDate !== todayStr) {
+                    userData.stats.lastPracticeDate = todayStr;
+                    userData.stats.currentStreak++;
+                    updateStreakDisplay();
+                }
+                saveUserData();
+            }
+
+
+            Object.assign(state, { exerciseStarted: false, isPlaying: false, isPaused: false, isPreRoll: false, currentMeasureIndex: -1, currentMetronomeCount: 0, currentMeasureContent: [], lastMelodicNote: null, displayedMeasureContent: [], exerciseStartTime: null });
             ui.startStopButton.textContent = 'Comenzar';
             ui.pauseResumeButton.classList.add('hidden');
             ui.displayArea.classList.add('hidden');
@@ -1112,7 +1468,7 @@
                         }
                         
                         if (state.currentMeasureIndex >= state.measuresPerExercise) {
-                            stopExercise();
+                            stopExercise(true); // El ejercicio terminó exitosamente
                             return;
                         }
                         state.currentMeasureContent = state.exerciseMeasures[state.currentMeasureIndex];
@@ -2142,16 +2498,16 @@
         
         const tutorialSteps = [
              { id: 'main-content', text: '<h2 class="text-2xl font-bold text-emerald-400">¡Bienvenido a Lectura a Primera Vista!</h2><p>Esta aplicación está pensada principalmente para guitarristas, pero es una herramienta versátil para cualquier músico.</p><p class="mt-2">La sección de <strong>Melodía</strong> y la <strong>Armonía a 2 voces (intervalos)</strong> están disponibles en clave de Sol, Fa y Do, siendo útiles para cualquier instrumento o para practicar solfeo.</p><p class="mt-2">La <strong>Armonía a 3 y 4 voces</strong> ha sido diseñada específicamente con la guitarra en mente, por lo que estos ejercicios solo están disponibles en <strong>clave de Sol</strong>.</p><p class="mt-4">¡Vamos a explorar cómo funciona!</p>' },
-             { id: 'exercise-type-control', text: '<h3><strong>1. Tipo de Ejercicio</strong></h3><p>Primero, elige tu modo de práctica:</p><ul><li class="mt-2"><strong>Melodía:</strong> Practica la lectura de notas individuales, una tras otra.</li><li class="mt-2"><strong>Armonía:</strong> Practica la lectura de varias notas sonando al mismo tiempo.</li></ul>' },
-             { id: 'harmony-options-container', text: '<h3><strong>2. Opciones de Armonía</strong></h3><p>Si eliges <strong>Armonía</strong>, aparecerán nuevas opciones:</p><ul><li class="mt-2"><strong>Notas:</strong> Define cuántas notas simultáneas leerás. <strong>2</strong> para intervalos, <strong>3</strong> para tríadas (acordes de 3 notas) y <strong>4</strong> para cuatríadas (acordes de 7ma).</li><li class="mt-2"><strong>Filtros específicos:</strong> Según las notas que elijas, podrás filtrar por tipos de intervalos, acordes o voicings. ¡Busca la opción <strong>"Personalizado"</strong> para un control total!</li></ul>' },
-             { id: 'difficulty-select', text: '<h3><strong>3. Nivel de Dificultad</strong></h3><p>Ajusta la complejidad del ejercicio:</p><ul><li class="mt-2"><strong>Básico:</strong> Rango de notas limitado y saltos melódicos pequeños.</li><li class="mt-2"><strong>Medio:</strong> Un rango más amplio y saltos más desafiantes.</li><li class="mt-2"><strong>Avanzado:</strong> Todo el rango del instrumento con saltos complejos e inesperados.</li></ul>' },
-             { id: 'clef-select', text: `<h3><strong>4. Configuración del Pentagrama</strong></h3><p>Personaliza la escritura musical:</p><ul><li class="mt-2"><strong>Clave:</strong> Elige entre Sol, Fa y Do.</li><li class="mt-2"><strong>Armadura:</strong> Selecciona la tonalidad del ejercicio (disponible solo en modo Melodía).</li><li class="mt-2"><strong>Compás:</strong> Define el compás (4/4, 3/4, 2/4).</li></ul><div class="mt-4 p-2 bg-sky-800 rounded-md text-sm"><p><strong>🧠 Trabajo Mental en Armonía:</strong></p><p class="mt-1">El modo <strong>Armonía</strong> siempre se muestra sin armadura (Do Mayor), pero el verdadero ejercicio es mental. Imagina que estás en otra tonalidad. Por ejemplo, si decides practicar en <strong>Re Mayor</strong>, debes leer todas las notas F y C como si fueran F♯ y C♯. Si piensas en <strong>Mi♭ Mayor</strong>, las notas B, E y A se convierten en Si♭, Mi♭ y La♭. ¡Este es el núcleo del entrenamiento!</p></div><p class="mt-4 p-2 bg-zinc-600 rounded-md text-sm"><strong>Nota Importante:</strong> La app está optimizada para móviles y tablets. Si en tu computadora las claves no se ven en la línea correcta (Sol en 2ª, Fa en 4ª, Do en 3ª), es debido a diferencias de renderizado de fuentes entre sistemas operativos.</p>` },
-             { id: 'tempo', text: '<h3><strong>5. Duración y Velocidad</strong></h3><ul><li class="mt-2"><strong>Tempo (BPM):</strong> Establece la velocidad del metrónomo en pulsos por minuto.</li><li class="mt-2"><strong>Compases:</strong> Elige cuántos compases durará el ejercicio. Puedes seleccionar un valor predefinido o "Personalizado" para escribir tu propio número.</li></ul>' },
-             { id: 'change-beat-control', text: '<h3><strong>6. Lectura Adelantada</strong></h3><p>Esta es una herramienta clave para forzarte a leer más adelante. Te permite elegir en qué <strong>pulso</strong> del compás actual quieres que aparezcan las notas del <strong>siguiente compás</strong>.</p><p class="mt-2">Por defecto, está en el último pulso, dándote un tiempo para anticipar. Si lo ajustas a un pulso anterior (por ejemplo, al 3 en un 4/4), tendrás menos tiempo, forzando una lectura más rápida y fluida. ¡Es una habilidad crucial!</p>' },
-             { id: 'info-aids-container', text: '<h3><strong>7. Ayudas de Lectura</strong></h3><p>Activa estas opciones para facilitar la lectura:</p><ul><li class="mt-2"><strong>Nombres:</strong> Muestra el nombre de las notas o el cifrado de los acordes debajo del pentagrama.</li><li class="mt-2"><strong>Guía:</strong> Muestra una línea vertical que se mueve pulso a pulso, ayudándote a no perderte.</li></ul>' },
-             { id: 'visual-aids-container', text: '<h3><strong>8. Ayudas Interactivas</strong></h3><p>Usa estas herramientas para una práctica más completa:</p><ul><li class="mt-2"><strong>Mástil:</strong> Muestra un diapasón de guitarra que visualiza las notas del ejercicio. Las notas de la escala actual se muestran en el mástil y la nota que suena se resalta en verde.</li><li class="mt-2"><strong>Sonido:</strong> Reproduce cada nota o acorde a medida que avanza el ejercicio. ¡Ideal para entrenar tu oído!</li><li class="mt-2"><strong>Enarmónicos (♯/♭):</strong> Te permite elegir si prefieres ver las alteraciones como sostenidos o bemoles en el mástil.</li></ul>' },
-             { id: 'audio-controls-container', text: '<h3><strong>9. Controles de Audio</strong></h3><p>Personaliza el sonido a tu gusto:</p><ul><li class="mt-2"><strong>Metrónomo:</strong> Activa o desactiva el clic del metrónomo.</li><li class="mt-2"><strong>Vol. Sonido:</strong> Ajusta el volumen de las notas del ejercicio.</li><li class="mt-2"><strong>Vol. Metrónomo:</strong> Ajusta el volumen del clic del metrónomo.</li></ul>' },
-             { id: 'startStopButton', text: '<h3><strong>10. Controles y Atajos</strong></h3><p>Usa los botones o atajos para manejar el ejercicio:</p><ul><li class="mt-2"><strong>Botones:</strong> Inicia, pausa o detén el ejercicio.</li><li class="mt-2"><strong>Clics:</strong> Un clic en el pentagrama inicia o pausa, doble clic detiene.</li><li class="mt-2"><strong>Barra Espaciadora:</strong> Inicia/Pausa (un toque) y Detiene (doble toque).</li><li class="mt-2"><strong>E:</strong> Cambia entre Melodía y Armonía.</li><li class="mt-2"><strong>C:</strong> Cambia entre las claves de Sol, Fa y Do.</li><li class="mt-2"><strong>N:</strong> Muestra/Oculta los nombres.</li><li class="mt-2"><strong>G:</strong> Muestra/Oculta la guía.</li><li class="mt-2"><strong>M:</strong> Muestra/Oculta el mástil.</li><li class="mt-2"><strong>S:</strong> Activa/Desactiva el sonido.</li><li class="mt-2"><strong>K:</strong> Activa/Desactiva el metrónomo.</li><li class="mt-2"><strong>A:</strong> Alterna la vista de enarmónicos.</li><li class="mt-2"><strong>F:</strong> Activa/Desactiva la pantalla completa.</li></ul>' },
+             { id: 'exercise-type-control', text: '<h3><strong>2. Tipo de Ejercicio</strong></h3><p>Primero, elige tu modo de práctica:</p><ul><li class="mt-2"><strong>Melodía:</strong> Practica la lectura de notas individuales, una tras otra.</li><li class="mt-2"><strong>Armonía:</strong> Practica la lectura de varias notas sonando al mismo tiempo.</li></ul><p class="mt-2">Puedes cambiar rápidamente entre modos con la tecla <strong>E</strong>.</p>' },
+             { id: 'harmony-options-container', text: '<h3><strong>3. Opciones de Armonía</strong></h3><p>Si eliges <strong>Armonía</strong>, aparecerán nuevas opciones:</p><ul><li class="mt-2"><strong>Notas:</strong> Define cuántas notas simultáneas leerás. <strong>2</strong> para intervalos, <strong>3</strong> para tríadas (acordes de 3 notas) y <strong>4</strong> para cuatríadas (acordes de 7ma).</li><li class="mt-2"><strong>Filtros específicos:</strong> Según las notas que elijas, podrás filtrar por tipos de intervalos, acordes o voicings. ¡Busca la opción <strong>"Personalizado"</strong> para un control total!</li></ul>' },
+             { id: 'difficulty-select', text: '<h3><strong>4. Nivel de Dificultad</strong></h3><p>Ajusta la complejidad del ejercicio:</p><ul><li class="mt-2"><strong>Básico:</strong> Rango de notas limitado y saltos melódicos pequeños.</li><li class="mt-2"><strong>Medio:</strong> Un rango más amplio y saltos más desafiantes.</li><li class="mt-2"><strong>Avanzado:</strong> Todo el rango del instrumento con saltos complejos e inesperados.</li></ul>' },
+             { id: 'clef-select', text: `<h3><strong>5. Configuración del Pentagrama</strong></h3><p>Personaliza la escritura musical:</p><ul><li class="mt-2"><strong>Clave:</strong> Elige entre Sol, Fa y Do (Atajo: <strong>C</strong>).</li><li class="mt-2"><strong>Armadura:</strong> Selecciona la tonalidad del ejercicio (disponible solo en modo Melodía).</li><li class="mt-2"><strong>Compás:</strong> Define el compás (4/4, 3/4, 2/4).</li></ul><div class="mt-4 p-2 bg-sky-800 rounded-md text-sm"><p><strong>🧠 Trabajo Mental en Armonía:</strong></p><p class="mt-1">El modo <strong>Armonía</strong> siempre se muestra sin armadura (Do Mayor), ¡el ejercicio es mental! Si decides practicar en <strong>Re Mayor</strong>, debes leer todas las notas F y C como si fueran F♯ y C♯.</p></div>` },
+             { id: 'tempo', text: '<h3><strong>6. Duración y Velocidad</strong></h3><ul><li class="mt-2"><strong>Tempo (BPM):</strong> Establece la velocidad del metrónomo en pulsos por minuto.</li><li class="mt-2"><strong>Compases:</strong> Elige cuántos compases durará el ejercicio. Puedes seleccionar un valor predefinido o "Personalizado" para escribir tu propio número.</li></ul>' },
+             { id: 'change-beat-control', text: '<h3><strong>7. Lectura Adelantada</strong></h3><p>Esta es una herramienta clave para forzarte a leer más adelante. Te permite elegir en qué <strong>pulso</strong> del compás actual quieres que aparezcan las notas del <strong>siguiente compás</strong>.</p><p class="mt-2">Por defecto, está en el último pulso, dándote un tiempo para anticipar. Si lo ajustas a un pulso anterior (por ejemplo, al 3 en un 4/4), tendrás menos tiempo, forzando una lectura más rápida y fluida. ¡Es una habilidad crucial!</p>' },
+             { id: 'info-aids-container', text: '<h3><strong>8. Ayudas de Lectura</strong></h3><p>Activa estas opciones para facilitar la lectura:</p><ul><li class="mt-2"><strong>Nombres:</strong> Muestra el nombre de las notas o el cifrado de los acordes (Atajo: <strong>N</strong>).</li><li class="mt-2"><strong>Guía:</strong> Muestra una línea vertical que se mueve pulso a pulso, ayudándote a no perderte (Atajo: <strong>G</strong>).</li></ul>' },
+             { id: 'visual-aids-container', text: '<h3><strong>9. Ayudas Interactivas</strong></h3><p>Usa estas herramientas para una práctica más completa:</p><ul><li class="mt-2"><strong>Mástil:</strong> Muestra un diapasón de guitarra que visualiza las notas del ejercicio (Atajo: <strong>M</strong>).</li><li class="mt-2"><strong>Sonido:</strong> Reproduce cada nota o acorde a medida que avanza el ejercicio (Atajo: <strong>S</strong>).</li><li class="mt-2"><strong>Enarmónicos (♯/♭):</strong> Elige si prefieres ver las alteraciones como sostenidos o bemoles en el mástil (Atajo: <strong>A</strong>).</li></ul>' },
+             { id: 'audio-controls-container', text: '<h3><strong>10. Controles de Audio</strong></h3><p>Personaliza el sonido a tu gusto:</p><ul><li class="mt-2"><strong>Metrónomo:</strong> Activa o desactiva el clic del metrónomo (Atajo: <strong>K</strong>).</li><li class="mt-2"><strong>Vol. Sonido:</strong> Ajusta el volumen de las notas del ejercicio.</li><li class="mt-2"><strong>Vol. Metrónomo:</strong> Ajusta el volumen del clic del metrónomo.</li></ul>' },
+             { id: 'startStopButton', text: '<h3><strong>11. Controles y Resumen de Atajos</strong></h3><p>Usa los botones o los atajos del teclado para manejar el ejercicio de forma más fluida.</p><p class="mt-2"><strong>Control del Ejercicio:</strong></p><ul><li class="mt-2"><strong>Barra Espaciadora:</strong> Un toque para Iniciar/Pausar, doble toque para Detener.</li><li class="mt-2"><strong>Clic en Pentagrama:</strong> Un clic para Iniciar/Pausar, doble clic para Detener.</li></ul><p class="mt-2"><strong>Herramientas Rápidas:</strong></p><ul class="grid grid-cols-2 gap-x-4"><li><strong>E:</strong> Ejercicio (Melodía/Armonía)</li><li><strong>C:</strong> Clave</li><li><strong>N:</strong> Nombres de notas</li><li><strong>G:</strong> Guía visual</li><li><strong>M:</strong> Mástil</li><li><strong>S:</strong> Sonido</li><li><strong>K:</strong> Metrónomo (Clic)</li><li><strong>A:</strong> Alteraciones (♯/♭)</li><li><strong>F:</strong> Pantalla Completa</li></ul>' },
              { id: 'main-content', text: '<h2 class="text-2xl font-bold text-emerald-400">¡Todo Listo!</h2><p>Ya conoces todas las funciones. Configura tu ejercicio ideal y ¡a mejorar esa lectura! La práctica constante es la clave.</p>' }
         ];
         let currentTutorialStep = 0;
