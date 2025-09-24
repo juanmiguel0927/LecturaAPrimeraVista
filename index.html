@@ -422,9 +422,11 @@
                 <table class="w-full text-sm text-left text-zinc-300">
                     <thead class="text-xs text-sky-300 uppercase bg-zinc-700">
                         <tr>
-                            <th scope="col" class="px-6 py-3">Fecha</th>
-                            <th scope="col" class="px-6 py-3">Hora</th>
-                            <th scope="col" class="px-6 py-3">Duración</th>
+                            <th scope="col" class="px-4 py-3">Fecha</th>
+                            <th scope="col" class="px-4 py-3">Hora</th>
+                            <th scope="col" class="px-4 py-3">Duración</th>
+                            <th scope="col" class="px-4 py-3 text-center">Compases</th>
+                            <th scope="col" class="px-4 py-3 text-center">BPM</th>
                         </tr>
                     </thead>
                     <tbody id="history-table-body">
@@ -579,9 +581,11 @@
                     const row = document.createElement('tr');
                     row.className = 'bg-zinc-800 border-b border-zinc-700 hover:bg-zinc-600';
                     row.innerHTML = `
-                        <td class="px-6 py-4">${entry.date}</td>
-                        <td class="px-6 py-4">${entry.time}</td>
-                        <td class="px-6 py-4">${entry.duration}</td>
+                        <td class="px-4 py-4">${entry.date}</td>
+                        <td class="px-4 py-4">${entry.time}</td>
+                        <td class="px-4 py-4">${entry.duration}</td>
+                        <td class="px-4 py-4 text-center">${entry.measures || '-'}</td>
+                        <td class="px-4 py-4 text-center">${entry.bpm || '-'}</td>
                     `;
                     ui.historyTableBody.appendChild(row);
                 });
@@ -1405,7 +1409,9 @@
                     const historyEntry = {
                         date: endTime.toLocaleDateString('es-ES'),
                         time: endTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-                        duration: durationString
+                        duration: durationString,
+                        measures: state.measuresPerExercise,
+                        bpm: ui.tempoInput.value
                     };
                     
                     if (!userData.practiceHistory) userData.practiceHistory = [];
