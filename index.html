@@ -29,16 +29,23 @@
             .control-item { flex-direction: row; align-items: center; justify-content: space-between; width: 100%;}
         }
         
-        #stave-viewer:fullscreen {
-            background-color: #f8fafc; /* Same as stave bg */
+        #main-display-area:fullscreen {
+            display: flex;
+            flex-direction: column;
+            background-color: #111827;
             padding: 1rem;
-        }
-        #stave-viewer:fullscreen #stave-container {
-            height: 100%;
             width: 100%;
+            height: 100%;
+            gap: 1rem;
         }
-        #stave-viewer:fullscreen #fullscreen-toggle {
-            opacity: 1;
+        #main-display-area:fullscreen #stave-viewer {
+            flex: 1 1 auto;
+            height: 0; /* Allow shrinking and growing */
+            background-color: #f8fafc;
+        }
+        #main-display-area:fullscreen #fretboard-container {
+            flex: 0 0 auto;
+            max-width: 100%;
         }
 
         #fretboard-svg {
@@ -58,8 +65,9 @@
             pointer-events: none;
         }
         .static-note-text {
-             font-size: 10px;
-            fill: #a1a1aa;
+            font-size: 10px;
+            font-weight: bold;
+            fill: white;
             text-anchor: middle;
             dominant-baseline: central;
             pointer-events: none;
@@ -93,6 +101,11 @@
         .tooltip:has(input:focus, select:focus, button:focus):not(:hover) .tooltiptext {
             visibility: hidden;
             opacity: 0;
+        }
+        
+        /* Added for fretboard interaction */
+        .clickable-note {
+            cursor: pointer;
         }
 
     </style>
@@ -378,14 +391,19 @@
              </div>
             <button id="show-tutorial" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Tutorial</button>
         </div>
-        <div id="stave-viewer" class="group relative bg-zinc-700 p-2 md:p-6 rounded-lg shadow-inner mb-8 overflow-x-auto w-full">
-            <div id="stave-container" class="stave-container w-full h-80 flex items-center justify-center bg-white rounded-lg shadow-md border border-zinc-600"></div>
-            <div class="tooltip">
-                <button id="fullscreen-toggle" class="absolute z-10 bottom-4 right-4 p-3 rounded-full bg-gray-800 bg-opacity-60 text-white hover:bg-opacity-80 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100">
-                    <svg id="enter-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
-                    <svg id="exit-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
-                </button>
-                <span class="tooltiptext">Atajo: F</span>
+        <div id="main-display-area">
+            <div id="stave-viewer" class="group relative bg-zinc-700 p-2 md:p-6 rounded-lg shadow-inner mb-8 overflow-x-auto w-full">
+                <div id="stave-container" class="stave-container w-full h-80 flex items-center justify-center bg-white rounded-lg shadow-md border border-zinc-600"></div>
+                <div class="tooltip">
+                    <button id="fullscreen-toggle" class="absolute z-10 bottom-4 right-4 p-3 rounded-full bg-gray-800 bg-opacity-60 text-white hover:bg-opacity-80 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100">
+                        <svg id="enter-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                        <svg id="exit-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
+                    </button>
+                    <span class="tooltiptext">Atajo: F</span>
+                </div>
+            </div>
+             <div id="fretboard-container" class="hidden w-full max-w-4xl mx-auto mt-4 p-2 sm:p-4 bg-zinc-900 rounded-lg shadow-inner">
+                <!-- SVG will be injected here -->
             </div>
         </div>
         <div id="displayArea" class="hidden bg-zinc-700 p-6 rounded-lg shadow-inner">
@@ -394,10 +412,7 @@
                 <span class="text-zinc-300 font-mono">Compases: <span id="measuresCount" class="text-xl font-bold text-sky-400">0 / 10</span></span>
             </div>
         </div>
-         <div id="fretboard-container" class="hidden w-full max-w-4xl mx-auto mt-4 p-2 sm:p-4 bg-zinc-900 rounded-lg shadow-inner">
-            <!-- SVG will be injected here -->
-        </div>
-        <div id="pre-roll-message" class="pre-roll-message hidden">
+         <div id="pre-roll-message" class="pre-roll-message hidden">
             <span>Preparación</span><span id="preRollCount" class="pre-roll-message-count"></span>
         </div>
     </div>
@@ -486,6 +501,35 @@
         document.addEventListener('DOMContentLoaded', () => {
             initializeLogin();
         });
+        
+        async function handleFretboardNoteClick(event) {
+            // Do nothing if an exercise is in progress to avoid conflicts
+            if (state.exerciseStarted) return;
+
+            const clickedNote = event.currentTarget.dataset.note;
+            if (clickedNote) {
+                 // Play sound if enabled
+                if (state.soundEnabled) {
+                    try {
+                        // Initialize audio context on first user interaction
+                        if (!audio.context) {
+                            audio.context = new (window.AudioContext || window.webkitAudioContext)();
+                            audio.noteGain = audio.context.createGain();
+                            audio.metronomeGain = audio.context.createGain();
+                            audio.noteGain.connect(audio.context.destination);
+                            audio.metronomeGain.connect(audio.context.destination);
+                        }
+                        if (audio.context.state === 'suspended') await audio.context.resume();
+
+                        playNoteSound(clickedNote, audio.context.currentTime);
+                    } catch (e) {
+                        console.error("Error playing note sound on click:", e);
+                    }
+                }
+                // Tell the render function to display only this note
+                renderStave([clickedNote]); 
+            }
+        }
 
         // --- USER DATA & PROFILE MANAGEMENT ---
 
@@ -739,6 +783,7 @@
                 keySigContainer: get('key-signature-container'), melodyNoteNameOptionsContainer: get('melody-note-name-options-container'),
                 melodyNoteNameStyleSelect: get('melody-note-name-style-select'), showGuideToggle: get('show-guide'),
                 timeSigContainer: get('time-signature-container'), 
+                mainDisplayArea: get('main-display-area'), // wrapper for fullscreen
                 staveViewer: get('stave-viewer'), fullscreenToggle: get('fullscreen-toggle'), enterFullscreenIcon: get('enter-fullscreen-icon'), exitFullscreenIcon: get('exit-fullscreen-icon'),
                 customIntervalModal: get('custom-interval-modal'), closeIntervalModalBtn: get('close-interval-modal'),
                 intervalCheckboxes: get('interval-checkboxes'), cancelIntervalSelectionBtn: get('cancel-interval-selection'),
@@ -1235,7 +1280,7 @@
 
 
         function toggleFullscreen() {
-            const el = ui.staveViewer;
+            const el = ui.mainDisplayArea; // Target the main wrapper
             if (!document.fullscreenElement) {
                 if (el.requestFullscreen) el.requestFullscreen().catch(err => console.warn(`Fullscreen error: ${err.message}`));
             } else {
@@ -2116,72 +2161,101 @@
             container.innerHTML = '';
             const NUM_FRETS = 12;
             const NUM_STRINGS = 6;
-            const tuning = ['E/5', 'B/4', 'G/4', 'D/4', 'A/3', 'E/3']; // Custom tuning for exercise range
+
+            const tuningLabels = ['E', 'B', 'G', 'D', 'A', 'E'];
+            const tuning = ['E/5', 'B/4', 'G/4', 'D/4', 'A/3', 'E/3'];
+
+            const fretWidth = 50;
+            const stringHeight = 20;
+            const startX = 35;
+            const startY = 20;
+            const svgWidth = startX + (NUM_FRETS * fretWidth) + fretWidth / 2 + 10;
+            const svgHeight = startY + (NUM_STRINGS * stringHeight) + 30;
 
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('id', 'fretboard-svg');
-            svg.setAttribute('viewBox', `0 0 ${(NUM_FRETS + 1) * 50 + 30} ${NUM_STRINGS * 20 + 40}`);
+            svg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
             container.appendChild(svg);
             
             const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
             bg.setAttribute('width', '100%'); bg.setAttribute('height', '100%');
-            bg.setAttribute('fill', '#27272a');
+            bg.setAttribute('fill', '#18181b');
             svg.appendChild(bg);
 
+            const wood = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            wood.setAttribute('x', startX);
+            wood.setAttribute('y', startY);
+            wood.setAttribute('width', NUM_FRETS * fretWidth);
+            wood.setAttribute('height', (NUM_STRINGS - 1) * stringHeight);
+            wood.setAttribute('fill', '#6b462a');
+            wood.setAttribute('rx', '5');
+            svg.appendChild(wood);
+
+            const markers = [3, 5, 7, 9];
+            markers.forEach(fret => {
+                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                marker.setAttribute('cx', startX + (fret * fretWidth) - fretWidth / 2);
+                marker.setAttribute('cy', startY + (NUM_STRINGS * stringHeight) / 2 - stringHeight / 2);
+                marker.setAttribute('r', 4);
+                marker.setAttribute('fill', '#a1a1aa');
+                marker.setAttribute('opacity', '0.5');
+                svg.appendChild(marker);
+            });
+            const doubleMarkerFret = 12;
+            const marker1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            marker1.setAttribute('cx', startX + (doubleMarkerFret * fretWidth) - fretWidth / 2);
+            marker1.setAttribute('cy', startY + 1.5 * stringHeight);
+            marker1.setAttribute('r', 4);
+            marker1.setAttribute('fill', '#a1a1aa');
+            marker1.setAttribute('opacity', '0.5');
+            svg.appendChild(marker1);
+            const marker2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            marker2.setAttribute('cx', startX + (doubleMarkerFret * fretWidth) - fretWidth / 2);
+            marker2.setAttribute('cy', startY + 3.5 * stringHeight);
+            marker2.setAttribute('r', 4);
+            marker2.setAttribute('fill', '#a1a1aa');
+            marker2.setAttribute('opacity', '0.5');
+            svg.appendChild(marker2);
+
             for (let i = 0; i <= NUM_FRETS; i++) {
-                const x = 30 + (i * 50);
+                const x = startX + (i * fretWidth);
                 const fret = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                fret.setAttribute('x1', x); fret.setAttribute('y1', 10);
-                fret.setAttribute('x2', x); fret.setAttribute('y2', NUM_STRINGS * 20);
-                fret.setAttribute('stroke', '#a1a1aa');
-                fret.setAttribute('stroke-width', i === 0 ? 4 : 1);
+                fret.setAttribute('x1', x); fret.setAttribute('y1', startY);
+                fret.setAttribute('x2', x); fret.setAttribute('y2', startY + (NUM_STRINGS - 1) * stringHeight);
+                fret.setAttribute('stroke', '#cccccc');
+                fret.setAttribute('stroke-width', i === 0 ? 6 : 2);
                 svg.appendChild(fret);
             }
 
             for (let i = 0; i < NUM_STRINGS; i++) {
-                const y = 10 + (i * 20) + 10;
+                const y = startY + (i * stringHeight);
                 const string = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                string.setAttribute('x1', 30); string.setAttribute('y1', y);
-                string.setAttribute('x2', 30 + NUM_FRETS * 50); string.setAttribute('y2', y);
-                string.setAttribute('stroke', '#71717a');
-                string.setAttribute('stroke-width', 1 + i * 0.2);
+                string.setAttribute('x1', startX); string.setAttribute('y1', y);
+                string.setAttribute('x2', startX + NUM_FRETS * fretWidth); string.setAttribute('y2', y);
+                string.setAttribute('stroke', '#d1d5db');
+                string.setAttribute('stroke-width', 1 + (NUM_STRINGS - 1 - i) * 0.3);
                 svg.appendChild(string);
             }
 
-            const markers = [3, 5, 7, 9, 15];
-            markers.forEach(fret => {
-                if (fret > NUM_FRETS) return;
-                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                marker.setAttribute('cx', 30 + (fret * 50) - 25);
-                marker.setAttribute('cy', (NUM_STRINGS * 20 + 10) / 2);
-                marker.setAttribute('r', 4);
-                marker.setAttribute('fill', '#52525b');
-                svg.appendChild(marker);
-            });
-            const doubleMarkers = [12];
-            doubleMarkers.forEach(fret => {
-                 if (fret > NUM_FRETS) return;
-                 const marker1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                marker1.setAttribute('cx', 30 + (fret * 50) - 25);
-                marker1.setAttribute('cy', (NUM_STRINGS * 20 + 10) / 2 - 20);
-                marker1.setAttribute('r', 4);
-                marker1.setAttribute('fill', '#52525b');
-                svg.appendChild(marker1);
-                 const marker2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                marker2.setAttribute('cx', 30 + (fret * 50) - 25);
-                marker2.setAttribute('cy', (NUM_STRINGS * 20 + 10) / 2 + 20);
-                marker2.setAttribute('r', 4);
-                marker2.setAttribute('fill', '#52525b');
-                svg.appendChild(marker2);
+            tuningLabels.forEach((label, i) => {
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', startX - 20);
+                text.setAttribute('y', startY + (i * stringHeight));
+                text.setAttribute('fill', '#d1d5db');
+                text.setAttribute('font-size', '14px');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('dominant-baseline', 'central');
+                text.textContent = label;
+                svg.appendChild(text);
             });
 
-            // Fret Numbers
             const fretNumbers = [3, 5, 7, 9, 12];
             fretNumbers.forEach(fret => {
                 if (fret > NUM_FRETS) return;
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', 30 + (fret * 50) - 25);
-                text.setAttribute('y', NUM_STRINGS * 20 + 30);
+                text.setAttribute('x', startX + (fret * fretWidth) - fretWidth / 2);
+                text.setAttribute('y', svgHeight - 10);
                 text.setAttribute('fill', '#a1a1aa');
                 text.setAttribute('font-size', '12px');
                 text.setAttribute('text-anchor', 'middle');
@@ -2198,7 +2272,7 @@
             staticNotes.forEach(note => {
                 if (notesData.guitarFretboard[note]) {
                      notesData.guitarFretboard[note].forEach(pos => {
-                        if (pos.fret <= NUM_FRETS && !processedNotes.has(`${pos.string}-${pos.fret}`)) {
+                        if (pos.fret > 0 && pos.fret <= NUM_FRETS && !processedNotes.has(`${pos.string}-${pos.fret}`)) {
                             notePositions.push({note, ...pos});
                             processedNotes.add(`${pos.string}-${pos.fret}`);
                         }
@@ -2209,33 +2283,40 @@
             notePositions.forEach(({note, string, fret}) => {
                 const midiVal = notesData.chromaticMap[note];
                 const noteName = getEnharmonicName(midiVal);
-                const cx = 30 + (fret * 50) - 25;
-                const cy = 10 + (string * 20) + 10;
+                const cx = startX + (fret * fretWidth) - (fretWidth / 2);
+                const cy = startY + (string * stringHeight);
+                
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.classList.add('clickable-note');
+                g.dataset.note = note;
+                g.addEventListener('click', handleFretboardNoteClick);
                 
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('class', 'note-marker');
                 circle.setAttribute('cx', cx);
                 circle.setAttribute('cy', cy);
-                circle.setAttribute('r', 8);
+                circle.setAttribute('r', 9);
                 
                 const keyNotes = notesData.keySignatures[state.keySignature].notes;
                 const rootNoteName = keyNotes[0];
                 if (note.startsWith(rootNoteName)) {
-                     circle.setAttribute('fill', '#f87171'); // Red-400 for root
+                     circle.setAttribute('fill', '#ef4444'); // Red-500
                 } else {
-                     circle.setAttribute('fill', '#60a5fa'); // Blue-400 for other scale tones
+                     circle.setAttribute('fill', '#3b82f6'); // Blue-500
                 }
-
-                staticNotesGroup.appendChild(circle);
+                circle.setAttribute('stroke', '#18181b');
+                circle.setAttribute('stroke-width', '1.5');
+                
+                g.appendChild(circle);
 
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('class', 'note-text');
                 text.setAttribute('x', cx);
                 text.setAttribute('y', cy);
                 text.textContent = noteName;
-                staticNotesGroup.appendChild(text);
+                text.classList.add('static-note-text');
+                
+                g.appendChild(text);
+                staticNotesGroup.appendChild(g);
             });
-
 
             const highlightsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             highlightsGroup.setAttribute('id', 'fretboard-highlights');
@@ -2249,39 +2330,63 @@
             
             if (!Array.isArray(playingNotes) || playingNotes.length === 0) return;
             
-            const notePositions = [];
+            const fretWidth = 50;
+            const stringHeight = 20;
+            const startX = 35;
+            const startY = 20;
+
+            const notePositions = new Set();
             
             playingNotes.forEach(note => {
                 if (notesData.guitarFretboard[note]) {
                     notesData.guitarFretboard[note].forEach(pos => {
-                         if (pos.fret <= 12) {
-                            notePositions.push({note, ...pos});
-                        }
+                         if (pos.fret > 0 && pos.fret <= 12) {
+                            notePositions.add(JSON.stringify({note, ...pos}));
+                         }
                     });
                 }
             });
 
-            notePositions.forEach(({note, string, fret}) => {
+            notePositions.forEach((posString) => {
+                const {note, string, fret} = JSON.parse(posString);
+
                 const midiVal = notesData.chromaticMap[note];
                 const noteName = getEnharmonicName(midiVal);
-                const cx = 30 + (fret * 50) - 25;
-                const cy = 10 + (string * 20) + 10;
+                const cx = startX + (fret * fretWidth) - (fretWidth / 2);
+                const cy = startY + (string * stringHeight);
                 
+                const glow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                glow.setAttribute('cx', cx);
+                glow.setAttribute('cy', cy);
+                glow.setAttribute('r', 13);
+                glow.setAttribute('fill', '#fde047');
+                glow.setAttribute('opacity', '0.75');
+                
+                const animate = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+                animate.setAttribute('attributeName', 'opacity');
+                animate.setAttribute('values', '0.75;0;0.75');
+                animate.setAttribute('dur', '1s');
+                animate.setAttribute('repeatCount', 'indefinite');
+                glow.appendChild(animate);
+                highlightsGroup.appendChild(glow);
+
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('class', 'note-marker');
                 circle.setAttribute('cx', cx);
                 circle.setAttribute('cy', cy);
-                circle.setAttribute('r', 8);
-                
+                circle.setAttribute('r', 9);
+                circle.setAttribute('stroke', '#fde047');
+                circle.setAttribute('stroke-width', '2.5');
+
                 if (state.exerciseType === 'armonia' && rootNoteName && playingNotes.length > 1) {
                     const currentNoteNameOnly = note.split('/')[0];
                     if (currentNoteNameOnly === rootNoteName) {
-                        circle.setAttribute('fill', '#f87171'); // Red-400 for root
+                        circle.setAttribute('fill', '#ef4444'); 
                     } else {
-                        circle.setAttribute('fill', '#60a5fa'); // Blue-400 for other chord tones
+                        circle.setAttribute('fill', '#3b82f6'); 
                     }
-                } else { // Melody mode or no root found
-                    circle.setAttribute('fill', '#34d399'); // Emerald-400 for current playing note
+                } else {
+                    circle.setAttribute('fill', '#16a34a');
                 }
 
                 highlightsGroup.appendChild(circle);
@@ -2296,7 +2401,7 @@
         }
 
 
-        function renderStave() {
+        function renderStave(notesToShow = null) {
             ui.staveContainer.innerHTML = '';
             const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             svg.setAttribute('viewBox', `-15 -60 460 280`);
@@ -2312,12 +2417,19 @@
             const mainGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
             mainGroup.setAttribute('transform', 'translate(0, 40)');
             svg.appendChild(mainGroup);
+            
             let contentToDraw = [];
-            if (state.isPreRoll && state.exerciseMeasures.length > 0) {
-                contentToDraw = state.exerciseMeasures[0];
-            } else if (state.exerciseStarted) {
-                contentToDraw = state.displayedMeasureContent;
+            
+            if (notesToShow) {
+                contentToDraw = notesToShow;
+            } else {
+                if (state.isPreRoll && state.exerciseMeasures.length > 0) {
+                    contentToDraw = state.exerciseMeasures[0];
+                } else if (state.exerciseStarted) {
+                    contentToDraw = state.displayedMeasureContent;
+                }
             }
+            
             drawMeasure(mainGroup, contentToDraw, 45, 330);
         }
 
