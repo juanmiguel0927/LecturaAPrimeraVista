@@ -48,6 +48,26 @@
             max-width: 100%;
         }
 
+        @media (orientation: landscape) and (max-height: 600px) {
+             #main-display-area:fullscreen {
+                flex-direction: row;
+                align-items: stretch;
+             }
+             #main-display-area:fullscreen #stave-viewer {
+                flex: 1 1 60%;
+                width: 0;
+                height: 100%;
+             }
+             #main-display-area:fullscreen #fretboard-container {
+                 flex: 1 1 40%;
+                 max-width: 40%;
+                 height: 100%;
+                 display: flex;
+                 align-items: center;
+                 justify-content: center;
+             }
+        }
+
         #fretboard-svg {
             width: 100%;
             height: auto;
@@ -2686,4 +2706,5 @@
     </script>
 </body>
 </html>
+
 
