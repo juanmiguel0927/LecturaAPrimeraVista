@@ -29,54 +29,91 @@
             .control-item { flex-direction: row; align-items: center; justify-content: space-between; width: 100%;}
         }
         
+        /* --- ESTILOS PARA PANTALLA COMPLETA --- */
+
+        /* Base para el contenedor en pantalla completa */
         #main-display-area:fullscreen {
             display: flex;
-            flex-direction: column;
             background-color: #111827;
-            padding: 0; /* Maximiza espacio */
+            padding: 0;
             width: 100%;
             height: 100%;
-            gap: 0; /* Maximiza espacio */
+            gap: 0;
+        }
+
+        /* Oculta el mástil si tiene la clase .hidden */
+        #main-display-area:fullscreen #fretboard-container.hidden {
+            display: none;
+        }
+
+        /* --- Disposición Vertical (Celulares vertical, Tablets vertical) --- */
+        #main-display-area:fullscreen {
+            flex-direction: column;
         }
         #main-display-area:fullscreen #stave-viewer {
-            flex: 1 1 20%; /* Partitura toma 20% en modo vertical para maximizar el mástil */
+            flex: 1 1 30%; /* Partitura: 30% del espacio */
             height: 0;
             background-color: #ffffff;
         }
         #main-display-area:fullscreen #fretboard-container {
-            flex: 1 1 80%; /* Mástil toma 80% en modo vertical */
-            max-width: 100%;
-            height: 0; /* Permite que crezca basado en flex */
+            flex: 1 1 70%; /* Mástil: 70% del espacio */
+            height: 0;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 0.5rem;
+            box-sizing: border-box;
+        }
+        /* Cuando el mástil está oculto, la partitura ocupa todo */
+        #main-display-area:fullscreen:has(#fretboard-container.hidden) #stave-viewer {
+            flex-basis: 100%;
         }
 
-        @media (orientation: landscape) { /* Se aplica a todos los dispositivos en horizontal */
+
+        /* --- Disposición Horizontal (Tablets y Escritorio en horizontal) --- */
+        @media (orientation: landscape) and (min-height: 501px) {
              #main-display-area:fullscreen {
                 flex-direction: row;
                 align-items: stretch;
              }
              #main-display-area:fullscreen #stave-viewer {
-                flex: 1 1 30%; /* Partitura toma 30% en horizontal */
+                flex: 1 1 40%; /* Partitura: 40% del espacio */
                 width: 0;
                 height: 100%;
              }
              #main-display-area:fullscreen #fretboard-container {
-                 flex: 1 1 70%; /* Mástil toma 70% en horizontal */
-                 max-width: 70%; /* Coincide con flex-basis */
+                 flex: 1 1 60%; /* Mástil: 60% del espacio */
+                 max-width: 60%;
                  height: 100%;
-                 display: flex;
-                 align-items: center;
-                 justify-content: center;
-                 padding: 0.5rem; /* Pequeño padding para que no toque los bordes */
-                 box-sizing: border-box;
              }
              #main-display-area:fullscreen #fretboard-container #fretboard-svg {
-                height: 100%; /* Escala el SVG a la altura del contenedor */
+                height: 100%;
                 width: auto;
              }
+             #main-display-area:fullscreen:has(#fretboard-container.hidden) #stave-viewer {
+                flex-basis: 100%;
+                width: 100%;
+             }
         }
+        
+        /* --- Disposición especial para Celulares en Horizontal --- */
+        @media (orientation: landscape) and (max-height: 500px) {
+            #main-display-area:fullscreen {
+                flex-direction: column; /* Mantiene la vista vertical para mejor legibilidad */
+            }
+             #main-display-area:fullscreen #stave-viewer {
+                flex-basis: 40%;
+                width: 100%;
+                height: 0;
+             }
+             #main-display-area:fullscreen #fretboard-container {
+                 flex-basis: 60%;
+                 width: 100%;
+                 max-width: 100%;
+                 height: 0;
+             }
+        }
+
 
         #fretboard-svg {
             width: 100%;
@@ -2721,6 +2758,7 @@
     </script>
 </body>
 </html>
+
 
 
 
