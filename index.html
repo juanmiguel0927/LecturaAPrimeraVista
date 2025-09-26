@@ -39,12 +39,12 @@
             gap: 0; /* Maximiza espacio */
         }
         #main-display-area:fullscreen #stave-viewer {
-            flex: 1 1 30%; /* Partitura toma 30% en modo vertical */
+            flex: 1 1 20%; /* Partitura toma 20% en modo vertical para maximizar el mástil */
             height: 0;
             background-color: #ffffff;
         }
         #main-display-area:fullscreen #fretboard-container {
-            flex: 1 1 70%; /* Mástil toma 70% en modo vertical */
+            flex: 1 1 80%; /* Mástil toma 80% en modo vertical */
             max-width: 100%;
             height: 0; /* Permite que crezca basado en flex */
             display: flex;
@@ -58,13 +58,13 @@
                 align-items: stretch;
              }
              #main-display-area:fullscreen #stave-viewer {
-                flex: 1 1 35%; /* Partitura toma 35% en horizontal */
+                flex: 1 1 30%; /* Partitura toma 30% en horizontal */
                 width: 0;
                 height: 100%;
              }
              #main-display-area:fullscreen #fretboard-container {
-                 flex: 1 1 65%; /* Mástil toma 65% en horizontal */
-                 max-width: 65%; /* Coincide con flex-basis */
+                 flex: 1 1 70%; /* Mástil toma 70% en horizontal */
+                 max-width: 70%; /* Coincide con flex-basis */
                  height: 100%;
                  display: flex;
                  align-items: center;
@@ -1157,10 +1157,11 @@
                 const isFullscreen = !!(document.fullscreenElement);
                 ui.enterFullscreenIcon.classList.toggle('hidden', isFullscreen);
                 ui.exitFullscreenIcon.classList.toggle('hidden', !isFullscreen);
-                if (isFullscreen) {
-                    // Asegura que el mástil solo se muestre en pantalla completa si la opción está activa
-                    ui.fretboardContainer.classList.toggle('hidden', !state.showFretboard);
-                }
+                
+                // Sincroniza siempre la visibilidad del mástil con el estado,
+                // tanto al entrar como al salir de pantalla completa.
+                ui.fretboardContainer.classList.toggle('hidden', !state.showFretboard);
+
                 setTimeout(renderStave, 50);
             }
 
@@ -2720,5 +2721,6 @@
     </script>
 </body>
 </html>
+
 
 
