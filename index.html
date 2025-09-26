@@ -41,7 +41,7 @@
         #main-display-area:fullscreen #stave-viewer {
             flex: 1 1 auto;
             height: 0; /* Allow shrinking and growing */
-            background-color: #f8fafc;
+            background-color: #ffffff;
         }
         #main-display-area:fullscreen #fretboard-container {
             flex: 0 0 auto;
@@ -402,7 +402,7 @@
                     <span class="tooltiptext">Atajo: F</span>
                 </div>
             </div>
-             <div id="fretboard-container" class="hidden w-full max-w-4xl mx-auto mt-4 p-2 sm:p-4 bg-zinc-900 rounded-lg shadow-inner">
+             <div id="fretboard-container" class="hidden w-full max-w-5xl mx-auto mt-4 p-2 sm:p-4 bg-zinc-900 rounded-lg shadow-inner">
                 <!-- SVG will be injected here -->
             </div>
         </div>
@@ -2159,7 +2159,7 @@
         function drawFretboard(staticNotes = []) {
             const container = ui.fretboardContainer;
             container.innerHTML = '';
-            const NUM_FRETS = 12;
+            const NUM_FRETS = 15;
             const NUM_STRINGS = 6;
 
             const tuningLabels = ['E', 'B', 'G', 'D', 'A', 'E'];
@@ -2191,7 +2191,7 @@
             wood.setAttribute('rx', '5');
             svg.appendChild(wood);
 
-            const markers = [3, 5, 7, 9];
+            const markers = [3, 5, 7, 9, 15];
             markers.forEach(fret => {
                 const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 marker.setAttribute('cx', startX + (fret * fretWidth) - fretWidth / 2);
@@ -2237,20 +2237,45 @@
                 svg.appendChild(string);
             }
 
-            tuningLabels.forEach((label, i) => {
+            const staticNotesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            staticNotesGroup.setAttribute('id', 'fretboard-static-notes');
+            svg.appendChild(staticNotesGroup);
+            
+            // Open Strings
+            tuning.forEach((openNote, i) => {
+                const midiVal = notesData.chromaticMap[openNote];
+                const noteName = getEnharmonicName(midiVal);
+
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.classList.add('clickable-note');
+                g.dataset.note = openNote;
+                g.addEventListener('click', handleFretboardNoteClick);
+                
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', startX - 20);
+                circle.setAttribute('cy', startY + (i * stringHeight));
+                circle.setAttribute('r', 9);
+                const keyNotes = notesData.keySignatures[state.keySignature].notes;
+                const rootNoteName = keyNotes[0];
+                if (openNote.startsWith(rootNoteName)) {
+                     circle.setAttribute('fill', '#ef4444'); // Red-500
+                } else {
+                     circle.setAttribute('fill', '#3b82f6'); // Blue-500
+                }
+                g.appendChild(circle);
+
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('x', startX - 20);
                 text.setAttribute('y', startY + (i * stringHeight));
-                text.setAttribute('fill', '#d1d5db');
-                text.setAttribute('font-size', '14px');
-                text.setAttribute('font-weight', 'bold');
-                text.setAttribute('text-anchor', 'middle');
-                text.setAttribute('dominant-baseline', 'central');
-                text.textContent = label;
-                svg.appendChild(text);
+                text.textContent = noteName;
+                text.classList.add('static-note-text');
+                g.appendChild(text);
+
+                staticNotesGroup.appendChild(g);
             });
 
-            const fretNumbers = [3, 5, 7, 9, 12];
+
+            const fretNumbers = [3, 5, 7, 9, 12, 15];
             fretNumbers.forEach(fret => {
                 if (fret > NUM_FRETS) return;
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -2262,10 +2287,6 @@
                 text.textContent = fret;
                 svg.appendChild(text);
             });
-
-            const staticNotesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            staticNotesGroup.setAttribute('id', 'fretboard-static-notes');
-            svg.appendChild(staticNotesGroup);
             
             const notePositions = [];
             const processedNotes = new Set();
@@ -2330,6 +2351,7 @@
             
             if (!Array.isArray(playingNotes) || playingNotes.length === 0) return;
             
+            const NUM_FRETS = 15;
             const fretWidth = 50;
             const stringHeight = 20;
             const startX = 35;
@@ -2340,7 +2362,7 @@
             playingNotes.forEach(note => {
                 if (notesData.guitarFretboard[note]) {
                     notesData.guitarFretboard[note].forEach(pos => {
-                         if (pos.fret > 0 && pos.fret <= 12) {
+                         if (pos.fret <= NUM_FRETS) {
                             notePositions.add(JSON.stringify({note, ...pos}));
                          }
                     });
@@ -2352,7 +2374,7 @@
 
                 const midiVal = notesData.chromaticMap[note];
                 const noteName = getEnharmonicName(midiVal);
-                const cx = startX + (fret * fretWidth) - (fretWidth / 2);
+                const cx = (fret === 0) ? startX - 20 : startX + (fret * fretWidth) - (fretWidth / 2);
                 const cy = startY + (string * stringHeight);
                 
                 const glow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
