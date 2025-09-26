@@ -33,42 +33,46 @@
             display: flex;
             flex-direction: column;
             background-color: #111827;
-            padding: 1rem;
+            padding: 0.5rem;
             width: 100%;
             height: 100%;
-            gap: 1rem;
+            gap: 0.5rem;
         }
         #main-display-area:fullscreen #stave-viewer {
-            flex: 1 1 50%; /* Adjusted for more balanced view */
+            flex: 1 1 40%; /* La partitura toma el 40% en modo vertical */
             height: 0;
             background-color: #ffffff;
         }
         #main-display-area:fullscreen #fretboard-container {
-            flex: 1 1 50%; /* Adjusted to grow */
+            flex: 1 1 60%; /* El mástil toma el 60% en modo vertical */
             max-width: 100%;
-            height: 0; /* Allow it to grow based on flex */
+            height: 0; /* Permite que crezca basado en flex */
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        @media (orientation: landscape) and (max-height: 700px) { /* Increased height breakpoint for more devices */
+        @media (orientation: landscape) { /* Se aplica a todos los dispositivos en horizontal */
              #main-display-area:fullscreen {
                 flex-direction: row;
                 align-items: stretch;
              }
              #main-display-area:fullscreen #stave-viewer {
-                flex: 1 1 50%; /* Changed to 50% */
+                flex: 1 1 45%; /* La partitura toma el 45% en horizontal */
                 width: 0;
                 height: 100%;
              }
              #main-display-area:fullscreen #fretboard-container {
-                 flex: 1 1 50%; /* Changed to 50% */
-                 max-width: 50%; /* Changed to 50% */
+                 flex: 1 1 55%; /* El mástil toma el 55% en horizontal */
+                 max-width: 55%; /* Coincide con flex-basis */
                  height: 100%;
                  display: flex;
                  align-items: center;
                  justify-content: center;
+             }
+             #main-display-area:fullscreen #fretboard-container #fretboard-svg {
+                height: 90%; /* Escala el SVG a la altura del contenedor */
+                width: auto;
              }
         }
 
@@ -2710,3 +2714,4 @@
     </script>
 </body>
 </html>
+
