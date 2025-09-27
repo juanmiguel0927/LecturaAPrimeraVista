@@ -579,7 +579,9 @@
                     console.error("Error playing note sound on click:", e);
                 }
                 // Tell the render function to display only this note
-                renderStave([clickedNote]); 
+                renderStave([clickedNote]);
+                // Highlight the note on the fretboard
+                updateFretboard([clickedNote]);
             }
         }
 
@@ -2743,9 +2745,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
