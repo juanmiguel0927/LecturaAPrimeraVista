@@ -299,9 +299,21 @@
                 </select>
             </div>
              <div id="quad-options-container" class="control-item hidden">
-                <label for="quad-voicing-select" class="text-zinc-300 whitespace-nowrap">Voicing:</label>
+                <label for="quad-voicing-select" class="text-zinc-300 whitespace-nowrap">Tipo de Voicing:</label>
                 <select id="quad-voicing-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <!-- Options will be populated by JS -->
+                </select>
+            </div>
+            <div id="quad-chord-type-container" class="control-item hidden">
+                <label for="quad-chord-type-select" class="text-zinc-300 whitespace-nowrap">Tipo de Acorde:</label>
+                <select id="quad-chord-type-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="all" selected>Todos</option>
+                    <option value="maj7">Xmaj7</option>
+                    <option value="m7">Xm7</option>
+                    <option value="dom7">X7</option>
+                    <option value="m7b5">Xm7(b5)</option>
+                    <option value="dim7">X°7</option>
+                    <option value="custom">Personalizado</option>
                 </select>
             </div>
             <div class="control-item">
@@ -579,9 +591,7 @@
                     console.error("Error playing note sound on click:", e);
                 }
                 // Tell the render function to display only this note
-                renderStave([clickedNote]);
-                // Highlight the note on the fretboard
-                updateFretboard([clickedNote]);
+                renderStave([clickedNote]); 
             }
         }
 
@@ -833,6 +843,7 @@
                 intervalSelect: get('interval-select'), triadOptionsContainer: get('triad-options-container'), triadSelect: get('triad-select'),
                 triadPositionContainer: get('triad-position-container'), triadPositionSelect: get('triad-position-select'),
                 quadOptionsContainer: get('quad-options-container'), quadVoicingSelect: get('quad-voicing-select'),
+                quadChordTypeContainer: get('quad-chord-type-container'), quadChordTypeSelect: get('quad-chord-type-select'),
                 keySigSelect: get('key-signature-select'), cipherTypeContainer: get('cipher-type-container'), cipherTypeSelect: get('cipher-type-select'),
                 keySigContainer: get('key-signature-container'), melodyNoteNameOptionsContainer: get('melody-note-name-options-container'),
                 melodyNoteNameStyleSelect: get('melody-note-name-style-select'), showGuideToggle: get('show-guide'),
@@ -865,7 +876,7 @@
             state = { 
                 exerciseStartTime: null,
                 exerciseType: 'melodia', notesPerChord: 3, selectedInterval: 0, selectedTriad: 'all', triadPosition: 'all',
-                selectedQuadVoicing: 'all', cipherType: 'todos', melodyNoteNameStyle: 'con-alteracion',
+                selectedQuadVoicing: 'all', selectedQuadChordType: 'all', cipherType: 'todos', melodyNoteNameStyle: 'con-alteracion',
                 exerciseStarted: false, isPaused: false, metronomeTimer: null, exerciseMeasures: [], currentMeasureContent: [], 
                 currentMetronomeCount: 0, timeSignatureBeats: 4, measuresChangeBeat: 4, currentMeasureIndex: -1, 
                 measuresPerExercise: 10, isPreRoll: false, isPlaying: false, showNoteNames: false, keySignature: 'C',
@@ -1122,6 +1133,11 @@
             setupCustomSelection(ui.triadSelect, 'triad');
             setupCustomSelection(ui.quadVoicingSelect, 'voicing');
             
+            ui.quadChordTypeSelect.addEventListener('change', (e) => { 
+                state.selectedQuadChordType = e.target.value;
+                 if(state.exerciseStarted) stopExercise(false);
+            });
+
             ui.triadPositionSelect.addEventListener('change', e => { state.triadPosition = e.target.value; if(state.exerciseStarted) stopExercise(false); });
             
             ui.melodyNoteNameStyleSelect.addEventListener('change', (e) => {
@@ -1369,6 +1385,7 @@
             ui.triadPositionContainer.classList.toggle('hidden', !showTriadPosition);
 
             ui.quadOptionsContainer.classList.toggle('hidden', !isHarmony || notes !== 4);
+            ui.quadChordTypeContainer.classList.toggle('hidden', !isHarmony || notes !== 4);
             
             const showMelodyNameOptions = !isHarmony && showNames;
             ui.melodyNoteNameOptionsContainer.classList.toggle('hidden', !showMelodyNameOptions);
@@ -1938,13 +1955,29 @@
                     } else if (numNotes === 4) { 
                         const rootName = currentRoot.split('/')[0];
                         let possibleChords = notesData.allowedFourNoteChords[rootName];
+                        
+                        const selectedType = state.selectedQuadChordType;
+                        if (selectedType !== 'all') {
+                            let suffix;
+                            switch(selectedType) {
+                                case 'maj7': suffix = 'maj7'; break;
+                                case 'm7': suffix = 'm7'; break;
+                                case 'dom7': suffix = '7'; break;
+                                case 'm7b5': suffix = 'm7b5'; break;
+                                case 'dim7': suffix = '°7'; break;
+                            }
+                            if (suffix) {
+                                 possibleChords = possibleChords.filter(c => {
+                                     if (suffix === 'm7') return c.name.endsWith('m7') && !c.name.endsWith('m7b5');
+                                     if (suffix === '7') return c.name.endsWith('7') && !c.name.endsWith('maj7') && !c.name.endsWith('m7') && !c.name.endsWith('°7');
+                                     return c.name.endsWith(suffix);
+                                 });
+                            }
+                        }
+
                         if (!possibleChords || possibleChords.length === 0) continue;
                         
-                        let filteredQualities = possibleChords.filter(c => c.name.endsWith('maj7') || c.name.endsWith('m7'));
-                        if (filteredQualities.length === 0) {
-                            filteredQualities = possibleChords;
-                        }
-                        const baseChordData = filteredQualities[Math.floor(Math.random() * filteredQualities.length)];
+                        const baseChordData = possibleChords[Math.floor(Math.random() * possibleChords.length)];
                         
                         const closePositionChord = buildConcreteChord(currentRoot, baseChordData.notes);
                         if (!closePositionChord || !closePositionChord.every(n => noteRange.includes(n))) continue;
