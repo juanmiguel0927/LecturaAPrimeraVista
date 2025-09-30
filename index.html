@@ -554,6 +554,18 @@
             </div>
         </div>
     </div>
+    <div id="custom-quad-chord-type-modal" class="modal-overlay hidden">
+        <div class="modal-content text-left">
+            <span class="modal-close" id="close-quad-chord-type-modal">×</span>
+            <h2 class="text-2xl font-bold text-emerald-400">Seleccionar Tipos de Acorde</h2>
+            <p class="mb-4 text-zinc-400">Elige los tipos de acordes de 4 notas que quieres practicar.</p>
+            <div id="quad-chord-type-checkboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+            <div class="flex justify-end items-center mt-6 gap-4">
+                <button id="cancel-quad-chord-type-selection" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full shadow-lg">Cancelar</button>
+                <button id="save-quad-chord-type-selection" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-full shadow-lg">Guardar</button>
+            </div>
+        </div>
+    </div>
     <div id="tutorial-highlight-overlay" class="tutorial-highlight-overlay hidden"></div>
     <script>
         // --- AUTH & DATA KEYS ---
@@ -859,6 +871,9 @@
                 customVoicingModal: get('custom-voicing-modal'), closeVoicingModalBtn: get('close-voicing-modal'),
                 voicingCheckboxes: get('voicing-checkboxes'), cancelVoicingSelectionBtn: get('cancel-voicing-selection'),
                 saveVoicingSelectionBtn: get('save-voicing-selection'),
+                customQuadChordTypeModal: get('custom-quad-chord-type-modal'), closeQuadChordTypeModalBtn: get('close-quad-chord-type-modal'),
+                quadChordTypeCheckboxes: get('quad-chord-type-checkboxes'), cancelQuadChordTypeSelectionBtn: get('cancel-quad-chord-type-selection'),
+                saveQuadChordTypeSelectionBtn: get('save-quad-chord-type-selection'),
                 showFretboardToggle: get('show-fretboard'), enableSoundToggle: get('enable-sound'),
                 fretboardContainer: get('fretboard-container'), soundControlContainer: get('sound-control-container'),
                 fretboardControlContainer: get('fretboard-control-container'),
@@ -884,6 +899,7 @@
                 selectedCustomIntervals: new Set(['2', '3', '4', '5', '6', '7']),
                 selectedCustomTriads: new Set(['triad_fundamental', 'triad_inv1', 'triad_inv2', 'shell_voicing']),
                 selectedCustomVoicings: new Set(['drop2', 'drop3']),
+                selectedCustomQuadChordTypes: new Set(['maj7', 'm7', 'dom7']),
                 lastMelodicNote: null, showFretboard: false, soundEnabled: false, metronomeEnabled: true,
                 noteVolume: 0.3, metronomeVolume: 0.2,
                 displayedMeasureContent: [], enharmonicPreference: 'auto' // auto, sharps, flats
@@ -1039,6 +1055,13 @@
                 saveCustomSelection('voicing');
                 if(state.exerciseStarted) stopExercise(false);
             });
+            ui.closeQuadChordTypeModalBtn.addEventListener('click', () => hideCustomSelectionModal('quadChordType'));
+            ui.cancelQuadChordTypeSelectionBtn.addEventListener('click', () => hideCustomSelectionModal('quadChordType'));
+            ui.saveQuadChordTypeSelectionBtn.addEventListener('click', () => {
+                saveCustomSelection('quadChordType');
+                if(state.exerciseStarted) stopExercise(false);
+            });
+
 
             let staveClickTimer = null;
             let staveClickCount = 0;
@@ -1135,7 +1158,10 @@
             
             ui.quadChordTypeSelect.addEventListener('change', (e) => { 
                 state.selectedQuadChordType = e.target.value;
-                 if(state.exerciseStarted) stopExercise(false);
+                 if (e.target.value === 'custom') {
+                    showCustomSelectionModal('quadChordType');
+                }
+                if(state.exerciseStarted) stopExercise(false);
             });
 
             ui.triadPositionSelect.addEventListener('change', e => { state.triadPosition = e.target.value; if(state.exerciseStarted) stopExercise(false); });
@@ -1279,10 +1305,13 @@
         
         // --- MODAL HANDLING ---
         function showCustomSelectionModal(type) {
-            const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+            let capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+            if (type === 'quadChordType') capitalizedType = 'QuadChordType'; // Handle special case
+            
             const modal = ui[`custom${capitalizedType}Modal`];
             const checkboxes = ui[`${type}Checkboxes`].querySelectorAll('input[type="checkbox"]');
             const selectedSet = state[`selectedCustom${capitalizedType}s`];
+            
             checkboxes.forEach(checkbox => {
                 checkbox.checked = selectedSet.has(checkbox.value);
             });
@@ -1290,25 +1319,32 @@
         }
 
         function hideCustomSelectionModal(type) {
-            const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+            let capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+            if (type === 'quadChordType') capitalizedType = 'QuadChordType'; // Handle special case
+            
             const modal = ui[`custom${capitalizedType}Modal`];
             const select = ui[`${type}Select`];
             const selectedSet = state[`selectedCustom${capitalizedType}s`];
             modal.classList.add('hidden');
-            if (selectedSet.size === 0) {
+
+            if (selectedSet.size === 0 && select) {
                 select.value = 'all'; // Revert to 'Todos' or 'all' if nothing is selected
                 state[`selected${capitalizedType}`] = 'all';
             }
         }
 
         function saveCustomSelection(type) {
-            const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+            let capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+            if (type === 'quadChordType') capitalizedType = 'QuadChordType'; // Handle special case
+
             const checkboxes = ui[`${type}Checkboxes`].querySelectorAll('input[type="checkbox"]:checked');
             const selectedSet = state[`selectedCustom${capitalizedType}s`];
             selectedSet.clear();
             checkboxes.forEach(checkbox => selectedSet.add(checkbox.value));
-            if (selectedSet.size === 0) {
-                 ui[`${type}Select`].value = 'all';
+            
+            const select = ui[`${type}Select`];
+            if (selectedSet.size === 0 && select) {
+                 select.value = 'all';
                  state[`selected${capitalizedType}`] = 'all';
             }
             hideCustomSelectionModal(type);
@@ -1349,6 +1385,12 @@
             Array.from(ui.quadVoicingSelect.options).forEach(opt => {
                 if (!['all', 'custom'].includes(opt.value)) {
                     createCheckbox(ui.voicingCheckboxes, opt.value, opt.textContent, state.selectedCustomVoicings);
+                }
+            });
+            // Quad Chord Types
+            Array.from(ui.quadChordTypeSelect.options).forEach(opt => {
+                if (!['all', 'custom'].includes(opt.value)) {
+                    createCheckbox(ui.quadChordTypeCheckboxes, opt.value, opt.textContent, state.selectedCustomQuadChordTypes);
                 }
             });
         }
@@ -1954,10 +1996,29 @@
                 
                     } else if (numNotes === 4) { 
                         const rootName = currentRoot.split('/')[0];
-                        let possibleChords = notesData.allowedFourNoteChords[rootName];
+                        let possibleChords = notesData.allowedFourNoteChords[rootName] ? [...notesData.allowedFourNoteChords[rootName]] : [];
                         
                         const selectedType = state.selectedQuadChordType;
-                        if (selectedType !== 'all') {
+
+                        if (selectedType === 'custom') {
+                            if (state.selectedCustomQuadChordTypes.size > 0) {
+                                possibleChords = possibleChords.filter(c => {
+                                    return Array.from(state.selectedCustomQuadChordTypes).some(typeKey => {
+                                        let suffix;
+                                        switch(typeKey) {
+                                            case 'maj7': suffix = 'maj7'; break;
+                                            case 'm7': suffix = 'm7'; break;
+                                            case 'dom7': suffix = '7'; break;
+                                            case 'm7b5': suffix = 'm7b5'; break;
+                                            case 'dim7': suffix = '°7'; break;
+                                        }
+                                        if (suffix === 'm7') return c.name.endsWith('m7') && !c.name.endsWith('m7b5');
+                                        if (suffix === '7') return c.name.endsWith('7') && !c.name.endsWith('maj7') && !c.name.endsWith('m7') && !c.name.endsWith('°7');
+                                        return c.name.endsWith(suffix);
+                                    });
+                                });
+                            }
+                        } else if (selectedType !== 'all') {
                             let suffix;
                             switch(selectedType) {
                                 case 'maj7': suffix = 'maj7'; break;
@@ -2652,7 +2713,8 @@
                             bottomParts.forEach((part, i) => {
                                 const textElem = document.createElementNS("http://www.w3.org/2000/svg", "text");
                                 textElem.textContent = part; textElem.setAttribute('x', itemX); textElem.setAttribute('y', 145 + i * 18);
-                                textElem.setAttribute('font-size', '18px'); textElem.setAttribute('fill', 'black'); textElem.setAttribute('text-anchor', 'middle');
+                                textElem.setAttribute('font-size', '18px'); textElem.setAttribute('fill', 'black');
+                                textElem.setAttribute('text-anchor', 'middle');
                                 group.appendChild(textElem);
                             });
                         }
@@ -2778,3 +2840,4 @@
     </script>
 </body>
 </html>
+
