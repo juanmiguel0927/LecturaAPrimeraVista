@@ -304,6 +304,17 @@
                     <!-- Options will be populated by JS -->
                 </select>
             </div>
+            <div id="quad-inversion-container" class="control-item hidden">
+                <label for="quad-inversion-select" class="text-zinc-300 whitespace-nowrap">Estado:</label>
+                <select id="quad-inversion-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="all" selected>Todas</option>
+                    <option value="0">Fundamental</option>
+                    <option value="1">1ra Inversión</option>
+                    <option value="2">2da Inversión</option>
+                    <option value="3">3ra Inversión</option>
+                    <option value="custom">Personalizado</option>
+                </select>
+            </div>
             <div id="quad-chord-type-container" class="control-item hidden">
                 <label for="quad-chord-type-select" class="text-zinc-300 whitespace-nowrap">Tipo de Acorde:</label>
                 <select id="quad-chord-type-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -564,6 +575,18 @@
             <div class="flex justify-end items-center mt-6 gap-4">
                 <button id="cancel-quad-chord-type-selection" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full shadow-lg">Cancelar</button>
                 <button id="save-quad-chord-type-selection" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-full shadow-lg">Guardar</button>
+            </div>
+        </div>
+    </div>
+    <div id="custom-quad-inversion-modal" class="modal-overlay hidden">
+        <div class="modal-content text-left">
+            <span class="modal-close" id="close-quad-inversion-modal">×</span>
+            <h2 class="text-2xl font-bold text-emerald-400">Seleccionar Estado (Inversiones)</h2>
+            <p class="mb-4 text-zinc-400">Elige las inversiones de acordes de 4 notas que quieres practicar.</p>
+            <div id="quad-inversion-checkboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+            <div class="flex justify-end items-center mt-6 gap-4">
+                <button id="cancel-quad-inversion-selection" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full shadow-lg">Cancelar</button>
+                <button id="save-quad-inversion-selection" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-full shadow-lg">Guardar</button>
             </div>
         </div>
     </div>
@@ -857,6 +880,7 @@
                 intervalSelect: get('interval-select'), triadOptionsContainer: get('triad-options-container'), triadSelect: get('triad-select'),
                 triadPositionContainer: get('triad-position-container'), triadPositionSelect: get('triad-position-select'),
                 quadOptionsContainer: get('quad-options-container'), quadVoicingSelect: get('quad-voicing-select'),
+                quadInversionContainer: get('quad-inversion-container'), quadInversionSelect: get('quad-inversion-select'),
                 quadChordTypeContainer: get('quad-chord-type-container'), quadChordTypeSelect: get('quad-chord-type-select'),
                 keySigSelect: get('key-signature-select'), cipherTypeContainer: get('cipher-type-container'), cipherTypeSelect: get('cipher-type-select'),
                 keySigContainer: get('key-signature-container'), melodyNoteNameOptionsContainer: get('melody-note-name-options-container'),
@@ -876,6 +900,9 @@
                 customQuadChordTypeModal: get('custom-quad-chord-type-modal'), closeQuadChordTypeModalBtn: get('close-quad-chord-type-modal'),
                 quadChordTypeCheckboxes: get('quad-chord-type-checkboxes'), cancelQuadChordTypeSelectionBtn: get('cancel-quad-chord-type-selection'),
                 saveQuadChordTypeSelectionBtn: get('save-quad-chord-type-selection'),
+                customQuadInversionModal: get('custom-quad-inversion-modal'), closeQuadInversionModalBtn: get('close-quad-inversion-modal'),
+                quadInversionCheckboxes: get('quad-inversion-checkboxes'), cancelQuadInversionSelectionBtn: get('cancel-quad-inversion-selection'),
+                saveQuadInversionSelectionBtn: get('save-quad-inversion-selection'),
                 showFretboardToggle: get('show-fretboard'), enableSoundToggle: get('enable-sound'),
                 fretboardContainer: get('fretboard-container'), soundControlContainer: get('sound-control-container'),
                 fretboardControlContainer: get('fretboard-control-container'),
@@ -893,7 +920,8 @@
             state = { 
                 exerciseStartTime: null,
                 exerciseType: 'melodia', notesPerChord: 3, selectedInterval: 0, selectedTriad: 'all', triadPosition: 'all',
-                selectedQuadVoicing: 'all', selectedQuadChordType: 'all', cipherType: 'todos', melodyNoteNameStyle: 'con-alteracion',
+                selectedQuadVoicing: 'all', selectedQuadChordType: 'all', selectedQuadInversion: 'all',
+                cipherType: 'todos', melodyNoteNameStyle: 'con-alteracion',
                 exerciseStarted: false, isPaused: false, metronomeTimer: null, exerciseMeasures: [], currentMeasureContent: [], 
                 currentMetronomeCount: 0, timeSignatureBeats: 4, measuresChangeBeat: 4, currentMeasureIndex: -1, 
                 measuresPerExercise: 10, isPreRoll: false, isPlaying: false, showNoteNames: false, keySignature: 'C',
@@ -902,6 +930,7 @@
                 selectedCustomTriads: new Set(['triad_fundamental', 'triad_inv1', 'triad_inv2', 'shell_voicing']),
                 selectedCustomVoicings: new Set(['drop2', 'drop3']),
                 selectedCustomQuadChordTypes: new Set(['maj7', 'm7', 'dom7']),
+                selectedCustomQuadInversions: new Set(['0', '1', '2', '3']),
                 lastMelodicNote: null, showFretboard: false, soundEnabled: false, metronomeEnabled: true,
                 noteVolume: 0.3, metronomeVolume: 0.2,
                 displayedMeasureContent: [], enharmonicPreference: 'auto' // auto, sharps, flats
@@ -1063,6 +1092,12 @@
                 saveCustomSelection('quadChordType');
                 if(state.exerciseStarted) stopExercise(false);
             });
+             ui.closeQuadInversionModalBtn.addEventListener('click', () => hideCustomSelectionModal('quadInversion'));
+            ui.cancelQuadInversionSelectionBtn.addEventListener('click', () => hideCustomSelectionModal('quadInversion'));
+            ui.saveQuadInversionSelectionBtn.addEventListener('click', () => {
+                saveCustomSelection('quadInversion');
+                if(state.exerciseStarted) stopExercise(false);
+            });
 
 
             let staveClickTimer = null;
@@ -1146,8 +1181,16 @@
 
             const setupCustomSelection = (selectElement, type) => {
                 selectElement.addEventListener('change', e => {
-                    const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
-                    state[`selected${capitalizedType}`] = e.target.value;
+                    let capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+                    if (type === 'quadInversion') capitalizedType = 'QuadInversion';
+                    
+                    let stateKey = `selected${capitalizedType}`;
+                    if (type === 'voicing') {
+                        stateKey = 'selectedQuadVoicing';
+                    }
+
+                    state[stateKey] = e.target.value;
+
                     if (e.target.value === 'custom') {
                         showCustomSelectionModal(type);
                     }
@@ -1157,6 +1200,7 @@
             setupCustomSelection(ui.intervalSelect, 'interval');
             setupCustomSelection(ui.triadSelect, 'triad');
             setupCustomSelection(ui.quadVoicingSelect, 'voicing');
+            setupCustomSelection(ui.quadInversionSelect, 'quadInversion');
             
             ui.quadChordTypeSelect.addEventListener('change', (e) => { 
                 state.selectedQuadChordType = e.target.value;
@@ -1308,6 +1352,7 @@
         // --- MODAL HANDLING ---
         function showCustomSelectionModal(type) {
             let capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+             if (type === 'quadInversion') capitalizedType = 'QuadInversion';
             if (type === 'quadChordType') capitalizedType = 'QuadChordType'; // Handle special case
             
             const modal = ui[`custom${capitalizedType}Modal`];
@@ -1322,6 +1367,7 @@
 
         function hideCustomSelectionModal(type) {
             let capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+            if (type === 'quadInversion') capitalizedType = 'QuadInversion';
             if (type === 'quadChordType') capitalizedType = 'QuadChordType'; // Handle special case
             
             const modal = ui[`custom${capitalizedType}Modal`];
@@ -1337,6 +1383,7 @@
 
         function saveCustomSelection(type) {
             let capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+            if (type === 'quadInversion') capitalizedType = 'QuadInversion';
             if (type === 'quadChordType') capitalizedType = 'QuadChordType'; // Handle special case
 
             const checkboxes = ui[`${type}Checkboxes`].querySelectorAll('input[type="checkbox"]:checked');
@@ -1395,6 +1442,12 @@
                     createCheckbox(ui.quadChordTypeCheckboxes, opt.value, opt.textContent, state.selectedCustomQuadChordTypes);
                 }
             });
+            // Quad Inversions
+            Array.from(ui.quadInversionSelect.options).forEach(opt => {
+                if (!['all', 'custom'].includes(opt.value)) {
+                    createCheckbox(ui.quadInversionCheckboxes, opt.value, opt.textContent, state.selectedCustomQuadInversions);
+                }
+            });
         }
 
 
@@ -1409,14 +1462,10 @@
         
         function updateHarmonyControlsVisibility() {
             const isHarmony = state.exerciseType === 'armonia';
-            const isMelody = state.exerciseType === 'melodia';
             const notes = parseInt(ui.notesPerChordSelect.value, 10);
             const showNames = ui.showNoteNamesToggle.checked;
             const difficulty = ui.difficultySelect.value;
             
-            // Sound control is always visible now
-            // ui.soundControlContainer.classList.toggle('hidden', !isMelody);
-
             ui.keySigContainer.classList.toggle('hidden', isHarmony);
             if (isHarmony) { state.keySignature = 'C'; ui.keySigSelect.value = 'C'; } 
             else { state.keySignature = ui.keySigSelect.value; }
@@ -1429,6 +1478,7 @@
             ui.triadPositionContainer.classList.toggle('hidden', !showTriadPosition);
 
             ui.quadOptionsContainer.classList.toggle('hidden', !isHarmony || notes !== 4);
+            ui.quadInversionContainer.classList.toggle('hidden', !isHarmony || notes !== 4);
             ui.quadChordTypeContainer.classList.toggle('hidden', !isHarmony || notes !== 4);
             
             const showMelodyNameOptions = !isHarmony && showNames;
@@ -1855,8 +1905,10 @@
             let minRange = Infinity;
             for (let i = 0; i <= potentialNotes.length - 4; i++) {
                 const currentVoicing = potentialNotes.slice(i, i + 4);
-                const uniqueNoteNames = new Set(currentVoicing.map(n => n.split('/')[0]));
-                if (uniqueNoteNames.size === 4) {
+                const uniqueNoteNamesInVoicing = new Set(currentVoicing.map(n => n.split('/')[0].replace(/[#b]/g, '')));
+                 const targetNoteNames = new Set(noteNames.map(n => n.replace(/[#b]/g, '')));
+
+                if (uniqueNoteNamesInVoicing.size === 4 && [...targetNoteNames].every(name => uniqueNoteNamesInVoicing.has(name))) {
                      const currentRange = notesData.chromaticMap[currentVoicing[3]] - notesData.chromaticMap[currentVoicing[0]];
                     if (currentRange < minRange) {
                         minRange = currentRange;
@@ -1866,6 +1918,24 @@
             }
             return bestVoicing.length === 4 ? bestVoicing : null;
         }
+        
+        function applyInversion(chord, inversionType, noteRange) {
+            const inversion = parseInt(inversionType, 10);
+            if (inversion === 0 || isNaN(inversion)) return chord;
+
+            let notesToMove = chord.slice(0, inversion);
+            let remainingNotes = chord.slice(inversion);
+            
+            let invertedNotes = [...remainingNotes];
+            for(const note of notesToMove) {
+                const newNote = alterNote(note, 12);
+                if (!newNote || !noteRange.includes(newNote)) return null; // Inversion goes out of range
+                invertedNotes.push(newNote);
+            }
+            invertedNotes.sort((a, b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
+            return invertedNotes;
+        }
+
 
         function generateHarmonicItem(noteRange) {
             let attempts = 0;
@@ -2043,27 +2113,40 @@
                         
                         const baseChordData = possibleChords[Math.floor(Math.random() * possibleChords.length)];
                         
-                        const closePositionChord = buildConcreteChord(currentRoot, baseChordData.notes);
+                        let closePositionChord = buildConcreteChord(currentRoot, baseChordData.notes);
                         if (!closePositionChord || !closePositionChord.every(n => noteRange.includes(n))) continue;
                         
-                        const currentSelection = ui.quadVoicingSelect.value;
-                        let voicingOptionsPool = [];
+                        // Apply Inversion
+                        let inversionOptionsPool = [];
+                        if(state.selectedQuadInversion === 'all') {
+                            inversionOptionsPool = ['0','1','2','3'];
+                        } else if (state.selectedQuadInversion === 'custom') {
+                            inversionOptionsPool = Array.from(state.selectedCustomQuadInversions);
+                        } else {
+                            inversionOptionsPool = [state.selectedQuadInversion];
+                        }
+                        if (inversionOptionsPool.length === 0) continue;
+                        const inversionToApply = inversionOptionsPool[Math.floor(Math.random() * inversionOptionsPool.length)];
 
-                        if (currentSelection === 'all') {
+                        const invertedChord = applyInversion(closePositionChord, inversionToApply, noteRange);
+                        if(!invertedChord) continue;
+
+
+                        // Apply Voicing
+                        let voicingOptionsPool = [];
+                        if (state.selectedQuadVoicing === 'all') {
                             voicingOptionsPool = Object.keys(notesData.voicingsByDifficulty.advanced).filter(v => v !== 'all');
-                        } else if (currentSelection === 'custom') {
+                        } else if (state.selectedQuadVoicing === 'custom') {
                             voicingOptionsPool = Array.from(state.selectedCustomVoicings);
                         } else {
-                            voicingOptionsPool = [currentSelection];
+                            voicingOptionsPool = [state.selectedQuadVoicing];
                         }
 
-                        if (voicingOptionsPool.length === 0) {
-                            voicingOptionsPool = Object.keys(notesData.voicingsByDifficulty.advanced).filter(v => v !== 'all');
-                        }
-
+                        if (voicingOptionsPool.length === 0) continue;
+                        
                         const voicingToApply = voicingOptionsPool[Math.floor(Math.random() * voicingOptionsPool.length)];
 
-                        const notesInOrder = [...closePositionChord]; 
+                        const notesInOrder = [...invertedChord]; 
                         const dropNote = (note, octaves) => {
                             const newNote = alterNote(note, -12 * octaves);
                             return (newNote && noteRange.includes(newNote)) ? newNote : null;
@@ -2843,3 +2926,4 @@
     </script>
 </body>
 </html>
+
