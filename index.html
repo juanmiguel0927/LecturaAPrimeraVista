@@ -517,6 +517,9 @@
                             <th scope="col" class="px-4 py-3">Fecha</th>
                             <th scope="col" class="px-4 py-3">Hora</th>
                             <th scope="col" class="px-4 py-3">Duración</th>
+                            <!-- ***** LÍNEA MODIFICADA ***** -->
+                            <th scope="col" class="px-4 py-3">Ejercicio</th>
+                            <!-- ***** FIN DE MODIFICACIÓN ***** -->
                             <th scope="col" class="px-4 py-3 text-center">Nivel</th>
                             <th scope="col" class="px-4 py-3 text-center">Compases</th>
                             <th scope="col" class="px-4 py-3 text-center">BPM</th>
@@ -709,6 +712,7 @@
             }
         }
         
+        // ***** FUNCIÓN MODIFICADA *****
         function showHistoryModal() {
             ui.historyTableBody.innerHTML = ''; // Clear previous entries
             
@@ -724,20 +728,24 @@
                 [...history].reverse().forEach(entry => {
                     const row = document.createElement('tr');
                     row.className = 'bg-zinc-800 border-b border-zinc-700 hover:bg-zinc-600';
+                    // --- INICIO DE LA MODIFICACIÓN ---
                     row.innerHTML = `
                         <td class="px-4 py-4">${entry.date}</td>
                         <td class="px-4 py-4">${entry.time}</td>
                         <td class="px-4 py-4">${entry.duration}</td>
+                        <td class="px-4 py-4">${entry.exercise || '-'}</td>
                         <td class="px-4 py-4 text-center">${entry.level || '-'}</td>
                         <td class="px-4 py-4 text-center">${entry.measures || '-'}</td>
                         <td class="px-4 py-4 text-center">${entry.bpm || '-'}</td>
                     `;
+                    // --- FIN DE LA MODIFICACIÓN ---
                     ui.historyTableBody.appendChild(row);
                 });
             }
             
             ui.historyModal.classList.remove('hidden');
         }
+        // ***** FIN DE MODIFICACIÓN *****
 
         function initializeLogin() {
             // Referencias a elementos del DOM
@@ -1639,6 +1647,7 @@
             } catch (e) { console.error("Error starting exercise:", e); stopExercise(false); }
         }
 
+        // ***** FUNCIÓN MODIFICADA *****
         function stopExercise(completedSuccessfully) {
              if (completedSuccessfully && userData) {
                 userData.stats.totalExercises++;
@@ -1650,14 +1659,27 @@
                     const durationMinutes = Math.floor(durationMs / 60000);
                     const durationString = durationMinutes < 1 ? "< 1 minuto" : `${durationMinutes} minuto(s)`;
 
+                    // --- INICIO DE LA MODIFICACIÓN ---
+                    let exerciseInfo = '';
+                    if (state.exerciseType === 'melodia') {
+                        const keyOption = ui.keySigSelect.querySelector(`option[value="${state.keySignature}"]`);
+                        // Extrae solo el nombre de la tonalidad, ej: "Do M / La m"
+                        const keyText = keyOption ? keyOption.textContent.split(' (')[0] : state.keySignature; 
+                        exerciseInfo = `Melodía (${keyText})`;
+                    } else { // 'armonia'
+                        exerciseInfo = `Armonía (${state.notesPerChord} voces)`;
+                    }
+
                     const historyEntry = {
                         date: endTime.toLocaleDateString('es-ES'),
                         time: endTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
                         duration: durationString,
+                        exercise: exerciseInfo, // Se añade la nueva información
                         level: ui.difficultySelect.options[ui.difficultySelect.selectedIndex].text,
                         measures: state.measuresPerExercise,
                         bpm: ui.tempoInput.value
                     };
+                    // --- FIN DE LA MODIFICACIÓN ---
                     
                     if (!userData.practiceHistory) userData.practiceHistory = [];
                     userData.practiceHistory.push(historyEntry);
@@ -1686,6 +1708,7 @@
             if(state.showFretboard) drawFretboardWithCurrentSettings();
             updateFretboard([]);
         }
+        // ***** FIN DE MODIFICACIÓN *****
 
         function togglePause() {
             if (!state.exerciseStarted) return;
@@ -2943,4 +2966,3 @@
     </script>
 </body>
 </html>
-
