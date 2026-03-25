@@ -689,6 +689,13 @@
             localStorage.removeItem(`${USER_DATA_PREFIX}${username}`);
         }
         
+        function getLocalISODate(date = new Date()) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         function checkStreak() {
             if (!userData || !userData.stats) return;
 
@@ -696,10 +703,11 @@
             const yesterday = new Date(today);
             yesterday.setDate(yesterday.getDate() - 1);
 
-            const toISODate = (date) => date.toISOString().split('T')[0];
+            const todayStr = getLocalISODate(today);
+            const yesterdayStr = getLocalISODate(yesterday);
 
             const lastPractice = userData.stats.lastPracticeDate;
-            if (lastPractice && lastPractice !== toISODate(today) && lastPractice !== toISODate(yesterday)) {
+            if (lastPractice && lastPractice !== todayStr && lastPractice !== yesterdayStr) {
                 userData.stats.currentStreak = 0;
             }
             updateStreakDisplay();
@@ -1685,7 +1693,7 @@
                     userData.practiceHistory.push(historyEntry);
                 }
 
-                const todayStr = new Date().toISOString().split('T')[0];
+                const todayStr = getLocalISODate();
                 if (userData.stats.lastPracticeDate !== todayStr) {
                     userData.stats.lastPracticeDate = todayStr;
                     userData.stats.currentStreak++;
@@ -1945,40 +1953,48 @@
 
             const bassNoteName = noteNames[inversion];
             
-            let bassNote = null;
-            for(let octave = 2; octave <= 5; octave++) {
+            let validBassNotes = [];
+            for(let octave = 2; octave <= 6; octave++) {
                 const candidate = `${bassNoteName}/${octave}`;
                 if (noteRange.includes(candidate)) {
-                    bassNote = candidate;
-                    break;
+                    validBassNotes.push(candidate);
                 }
             }
-            if (!bassNote) return null;
+            if (validBassNotes.length === 0) return null;
 
-            const chord = [bassNote];
-            let lastNoteValue = notesData.chromaticMap[bassNote];
+            validBassNotes = validBassNotes.sort(() => Math.random() - 0.5);
 
-            for (let i = 1; i < noteNames.length; i++) {
-                const targetName = noteNames[(inversion + i) % noteNames.length];
-                let nextNote = null;
-                const lastOctave = parseInt(chord[i-1].split('/')[1]);
+            for (let bassNote of validBassNotes) {
+                const chord = [bassNote];
+                let lastNoteValue = notesData.chromaticMap[bassNote];
+                let success = true;
 
-                 for (let oct_offset = 0; oct_offset <= 2; oct_offset++) {
-                    const currentOctave = lastOctave + oct_offset;
-                    const candidateNote = `${targetName}/${currentOctave}`;
-                    if (notesData.all.includes(candidateNote) && notesData.chromaticMap[candidateNote] > lastNoteValue) {
-                         nextNote = candidateNote;
-                         break;
+                for (let i = 1; i < noteNames.length; i++) {
+                    const targetName = noteNames[(inversion + i) % noteNames.length];
+                    let nextNote = null;
+                    const lastOctave = parseInt(chord[i-1].split('/')[1]);
+
+                     for (let oct_offset = 0; oct_offset <= 2; oct_offset++) {
+                        const currentOctave = lastOctave + oct_offset;
+                        const candidateNote = `${targetName}/${currentOctave}`;
+                        if (notesData.all.includes(candidateNote) && notesData.chromaticMap[candidateNote] > lastNoteValue) {
+                             nextNote = candidateNote;
+                             break;
+                        }
+                    }
+                     if (nextNote) {
+                        chord.push(nextNote);
+                        lastNoteValue = notesData.chromaticMap[nextNote];
+                    } else {
+                        success = false;
+                        break;
                     }
                 }
-                 if (nextNote) {
-                    chord.push(nextNote);
-                    lastNoteValue = notesData.chromaticMap[nextNote];
-                } else {
-                    return null;
+                if (success && chord.every(n => n && noteRange.includes(n))) {
+                    return chord;
                 }
             }
-            return chord.every(n => n && noteRange.includes(n)) ? chord : null;
+            return null;
         }
 
         function applyVoicing(closePositionChord, voicingType, noteRange) {
@@ -2135,10 +2151,15 @@
                             if (!newRoot || !noteRange.includes(newRoot)) continue;
                             chordInProgress = [chordInProgress[1], chordInProgress[2], newRoot];
                         } else if (chosenChordType === 'triad_inv2') {
-                            const newRoot = alterNote(chordInProgress[0], 12);
-                            const newThird = alterNote(chordInProgress[1], 12);
-                            if (!newRoot || !newThird || !noteRange.includes(newRoot) || !noteRange.includes(newThird)) continue;
-                            chordInProgress = [chordInProgress[2], newRoot, newThird];
+                            const newFifth = alterNote(chordInProgress[2], -12);
+                            if (newFifth && noteRange.includes(newFifth)) {
+                                chordInProgress = [newFifth, chordInProgress[0], chordInProgress[1]];
+                            } else {
+                                const newRoot = alterNote(chordInProgress[0], 12);
+                                const newThird = alterNote(chordInProgress[1], 12);
+                                if (!newRoot || !newThird || !noteRange.includes(newRoot) || !noteRange.includes(newThird)) continue;
+                                chordInProgress = [chordInProgress[2], newRoot, newThird];
+                            }
                         }
 
                         finalNotes = chordInProgress;
