@@ -908,7 +908,7 @@
                 selectedQuadVoicing: 'all', selectedQuadChordType: 'all', selectedQuadInversion: 'all', cipherType: 'todos', melodyNoteNameStyle: 'con-alteracion',
                 exerciseStarted: false, isPlaying: false, isPaused: false, metronomeTimer: null, exerciseMeasures: [], 
                 timeSignatureBeats: 4, measuresChangeBeat: 4, measuresPerExercise: 10, showNoteNames: false, keySignature: 'C',
-                showGuide: false, notePositionsX: [], spacebarPressCount: 0, spacebarTimeout: null,
+                showGuide: false, notePositionsX: [], lastScale: 1, spacebarPressCount: 0, spacebarTimeout: null,
                 selectedCustomIntervals: new Set(['2', '3', '4', '5', '6', '7']), selectedCustomTriads: new Set(['triad_fundamental', 'triad_inv1', 'triad_inv2', 'shell_voicing']), selectedCustomVoicings: new Set(['drop2', 'drop3']), selectedCustomQuadChordTypes: new Set(['maj7', 'm7', 'dom7']), selectedCustomQuadInversions: new Set(['0', '1', '2', '3']),
                 lastMelodicNote: null, showFretboard: false, soundEnabled: false, metronomeEnabled: true, noteVolume: 0.3, metronomeVolume: 0.2, displayedMeasureContent: [], enharmonicPreference: 'auto',
                 
@@ -923,7 +923,9 @@
                 visualQueue: [],
                 currentDisplayedContent: null,
                 drawFrameId: null,
-                currentVisualBeat: 1
+                currentVisualBeat: 1,
+                totalPausedTime: 0,
+                pauseStartTimeReal: null
             };
             audio = { context: null, noteGain: null, metronomeGain: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0 };
             notesData = {
@@ -1356,7 +1358,15 @@
                     userData.stats.totalCorrect++; 
                 }
                 const endTime = new Date(); 
-                const durationMs = endTime - state.exerciseStartTime;
+                let durationMs = endTime - state.exerciseStartTime;
+                
+                // Compensar el tiempo que el usuario mantuvo la app en pausa
+                if (state.pauseStartTimeReal) {
+                    durationMs -= (endTime - state.pauseStartTimeReal);
+                }
+                durationMs -= (state.totalPausedTime || 0);
+                durationMs = Math.max(0, durationMs); // Evitar tiempos negativos
+                
                 const durationMinutes = Math.floor(durationMs / 60000); 
                 const durationSeconds = Math.floor((durationMs % 60000) / 1000);
                 const durationString = durationMinutes < 1 ? `${durationSeconds} seg` : `${durationMinutes} min ${durationSeconds} seg`;
@@ -1390,6 +1400,11 @@
                     updateStreakDisplay(); 
                 }
                 saveUserData();
+                
+                // Feedback visual explícito para evitar suposiciones de que no se guardó
+                if (currentUser && currentUser !== 'Invitado') {
+                    showTemporaryMessage('Historial de sesión guardado exitosamente.', false);
+                }
             }
             if (state.drawFrameId) {
                 cancelAnimationFrame(state.drawFrameId);
@@ -1402,7 +1417,7 @@
                 logicalMeasureIndex: -1, logicalMetronomeCount: 0,
                 currentMeasureIndex: -1, currentMetronomeCount: 0,
                 lastMelodicNote: null, currentDisplayedContent: null, exerciseStartTime: null,
-                manualNotesToDisplay: null 
+                manualNotesToDisplay: null, totalPausedTime: 0, pauseStartTimeReal: null 
             });
             ui.startStopButton.textContent = 'Comenzar'; ui.pauseResumeButton.classList.add('hidden'); ui.displayArea.classList.add('hidden');
             if (state.metronomeTimer) { clearTimeout(state.metronomeTimer); state.metronomeTimer = null; }
@@ -1418,11 +1433,16 @@
                 clearTimeout(state.metronomeTimer); 
                 cancelAnimationFrame(state.drawFrameId);
                 audio.pauseStartTime = audio.context.currentTime; 
+                state.pauseStartTimeReal = new Date();
                 ui.pauseResumeButton.textContent = 'Reanudar';
             } else {
                 const elapsedPauseTime = audio.context.currentTime - audio.pauseStartTime;
                 audio.nextNoteTime += elapsedPauseTime; 
                 state.visualQueue.forEach(ev => ev.time += elapsedPauseTime);
+                if (state.pauseStartTimeReal) {
+                    state.totalPausedTime += (new Date() - state.pauseStartTimeReal);
+                    state.pauseStartTimeReal = null;
+                }
                 ui.pauseResumeButton.textContent = 'Pausar'; 
                 scheduler();
                 state.drawFrameId = requestAnimationFrame(drawLoop);
