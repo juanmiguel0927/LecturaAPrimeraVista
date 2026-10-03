@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lectura a Primera Vista</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- VexFlow CDN -->
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css?family=Inter:wght@400;600;700;900&display=swap');
-        
         body { font-family: 'Inter', sans-serif; background-color: #111827; }
         
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1000; background-color: #1f2937; color: white; padding: 2rem; border-radius: 0.75rem; font-size: 1.5rem; font-weight: bold; }
@@ -23,15 +20,7 @@
         .modal-close { position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem; cursor: pointer; }
         .stave-container { position: relative; overflow: hidden; width: 100%; }
         
-        .stave-svg-responsive {
-            width: 100%;
-            height: auto;
-            max-height: 45vh; 
-            max-width: 1000px; 
-            display: block;
-            margin: 0 auto;
-        }
-
+        .stave-svg-responsive { width: 100%; height: auto; max-height: 45vh; max-width: 1000px; display: block; margin: 0 auto; }
         .tutorial-highlight-overlay { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 99; transition: all 0.5s ease-in-out; box-shadow: 0 0 0 0 transparent; border-radius: 1rem; }
         .pre-roll-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #34d399; font-size: 3rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .pre-roll-message-count { font-size: 5rem; }
@@ -39,87 +28,39 @@
         .radio-label { display: inline-block; background-color: #4b5563; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s ease-in-out; border: 2px solid transparent; }
         input[type="radio"]:checked + .radio-label { background-color: #374151; color: #34d399; border-color: #34d399; }
         .control-item { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-        @media (min-width: 640px) {
-            .control-item { flex-direction: row; align-items: center; justify-content: space-between; width: 100%;}
-        }
+        @media (min-width: 640px) { .control-item { flex-direction: row; align-items: center; justify-content: space-between; width: 100%;} }
         
-        #main-display-area:fullscreen {
-            display: flex;
-            background-color: #111827;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            gap: 0;
-            flex-direction: column;
-        }
-        #main-display-area:fullscreen #fretboard-container.hidden {
-            display: none;
-        }
-        #main-display-area:fullscreen #stave-viewer {
-            flex: 1 1 40%;
-            height: 0;
-            background-color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            border-radius: 0;
-            margin-bottom: 0;
-            padding: 0;
-        }
-        #main-display-area:fullscreen #stave-container {
-             flex-grow: 1;
-             height: 100%;
-             width: 100%;
-             display: flex;
-             align-items: center;
-             justify-content: center;
-        }
+        #main-display-area:-webkit-full-screen { display: flex; background-color: #111827; padding: 0; width: 100%; height: 100%; gap: 0; flex-direction: column; }
+        #main-display-area:fullscreen { display: flex; background-color: #111827; padding: 0; width: 100%; height: 100%; gap: 0; flex-direction: column; }
+        #main-display-area:-webkit-full-screen #fretboard-container.hidden { display: none; }
+        #main-display-area:fullscreen #fretboard-container.hidden { display: none; }
         
-        #main-display-area:fullscreen .stave-svg-responsive {
-            max-width: 100%;
-            max-height: 85vh; 
-            width: 100%;
-            height: 100%;
-        }
+        #main-display-area:-webkit-full-screen #stave-viewer { flex: 1 1 40%; height: 0; background-color: #ffffff; display: flex; flex-direction: column; justify-content: center; border-radius: 0; margin-bottom: 0; padding: 0; }
+        #main-display-area:fullscreen #stave-viewer { flex: 1 1 40%; height: 0; background-color: #ffffff; display: flex; flex-direction: column; justify-content: center; border-radius: 0; margin-bottom: 0; padding: 0; }
         
-        #main-display-area:fullscreen #fretboard-container {
-            flex: 1 1 60%;
-            height: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.5rem;
-            box-sizing: border-box;
-            margin-top: 0;
-        }
-        #main-display-area:fullscreen:has(#fretboard-container.hidden) #stave-viewer {
-            flex-basis: 100%;
-        }
+        #main-display-area:-webkit-full-screen #stave-container { flex-grow: 1; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; }
+        #main-display-area:fullscreen #stave-container { flex-grow: 1; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; }
+        
+        #main-display-area:-webkit-full-screen .stave-svg-responsive { max-width: 100%; max-height: 85vh; width: 100%; height: 100%; }
+        #main-display-area:fullscreen .stave-svg-responsive { max-width: 100%; max-height: 85vh; width: 100%; height: 100%; }
+        
+        #main-display-area:-webkit-full-screen #fretboard-container { flex: 1 1 60%; height: 0; display: flex; align-items: center; justify-content: center; padding: 0.5rem; box-sizing: border-box; margin-top: 0; }
+        #main-display-area:fullscreen #fretboard-container { flex: 1 1 60%; height: 0; display: flex; align-items: center; justify-content: center; padding: 0.5rem; box-sizing: border-box; margin-top: 0; }
+        
+        #main-display-area:-webkit-full-screen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; }
+        #main-display-area:fullscreen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; }
 
         @media (orientation: landscape) {
-             #main-display-area:fullscreen {
-                flex-direction: row;
-                align-items: stretch;
-             }
-             #main-display-area:fullscreen #stave-viewer {
-                flex: 1 1 50%;
-                width: 0;
-                height: 100%;
-             }
-             #main-display-area:fullscreen #fretboard-container {
-                 flex: 1 1 50%;
-                 width: 0;
-                 height: 100%;
-                 padding: 1rem;
-             }
-             #main-display-area:fullscreen #fretboard-container #fretboard-svg {
-                height: 100%;
-                width: auto;
-             }
-             #main-display-area:fullscreen:has(#fretboard-container.hidden) #stave-viewer {
-                flex-basis: 100%;
-                width: 100%;
-             }
+             #main-display-area:-webkit-full-screen { flex-direction: row; align-items: stretch; }
+             #main-display-area:fullscreen { flex-direction: row; align-items: stretch; }
+             #main-display-area:-webkit-full-screen #stave-viewer { flex: 1 1 50%; width: 0; height: 100%; }
+             #main-display-area:fullscreen #stave-viewer { flex: 1 1 50%; width: 0; height: 100%; }
+             #main-display-area:-webkit-full-screen #fretboard-container { flex: 1 1 50%; width: 0; height: 100%; padding: 1rem; }
+             #main-display-area:fullscreen #fretboard-container { flex: 1 1 50%; width: 0; height: 100%; padding: 1rem; }
+             #main-display-area:-webkit-full-screen #fretboard-container #fretboard-svg { height: 100%; width: auto; }
+             #main-display-area:fullscreen #fretboard-container #fretboard-svg { height: 100%; width: auto; }
+             #main-display-area:-webkit-full-screen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; width: 100%; }
+             #main-display-area:fullscreen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; width: 100%; }
         }
 
         #fretboard-svg { width: 100%; height: auto; font-family: monospace; }
@@ -405,7 +346,7 @@
                     <div class="flex items-center gap-2 tooltip" id="mic-control-container">
                         <label for="enable-mic" class="text-zinc-300 whitespace-nowrap font-bold text-emerald-400">Micrófono:</label>
                         <input type="checkbox" id="enable-mic" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
-                        <span id="mic-detected-note" class="ml-2 text-xs font-bold text-sky-400 w-6"></span>
+                        <span id="mic-detected-note" class="ml-2 text-xs font-bold text-sky-400 w-12 truncate text-center"></span>
                         <span class="tooltiptext">Evalúa precisión (Atajo: R)</span>
                     </div>
                 </div>
@@ -463,6 +404,21 @@
         
         <div id="main-display-area" class="relative w-full">
             
+            <div id="displayArea" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-zinc-800/90 backdrop-blur px-6 py-2 rounded-full shadow-lg z-20 border border-zinc-600 transition-all duration-300 hidden opacity-100">
+                <div class="flex justify-center items-center space-x-6">
+                    <span class="text-zinc-300 font-mono text-sm sm:text-base">Tiempo: <span id="metronomeCount" class="text-xl sm:text-2xl font-bold ml-2 text-zinc-100">0</span></span>
+                    <span class="text-zinc-300 font-mono text-sm sm:text-base">Compases: <span id="measuresCount" class="text-lg sm:text-xl font-bold text-sky-400">0 / 10</span></span>
+                </div>
+            </div>
+
+            <div class="tooltip absolute z-10 bottom-4 left-4">
+                <button id="toggle-info-btn" class="p-3 rounded-full bg-gray-800 text-white shadow-lg hover:bg-gray-700 transition-all duration-300 hidden">
+                    <svg id="info-visible-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg id="info-hidden-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+                </button>
+                <span class="tooltiptext">Mostrar/Ocultar Muestra (Atajo: V)</span>
+            </div>
+
             <div id="stave-viewer" class="relative bg-zinc-700 p-2 md:p-4 rounded-lg shadow-inner mb-4 w-full flex flex-col items-center h-64 sm:h-80 md:h-96">
                 
                 <div id="stave-container" class="w-full h-full bg-white rounded-lg shadow-md border border-zinc-600 overflow-hidden"></div>
@@ -548,13 +504,6 @@
                 </div>
             </div>
             
-        </div>
-        
-        <div id="displayArea" class="hidden bg-zinc-700 p-6 rounded-lg shadow-inner">
-            <div class="flex justify-center items-center space-x-4">
-                <span class="text-zinc-300 font-mono">Tiempo: <span id="metronomeCount" class="text-2xl font-bold ml-2 text-zinc-400">0</span></span>
-                <span class="text-zinc-300 font-mono">Compases: <span id="measuresCount" class="text-xl font-bold text-sky-400">0 / 10</span></span>
-            </div>
         </div>
     </div>
 
@@ -1063,6 +1012,7 @@
                 melodyNoteNameStyleSelect: get('melody-note-name-style-select'), showGuideToggle: get('show-guide'),
                 timeSigContainer: get('time-signature-container'), mainDisplayArea: get('main-display-area'), 
                 staveViewer: get('stave-viewer'), fullscreenToggle: get('fullscreen-toggle'), enterFullscreenIcon: get('enter-fullscreen-icon'), exitFullscreenIcon: get('exit-fullscreen-icon'),
+                toggleInfoBtn: get('toggle-info-btn'), infoVisibleIcon: get('info-visible-icon'), infoHiddenIcon: get('info-hidden-icon'),
                 customIntervalModal: get('custom-interval-modal'), closeIntervalModalBtn: get('close-interval-modal'), intervalCheckboxes: get('interval-checkboxes'), cancelIntervalSelectionBtn: get('cancel-interval-selection'), saveIntervalSelectionBtn: get('save-interval-selection'),
                 customTriadModal: get('custom-triad-modal'), closeTriadModalBtn: get('close-triad-modal'), triadCheckboxes: get('triad-checkboxes'), cancelTriadSelectionBtn: get('cancel-triad-selection'), saveTriadSelectionBtn: get('save-triad-selection'),
                 customVoicingModal: get('custom-voicing-modal'), closeVoicingModalBtn: get('close-voicing-modal'), voicingCheckboxes: get('voicing-checkboxes'), cancelVoicingSelectionBtn: get('cancel-voicing-selection'), saveVoicingSelectionBtn: get('save-voicing-selection'),
@@ -1100,6 +1050,7 @@
                 currentVisualBeat: 1,
                 totalPausedTime: 0,
                 pauseStartTimeReal: null,
+                showDisplayInfo: true,
                 
                 micEnabled: false,
                 scheduledSynthNotes: [], 
@@ -1111,7 +1062,7 @@
                 tunerSmoothedHz: 0,
                 score: { total: 0, hits: new Set(), status: {}, expectedNotes: {}, wrongFrames: 0, currentHitKey: null }
             };
-            audio = { context: null, noteGain: null, metronomeGain: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0, micStream: null, micAnalyser: null, micDataArray: null, micSource: null };
+            audio = { context: null, noteGain: null, metronomeGain: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0, micStream: null, micAnalyser: null, micDataArray: null, micFreqArray: null, micSource: null };
             notesData = {
                 all: [], natural: [], noteToLatin: {'C':'Do','D':'Re','E':'Mi','F':'Fa','G':'Sol','A':'La','B':'Si'}, letterToDiatonic: {'C':0,'D':1,'E':2,'F':3,'G':4,'A':5,'B':6},
                 diatonicTriads: { 'C': ['C', 'E', 'G'], 'D': ['D', 'F', 'A'], 'E': ['E', 'G', 'B'], 'F': ['F', 'A', 'C'], 'G': ['G', 'B', 'D'], 'A': ['A', 'C', 'E'], 'B': ['B', 'D', 'F'] },
@@ -1211,8 +1162,10 @@
                 });
                 audio.micStream = stream;
                 audio.micAnalyser = audio.context.createAnalyser();
-                audio.micAnalyser.fftSize = 4096; 
+                // Aumentado a 8192 para mejor resolución espectral en los graves (Acordes)
+                audio.micAnalyser.fftSize = 8192; 
                 audio.micDataArray = new Float32Array(audio.micAnalyser.fftSize);
+                audio.micFreqArray = new Float32Array(audio.micAnalyser.frequencyBinCount);
                 audio.micSource = audio.context.createMediaStreamSource(stream);
                 audio.micSource.connect(audio.micAnalyser);
             }
@@ -1378,6 +1331,55 @@
             tunerRafId = requestAnimationFrame(tunerLoop);
         }
 
+        // VERIFICACIÓN ESPECTRAL PARA ACORDES (FFT)
+        function verifyChord(expectedMidis) {
+            if (!audio.micAnalyser || !audio.context || !audio.micFreqArray) return false;
+
+            audio.micAnalyser.getFloatFrequencyData(audio.micFreqArray);
+            const sampleRate = audio.context.sampleRate;
+            const binCount = audio.micAnalyser.frequencyBinCount; // Mitad del fftSize
+            const nyquist = sampleRate / 2;
+
+            let maxDb = -Infinity;
+            for (let i = 0; i < binCount; i++) {
+                if (audio.micFreqArray[i] > maxDb) maxDb = audio.micFreqArray[i];
+            }
+
+            // Umbral absoluto de ruido ambiente
+            if (maxDb < -60) return false; 
+
+            // Umbral relativo ajustado para mayor precisión y rechazo de armónicos falsos.
+            const threshold = maxDb - 24; 
+
+            let foundCount = 0;
+            for (let midi of expectedMidis) {
+                const freq = 440 * Math.pow(2, (midi - 69) / 12);
+                const bin = Math.round((freq / nyquist) * binCount);
+
+                // Ventana de búsqueda más ajustada (1.5% de tolerancia a la desafinación)
+                let localMax = -Infinity;
+                const windowSize = Math.max(1, Math.round(bin * 0.015)); 
+                
+                for(let i = Math.max(0, bin - windowSize); i <= Math.min(binCount - 1, bin + windowSize); i++) {
+                    if (audio.micFreqArray[i] > localMax) localMax = audio.micFreqArray[i];
+                }
+
+                // Las guitarras a veces tienen frecuencias fundamentales débiles en los bajos.
+                // Damos un poco más de tolerancia (-6dB extra) a las notas graves para no fallar injustamente.
+                let currentThreshold = threshold;
+                if (midi < 50) currentThreshold -= 6;
+
+                if (localMax >= currentThreshold) {
+                    foundCount++;
+                }
+            }
+            
+            // ELIMINADA LA FLEXIBILIDAD. 
+            // Para evitar que acordes similares den falsos positivos (Ej. C Mayor pasando por Am7),
+            // ahora se exige de manera estricta que TODAS las notas solicitadas estén vibrando.
+            return foundCount === expectedMidis.length;
+        }
+
         function detectPitch() {
             if (!audio.micAnalyser || !audio.micDataArray || !audio.context || !audio.context.sampleRate) return -1;
             audio.micAnalyser.getFloatTimeDomainData(audio.micDataArray);
@@ -1464,6 +1466,20 @@
             ui.saveQuadInversionSelectionBtn.addEventListener('click', () => { saveCustomSelection('quadInversion'); if(state.exerciseStarted) stopExercise(false); });
 
             ui.closeResultsBtn.addEventListener('click', () => { ui.resultsModal.classList.add('hidden'); });
+
+            function toggleDisplayInfo() {
+                state.showDisplayInfo = !state.showDisplayInfo;
+                if (state.showDisplayInfo) {
+                    ui.displayArea.classList.remove('opacity-0', 'pointer-events-none');
+                    ui.infoVisibleIcon.classList.remove('hidden');
+                    ui.infoHiddenIcon.classList.add('hidden');
+                } else {
+                    ui.displayArea.classList.add('opacity-0', 'pointer-events-none');
+                    ui.infoVisibleIcon.classList.add('hidden');
+                    ui.infoHiddenIcon.classList.remove('hidden');
+                }
+            }
+            ui.toggleInfoBtn.addEventListener('click', toggleDisplayInfo);
 
             let staveClickTimer = null; let staveClickCount = 0;
             ui.staveContainer.addEventListener('click', (e) => {
@@ -1559,13 +1575,14 @@
             ui.fullscreenToggle.addEventListener('click', toggleFullscreen);
 
             function updateFullscreenIcons() {
-                const isFullscreen = !!(document.fullscreenElement);
+                const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
                 ui.enterFullscreenIcon.classList.toggle('hidden', isFullscreen);
                 ui.exitFullscreenIcon.classList.toggle('hidden', !isFullscreen);
                 ui.fretboardContainer.classList.toggle('hidden', !state.showFretboard);
                 setTimeout(() => renderStave(state.exerciseStarted ? state.currentDisplayedContent : state.manualNotesToDisplay), 50);
             }
             document.addEventListener('fullscreenchange', updateFullscreenIcons);
+            document.addEventListener('webkitfullscreenchange', updateFullscreenIcons);
             window.addEventListener('resize', () => { 
                 clearTimeout(window.resizeTimeout); 
                 window.resizeTimeout = setTimeout(() => {
@@ -1607,6 +1624,7 @@
                 else if (key === 'r') { e.preventDefault(); ui.enableMicToggle.checked = !ui.enableMicToggle.checked; ui.enableMicToggle.dispatchEvent(new Event('change')); }
                 else if (key === 'x') { e.preventDefault(); ui.exportBtn.click(); }
                 else if (key === 'i') { e.preventDefault(); ui.importBtn.click(); }
+                else if (key === 'v') { e.preventDefault(); toggleDisplayInfo(); }
                 else if (key === '?') { e.preventDefault(); if(ui.tutorialModal.classList.contains('hidden')) showTutorial(); else hideTutorial(); }
             });
         }
@@ -1666,8 +1684,13 @@
 
         function toggleFullscreen() {
             const el = ui.mainDisplayArea;
-            if (!document.fullscreenElement) { if (el.requestFullscreen) el.requestFullscreen().catch(err => console.warn(`Fullscreen error: ${err.message}`)); }
-            else { if (document.exitFullscreen) document.exitFullscreen().catch(err => console.warn(`Exit fullscreen error: ${err.message}`)); }
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) { 
+                if (el.requestFullscreen) el.requestFullscreen().catch(err => console.warn(`Fullscreen error: ${err.message}`));
+                else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+            } else { 
+                if (document.exitFullscreen) document.exitFullscreen().catch(err => console.warn(`Exit fullscreen error: ${err.message}`)); 
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
         }
         
         function updateHarmonyControlsVisibility() {
@@ -1676,7 +1699,10 @@
             ui.keySigContainer.classList.toggle('hidden', isHarmony);
             
             ui.micControlContainer.classList.toggle('hidden', isHarmony);
-            if (isHarmony && state.micEnabled) { ui.enableMicToggle.checked = false; toggleMicrophone(false); }
+            if (isHarmony && state.micEnabled) {
+                ui.enableMicToggle.checked = false;
+                ui.enableMicToggle.dispatchEvent(new Event('change'));
+            }
 
             if (isHarmony) { state.keySignature = 'C'; ui.keySigSelect.value = 'C'; } else { state.keySignature = ui.keySigSelect.value; }
             ui.harmonyOptionsContainer.classList.toggle('hidden', !isHarmony);
@@ -1780,6 +1806,7 @@
 
                 ui.preRollMessage.classList.remove('hidden'); 
                 ui.displayArea.classList.add('hidden');
+                ui.toggleInfoBtn.classList.add('hidden');
                 ui.startStopButton.textContent = 'Detener'; 
                 ui.pauseResumeButton.textContent = 'Pausar'; 
                 ui.pauseResumeButton.classList.remove('hidden');
@@ -1822,7 +1849,7 @@
                 } else { exerciseInfo = `Armonía (${state.notesPerChord} voces)`; }
                 
                 let scoreStr = '-';
-                if (completedSuccessfully && state.micEnabled && state.exerciseType === 'melodia') {
+                if (completedSuccessfully && state.micEnabled) {
                     const correct = state.score?.hits?.size || 0;
                     const total = state.score?.total || 0;
                     const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
@@ -1847,11 +1874,9 @@
                                 if (!userData.stats.missedNotesByExercise[exerciseInfo]) userData.stats.missedNotesByExercise[exerciseInfo] = {};
 
                                 if (!isHit) {
-                                    // Aumentar contador de fallos
                                     userData.stats.missedNotes[latinName] = (userData.stats.missedNotes[latinName] || 0) + 1;
                                     userData.stats.missedNotesByExercise[exerciseInfo][latinName] = (userData.stats.missedNotesByExercise[exerciseInfo][latinName] || 0) + 1;
                                 } else {
-                                    // Reducir contador si se acierta (mínimo 0 y limpieza de propiedad vacía)
                                     if (userData.stats.missedNotes[latinName] > 0) {
                                         userData.stats.missedNotes[latinName]--;
                                         if (userData.stats.missedNotes[latinName] === 0) delete userData.stats.missedNotes[latinName];
@@ -1891,7 +1916,7 @@
                 saveUserData();
             }
 
-            if (completedSuccessfully && state.micEnabled && state.exerciseType === 'melodia') {
+            if (completedSuccessfully && state.micEnabled) {
                 const correct = state.score?.hits?.size || 0;
                 const total = state.score?.total || 0;
                 const missed = total - correct;
@@ -1920,10 +1945,10 @@
                 logicalMeasureIndex: -1, logicalMetronomeCount: 0,
                 currentMeasureIndex: -1, currentMetronomeCount: 0,
                 lastMelodicNote: null, currentDisplayedContent: null, exerciseStartTime: null,
-                manualNotesToDisplay: null, totalPausedTime: 0, pauseStartTimeReal: null,
+                pauseStartTimeReal: null,
                 activeVisualEvent: null
             });
-            ui.startStopButton.textContent = 'Comenzar'; ui.pauseResumeButton.classList.add('hidden'); ui.displayArea.classList.add('hidden');
+            ui.startStopButton.textContent = 'Comenzar'; ui.pauseResumeButton.classList.add('hidden'); ui.displayArea.classList.add('hidden'); ui.toggleInfoBtn.classList.add('hidden');
             if (state.metronomeTimer) { clearTimeout(state.metronomeTimer); state.metronomeTimer = null; }
             handleMeasuresChange(); ui.metronomeCount.textContent = "0"; ui.preRollMessage.classList.add('hidden');
             if(ui.guideLine) ui.guideLine.style.display = 'none';
@@ -1984,6 +2009,7 @@
                 if (currentEvent.isPreRoll) {
                     ui.preRollMessage.classList.remove('hidden');
                     ui.displayArea.classList.add('hidden');
+                    ui.toggleInfoBtn.classList.add('hidden');
                     ui.preRollCount.textContent = currentEvent.metronomeCount;
                     
                     if (state.currentDisplayedContent !== currentEvent.displayedContent) {
@@ -1993,6 +2019,7 @@
                 } else {
                     ui.preRollMessage.classList.add('hidden'); 
                     ui.displayArea.classList.remove('hidden');
+                    ui.toggleInfoBtn.classList.remove('hidden');
                     
                     ui.metronomeCount.textContent = currentEvent.metronomeCount;
                     ui.measuresCount.textContent = `${currentEvent.measureIndex + 1} / ${state.measuresPerExercise}`;
@@ -2010,59 +2037,68 @@
                 const currentEvent = state.activeVisualEvent;
                 const hitKey = `${currentEvent.measureIndex}-${currentEvent.metronomeCount}`;
 
-                if (state.micEnabled && state.exerciseType === 'melodia' && !state.visualIsPreRoll && currentEvent.playingNotes && currentEvent.playingNotes.length > 0) {
+                if (state.micEnabled && !state.visualIsPreRoll && currentEvent.playingNotes && currentEvent.playingNotes.length > 0) {
                     
                     if (state.score.currentHitKey !== hitKey) {
                         state.score.currentHitKey = hitKey;
                         state.score.wrongFrames = 0;
                     }
-
-                    const pitch = detectPitch();
                     
                     if (state.score && state.score.status) {
                         if (!state.score.status[hitKey]) {
                             state.score.status[hitKey] = 'waiting';
                         }
 
-                        if (pitch > 0) {
-                            const detectedMidi = noteFromPitch(pitch);
-                            const expectedMidis = currentEvent.playingNotes.map(n => notesData.chromaticMap[n]);
-                            
-                            const noteName = getEnharmonicName(detectedMidi);
-                            if(ui.micDetectedNote) ui.micDetectedNote.textContent = noteName;
-                            
-                            const isMetronomeBleed = (detectedMidi === 69 || detectedMidi === 81) && !expectedMidis.some(m => m % 12 === 9);
-                            
-                            let isSynthBleed = false;
-                            if (state.soundEnabled && state.scheduledSynthNotes) {
-                                const now = audio.context.currentTime;
-                                state.scheduledSynthNotes = state.scheduledSynthNotes.filter(n => n.end > now);
-                                if (state.scheduledSynthNotes.some(n => now >= n.start && now <= n.end)) {
-                                    isSynthBleed = true;
-                                }
+                        const expectedMidis = currentEvent.playingNotes.map(n => notesData.chromaticMap[n]);
+                        
+                        let isSynthBleed = false;
+                        if (state.soundEnabled && state.scheduledSynthNotes) {
+                            const now = audio.context.currentTime;
+                            state.scheduledSynthNotes = state.scheduledSynthNotes.filter(n => n.end > now);
+                            if (state.scheduledSynthNotes.some(n => now >= n.start && now <= n.end)) {
+                                isSynthBleed = true;
                             }
+                        }
 
-                            if (!isMetronomeBleed && !isSynthBleed) {
-                                const isHit = expectedMidis.some(expectedMidi =>
-                                    detectedMidi === expectedMidi ||
-                                    detectedMidi === expectedMidi - 12 ||
-                                    detectedMidi === expectedMidi + 12 ||
-                                    detectedMidi === expectedMidi - 24 || 
-                                    detectedMidi === expectedMidi + 24
-                                );
+                        if (!isSynthBleed) {
+                            let isHit = false;
 
-                                if (isHit) {
-                                    state.score.hits.add(hitKey);
-                                    state.score.status[hitKey] = 'hit'; 
-                                    state.score.wrongFrames = 0; 
-                                } else if (state.score.status[hitKey] !== 'hit') {
-                                    state.score.wrongFrames++;
-                                    if (state.score.wrongFrames >= 10) {
-                                        state.score.status[hitKey] = 'miss'; 
+                            if (state.exerciseType === 'melodia') {
+                                const pitch = detectPitch();
+                                if (pitch > 0) {
+                                    const detectedMidi = noteFromPitch(pitch);
+                                    const noteName = getEnharmonicName(detectedMidi);
+                                    if(ui.micDetectedNote) ui.micDetectedNote.textContent = noteName;
+                                    
+                                    const isMetronomeBleed = (detectedMidi === 69 || detectedMidi === 81) && !expectedMidis.some(m => m % 12 === 9);
+                                    
+                                    if (!isMetronomeBleed) {
+                                        isHit = expectedMidis.some(expectedMidi =>
+                                            detectedMidi === expectedMidi ||
+                                            detectedMidi === expectedMidi - 12 ||
+                                            detectedMidi === expectedMidi + 12 ||
+                                            detectedMidi === expectedMidi - 24 || 
+                                            detectedMidi === expectedMidi + 24
+                                        );
                                     }
+                                } else {
+                                    if(ui.micDetectedNote) ui.micDetectedNote.textContent = '';
                                 }
                             } else {
-                                if(ui.micDetectedNote) ui.micDetectedNote.textContent = '';
+                                // MODO ARMONÍA: Llamada al Verificador Espectral
+                                if(ui.micDetectedNote) ui.micDetectedNote.textContent = '...';
+                                isHit = verifyChord(expectedMidis);
+                            }
+
+                            if (isHit) {
+                                state.score.hits.add(hitKey);
+                                state.score.status[hitKey] = 'hit'; 
+                                state.score.wrongFrames = 0; 
+                            } else if (state.score.status[hitKey] !== 'hit') {
+                                state.score.wrongFrames++;
+                                if (state.score.wrongFrames >= 5) {
+                                    state.score.status[hitKey] = 'miss'; 
+                                }
                             }
                         } else {
                             if(ui.micDetectedNote) ui.micDetectedNote.textContent = '';
@@ -2941,7 +2977,7 @@
              { id: 'info-aids-container', text: '<h3><strong>9. Ayudas de Lectura</strong></h3><p>Activa estas opciones para facilitar el aprendizaje:</p><ul><li class="mt-2"><strong>Nombres (Atajo: N):</strong> Muestra el nombre de las notas o el cifrado de los acordes.</li><li class="mt-2"><strong>Guía (Atajo: G):</strong> Muestra una línea vertical que se mueve pulso a pulso.</li></ul>' },
              { id: 'visual-aids-container', text: '<h3><strong>10. Ayudas Interactivas</strong></h3><p>Usa estas herramientas para una práctica más completa:</p><ul><li class="mt-2"><strong>Mástil (Atajo: M):</strong> Visualiza las notas en un diapasón de guitarra.</li><li class="mt-2"><strong>Sonido (Atajo: S):</strong> Reproduce cada nota o acorde.</li><li class="mt-2"><strong>Enarmónicos (Atajo: A):</strong> Elige si prefieres ver ♯ o ♭ en el mástil.</li><li class="mt-2 text-emerald-400"><strong>Micrófono (Atajo: R):</strong> Actívalo para que la app evalúe si tocas la nota correcta. ¡La guía te dirá si aciertas!</li></ul>' },
              { id: 'audio-controls-container', text: '<h3><strong>11. Controles de Audio</strong></h3><p>Personaliza el sonido a tu gusto:</p><ul><li class="mt-2"><strong>Metrónomo (Atajo: K):</strong> Activa o desactiva el clic.</li><li class="mt-2"><strong>Volúmenes:</strong> Ajusta el volumen del sonido y del metrónomo.</li></ul>' },
-             { id: 'startStopButton', text: '<h3><strong>12. Resumen de Atajos</strong></h3><p>Usa los botones o los atajos del teclado para manejar el ejercicio de forma más fluida.</p><p class="mt-2"><strong>Controles (Barra Espaciadora o Clic en Pentagrama):</strong></p><ul><li class="mt-1">Un toque para Iniciar/Pausar, doble toque para Detener.</li></ul><p class="mt-2"><strong>Teclas Rápidas:</strong></p><ul class="grid grid-cols-2 sm:grid-cols-3 gap-x-2 text-sm mt-2"><li><strong>U:</strong> Usuario</li><li><strong>H:</strong> Historial</li><li><strong>X/I:</strong> Export / Import</li><li><strong>E:</strong> Tipo de Ejercicio</li><li><strong>C:</strong> Cambiar Clave</li><li><strong>N:</strong> Ver Nombres</li><li><strong>G:</strong> Guía Visual</li><li><strong>M:</strong> Ver Mástil</li><li><strong>S:</strong> Activar Sonido</li><li><strong>K:</strong> Metrónomo</li><li><strong>A:</strong> ♯ / ♭</li><li><strong>R:</strong> Micrófono</li><li><strong>T:</strong> Afinador</li><li><strong>F:</strong> Pantalla Comp.</li><li><strong>?:</strong> Tutorial</li></ul>' }
+             { id: 'startStopButton', text: '<h3><strong>12. Resumen de Atajos</strong></h3><p>Usa los botones o los atajos del teclado para manejar el ejercicio de forma más fluida.</p><p class="mt-2"><strong>Controles (Barra Espaciadora o Clic en Pentagrama):</strong></p><ul><li class="mt-1">Un toque para Iniciar/Pausar, doble toque para Detener.</li></ul><p class="mt-2"><strong>Teclas Rápidas:</strong></p><ul class="grid grid-cols-2 sm:grid-cols-3 gap-x-2 text-sm mt-2"><li><strong>U:</strong> Usuario</li><li><strong>H:</strong> Historial</li><li><strong>X/I:</strong> Export / Import</li><li><strong>E:</strong> Tipo de Ejercicio</li><li><strong>C:</strong> Cambiar Clave</li><li><strong>N:</strong> Ver Nombres</li><li><strong>G:</strong> Guía Visual</li><li><strong>M:</strong> Ver Mástil</li><li><strong>S:</strong> Activar Sonido</li><li><strong>K:</strong> Metrónomo</li><li><strong>A:</strong> ♯ / ♭</li><li><strong>R:</strong> Micrófono</li><li><strong>T:</strong> Afinador</li><li><strong>F:</strong> Pantalla Comp.</li><li><strong>V:</strong> Ocultar/Ver Info</li><li><strong>?:</strong> Tutorial</li></ul>' }
         ];
         let currentTutorialStep = 0;
         function showTutorial() { currentTutorialStep = 0; ui.tutorialModal.classList.remove('hidden'); updateTutorialStep(); }
