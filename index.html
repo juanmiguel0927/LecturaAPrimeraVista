@@ -2,51 +2,50 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lectura a Primera Vista</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- VexFlow CDN -->
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css?family=Inter:wght@400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #111827; }
+        
+        body { font-family: 'Inter', sans-serif; background-color: #111827; transition: background-color 0.3s, color 0.3s; overscroll-behavior: none; }
         
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1000; background-color: #1f2937; color: white; padding: 2rem; border-radius: 0.75rem; font-size: 1.5rem; font-weight: bold; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.3s ease-in-out; }
-        .modal-content { background-color: #374151; color: #d1d5db; padding: 2rem; border-radius: 1rem; max-width: 90%; width: 500px; max-height: 90%; overflow-y: auto; position: relative; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.3s ease-in-out; }
+        .modal-content { background-color: #374151; color: #d1d5db; padding: 2rem; border-radius: 1rem; max-width: 90%; width: 500px; max-height: 90%; overflow-y: auto; position: relative; transition: background-color 0.3s; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
         .modal-content h2, .modal-content h3 { margin-bottom: 1.5rem; }
         .modal-content p, .modal-content ul { line-height: 1.6; }
         .modal-content strong { color: #34d399; }
         .modal-content ul { list-style-position: inside; padding-left: 1rem; }
-        .modal-close { position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem; cursor: pointer; }
+        .modal-close { position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem; cursor: pointer; transition: color 0.2s; }
+        .modal-close:hover { color: #fff; }
         .stave-container { position: relative; overflow: hidden; width: 100%; }
         
-        .stave-svg-responsive { width: 100%; height: auto; max-height: 45vh; max-width: 1000px; display: block; margin: 0 auto; }
         .tutorial-highlight-overlay { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 99; transition: all 0.5s ease-in-out; box-shadow: 0 0 0 0 transparent; border-radius: 1rem; }
-        .pre-roll-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #34d399; font-size: 3rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .pre-roll-message-count { font-size: 5rem; }
+        
+        .pre-roll-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #34d399; font-size: 3rem; font-weight: 800; text-shadow: 0 4px 8px rgba(0,0,0,0.4); }
+        .pre-roll-message-count { font-size: 6rem; line-height: 1; }
         .tutorial-step.active { color: #d1d5db; }
+        
         .radio-label { display: inline-block; background-color: #4b5563; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s ease-in-out; border: 2px solid transparent; }
         input[type="radio"]:checked + .radio-label { background-color: #374151; color: #34d399; border-color: #34d399; }
         .control-item { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
         @media (min-width: 640px) { .control-item { flex-direction: row; align-items: center; justify-content: space-between; width: 100%;} }
         
+        /* Fullscreen Layout Handling */
         #main-display-area:-webkit-full-screen { display: flex; background-color: #111827; padding: 0; width: 100%; height: 100%; gap: 0; flex-direction: column; }
         #main-display-area:fullscreen { display: flex; background-color: #111827; padding: 0; width: 100%; height: 100%; gap: 0; flex-direction: column; }
         #main-display-area:-webkit-full-screen #fretboard-container.hidden { display: none; }
         #main-display-area:fullscreen #fretboard-container.hidden { display: none; }
-        
         #main-display-area:-webkit-full-screen #stave-viewer { flex: 1 1 40%; height: 0; background-color: #ffffff; display: flex; flex-direction: column; justify-content: center; border-radius: 0; margin-bottom: 0; padding: 0; }
         #main-display-area:fullscreen #stave-viewer { flex: 1 1 40%; height: 0; background-color: #ffffff; display: flex; flex-direction: column; justify-content: center; border-radius: 0; margin-bottom: 0; padding: 0; }
-        
         #main-display-area:-webkit-full-screen #stave-container { flex-grow: 1; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; }
         #main-display-area:fullscreen #stave-container { flex-grow: 1; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; }
-        
-        #main-display-area:-webkit-full-screen .stave-svg-responsive { max-width: 100%; max-height: 85vh; width: 100%; height: 100%; }
-        #main-display-area:fullscreen .stave-svg-responsive { max-width: 100%; max-height: 85vh; width: 100%; height: 100%; }
-        
         #main-display-area:-webkit-full-screen #fretboard-container { flex: 1 1 60%; height: 0; display: flex; align-items: center; justify-content: center; padding: 0.5rem; box-sizing: border-box; margin-top: 0; }
         #main-display-area:fullscreen #fretboard-container { flex: 1 1 60%; height: 0; display: flex; align-items: center; justify-content: center; padding: 0.5rem; box-sizing: border-box; margin-top: 0; }
-        
         #main-display-area:-webkit-full-screen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; }
         #main-display-area:fullscreen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; }
 
@@ -57,8 +56,6 @@
              #main-display-area:fullscreen #stave-viewer { flex: 1 1 50%; width: 0; height: 100%; }
              #main-display-area:-webkit-full-screen #fretboard-container { flex: 1 1 50%; width: 0; height: 100%; padding: 1rem; }
              #main-display-area:fullscreen #fretboard-container { flex: 1 1 50%; width: 0; height: 100%; padding: 1rem; }
-             #main-display-area:-webkit-full-screen #fretboard-container #fretboard-svg { height: 100%; width: auto; }
-             #main-display-area:fullscreen #fretboard-container #fretboard-svg { height: 100%; width: auto; }
              #main-display-area:-webkit-full-screen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; width: 100%; }
              #main-display-area:fullscreen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; width: 100%; }
         }
@@ -69,14 +66,45 @@
         .static-note-text { font-size: 10px; font-weight: bold; fill: white; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
         
         .tooltip { position: relative; display: inline-block; }
-        .tooltip .tooltiptext { visibility: hidden; width: max-content; max-width: 200px; background-color: #27272a; color: #fff; text-align: center; border-radius: 6px; padding: 5px 10px; position: absolute; z-index: 100; bottom: 125%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.1s; font-size: 0.75rem; }
+        .tooltip .tooltiptext { visibility: hidden; width: max-content; max-width: 200px; background-color: #27272a; color: #fff; text-align: center; border-radius: 6px; padding: 5px 10px; position: absolute; z-index: 100; bottom: 125%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.15s; font-size: 0.75rem; pointer-events: none; }
         .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
-        .tooltip:has(input:focus, select:focus, button:focus):not(:hover) .tooltiptext { visibility: hidden; opacity: 0; }
-        .clickable-note { cursor: pointer; }
+
+        @keyframes arcadePop {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.4); filter: brightness(1.3) drop-shadow(0 0 6px currentColor); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+        .note-hit-anim path, .note-hit-anim rect { 
+            animation: arcadePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
+            transform-origin: center; 
+            transform-box: fill-box; 
+        }
+
+        .stave-scroll-wrapper { 
+            overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; 
+            width: 100%; height: 100%; scrollbar-width: thin; scrollbar-color: #10b981 transparent;
+        }
+        .stave-scroll-wrapper::-webkit-scrollbar { height: 8px; }
+        .stave-scroll-wrapper::-webkit-scrollbar-thumb { background-color: #10b981; border-radius: 10px; }
+
+        /* Light Mode Styles */
+        body.light-mode { background-color: #f3f4f6; color: #1f2937; }
+        body.light-mode .bg-zinc-800, body.light-mode .bg-zinc-900 { background-color: #ffffff; border-color: #d1d5db; }
+        body.light-mode .bg-zinc-700 { background-color: #e5e7eb; color: #1f2937; border-color: #d1d5db; }
+        body.light-mode .text-zinc-300, body.light-mode .text-zinc-400, body.light-mode .text-zinc-500 { color: #4b5563; }
+        body.light-mode .text-white { color: #111827; }
+        body.light-mode .border-zinc-600 { border-color: #d1d5db; }
+        body.light-mode #fretboard-container { background-color: #e5e7eb; }
+        body.light-mode input[type="radio"]:not(:checked) + .radio-label { background-color: #d1d5db; color: #4b5563; }
+
+        .achievement-card { transition: all 0.3s ease; }
+        .achievement-card.locked { opacity: 0.4; filter: grayscale(100%); }
+        .achievement-card.unlocked { filter: drop-shadow(0 4px 6px rgba(16, 185, 129, 0.2)); border-color: #10b981; }
     </style>
 </head>
+
 <body class="bg-zinc-900 text-white flex flex-col items-center p-4 min-h-screen">
-    
+    <!-- Welcome Modal -->
     <div id="welcome-modal" class="modal-overlay">
         <div class="modal-content text-center bg-zinc-800 border-2 border-emerald-500 shadow-2xl">
             <h2 class="text-3xl font-extrabold text-emerald-400 mb-4">Bienvenido a Lectura a Primera Vista</h2>
@@ -119,6 +147,7 @@
         </div>
     </div>
 
+    <!-- Confirm Delete Modal -->
     <div id="delete-confirm-modal" class="modal-overlay hidden">
         <div class="modal-content text-center bg-zinc-800 border-2 border-red-500">
             <h2 class="text-2xl font-bold text-red-400">Confirmar Eliminación</h2>
@@ -131,57 +160,69 @@
     </div>
 
     <div id="loading-message" class="hidden">Cargando...</div>
-    <div id="main-content" class="hidden bg-zinc-800 rounded-2xl text-center border-2 shadow-2xl p-6 md:p-10 w-full max-w-5xl border-emerald-500">
-        <div class="relative flex flex-col items-center mb-8 sm:mb-2">
-            <div class="w-full text-center mb-4 sm:mb-0">
+    
+    <div id="main-content" class="hidden bg-zinc-800 rounded-2xl text-center border-2 shadow-2xl p-6 md:p-10 w-full max-w-5xl border-emerald-500 relative">
+        
+        <!-- CABECERA PERFECTAMENTE CENTRADA -->
+        <div class="flex flex-col items-center w-full gap-4 mb-8">
+            <div class="text-center w-full">
                 <h1 class="text-4xl md:text-5xl font-extrabold text-emerald-400 drop-shadow-md">Lectura a Primera Vista</h1>
-                <p class="text-zinc-500 text-sm">Aplicación realizada por Juan Miguel Rios Redondo</p>
+                <p class="text-zinc-500 text-sm mt-2">Aplicación realizada por Juan Miguel Rios Redondo</p>
             </div>
-            <div class="w-full sm:w-auto flex-shrink-0 sm:absolute sm:top-0 sm:right-0">
-                <div id="user-info-panel" class="bg-zinc-700 p-3 rounded-lg flex flex-col items-center sm:items-end">
-                    <div id="user-display" class="text-emerald-400 font-semibold text-lg"></div>
-                    <div id="streak-display" class="text-amber-400 text-sm"></div>
-                    <div class="flex gap-2 mt-2">
-                        <div class="tooltip">
-                            <button id="history-button" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-1 px-3 rounded-full shadow-lg text-xs">Historial</button>
-                            <span class="tooltiptext">Historial (Atajo: H)</span>
-                        </div>
-                        <div class="tooltip">
-                             <button id="change-user-button" class="bg-zinc-600 hover:bg-zinc-500 text-white font-bold py-1 px-3 rounded-full shadow-lg text-xs">Usuario</button>
-                             <span class="tooltiptext">Atajo: U</span>
-                        </div>
+            
+            <div id="user-info-panel" class="bg-zinc-700 p-4 rounded-xl flex flex-col items-center shadow-lg w-full max-w-md border border-zinc-600">
+                <div id="user-display" class="text-emerald-400 font-semibold text-lg"></div>
+                <div id="streak-display" class="text-amber-400 text-sm mb-3 font-medium tracking-wide"></div>
+                
+                <div class="flex flex-wrap justify-center gap-2 w-full">
+                    <div class="tooltip">
+                         <button id="achievements-button" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs transition-colors">🏆 Logros</button>
+                         <span class="tooltiptext">Tus Medallas</span>
                     </div>
-                    <div class="flex gap-2 mt-2">
-                        <div class="tooltip">
-                            <button id="export-button" class="bg-green-600 hover:bg-green-500 text-white font-bold py-1 px-3 rounded-full shadow-lg text-xs">Exportar</button>
-                            <span class="tooltiptext">Atajo: X</span>
-                        </div>
-                        <div class="tooltip">
-                            <button id="import-button" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-1 px-3 rounded-full shadow-lg text-xs">Importar</button>
-                            <span class="tooltiptext">Atajo: I</span>
-                        </div>
-                        <input type="file" id="import-file" accept=".json" class="hidden">
+                    <div class="tooltip">
+                         <button id="theme-toggle-btn" class="bg-amber-500 hover:bg-amber-400 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs transition-colors">☀️ Tema</button>
+                         <span class="tooltiptext">Alternar Claro/Oscuro</span>
                     </div>
-                    <p id="export-import-msg" class="text-xs mt-1 hidden"></p>
+                    <div class="tooltip">
+                        <button id="history-button" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs">Historial</button>
+                        <span class="tooltiptext">Historial (Atajo: H)</span>
+                    </div>
                 </div>
+                
+                <div class="flex flex-wrap justify-center gap-2 mt-2 w-full">
+                    <div class="tooltip">
+                         <button id="change-user-button" class="bg-zinc-600 hover:bg-zinc-500 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs">Usuario</button>
+                         <span class="tooltiptext">Atajo: U</span>
+                    </div>
+                    <div class="tooltip">
+                        <button id="export-button" class="bg-green-600 hover:bg-green-500 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs">Exportar</button>
+                        <span class="tooltiptext">Atajo: X</span>
+                    </div>
+                    <div class="tooltip">
+                        <button id="import-button" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs">Importar</button>
+                        <span class="tooltiptext">Atajo: I</span>
+                    </div>
+                    <input type="file" id="import-file" accept=".json" class="hidden">
+                </div>
+                <p id="export-import-msg" class="text-xs mt-2 hidden text-center w-full font-semibold"></p>
             </div>
         </div>
         
-        <p class="text-zinc-400 text-lg md:text-xl my-6">Ejercicios para guitarra</p>
-        <div id="exercise-type-control" class="flex items-center justify-center space-x-2 mb-6">
-            <span class="text-zinc-300 font-bold mr-2">Tipo de Ejercicio:</span>
+        <div id="exercise-type-control" class="flex flex-wrap items-center justify-center gap-4 mb-8 bg-zinc-700/50 p-4 rounded-xl border border-zinc-600/50">
+            <span class="text-zinc-300 font-bold">Tipo de Ejercicio:</span>
             <div class="tooltip">
                 <input type="radio" name="exerciseType" id="type-melodia" value="melodia" class="hidden" checked>
-                <label for="type-melodia" class="radio-label">Melodía</label>
+                <label for="type-melodia" class="radio-label shadow">Melodía</label>
                 <span class="tooltiptext">Atajo: E</span>
             </div>
             <div class="tooltip">
                 <input type="radio" name="exerciseType" id="type-armonia" value="armonia" class="hidden">
-                <label for="type-armonia" class="radio-label">Armonía</label>
+                <label for="type-armonia" class="radio-label shadow">Armonía</label>
                 <span class="tooltiptext">Atajo: E</span>
             </div>
         </div>
-        <div id="controls-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 mb-8">
+
+        <div id="controls-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 text-left">
             <div id="harmony-options-container" class="control-item hidden">
                 <label for="notes-per-chord" class="text-zinc-300 whitespace-nowrap">Notas:</label>
                 <select id="notes-per-chord" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -198,7 +239,7 @@
                 </select>
             </div>
             <div id="triad-options-container" class="control-item hidden">
-                <label for="triad-select" class="text-zinc-300 whitespace-nowrap">Tipo de Acorde:</label>
+                <label for="triad-select" class="text-zinc-300 whitespace-nowrap">Tipo Acorde:</label>
                 <select id="triad-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="all" selected>Todos</option>
                     <option value="triad_fundamental">Tríada Fundamental</option>
@@ -219,7 +260,7 @@
                 </select>
             </div>
              <div id="quad-options-container" class="control-item hidden">
-                <label for="quad-voicing-select" class="text-zinc-300 whitespace-nowrap">Tipo de Voicing:</label>
+                <label for="quad-voicing-select" class="text-zinc-300 whitespace-nowrap">Voicing:</label>
                 <select id="quad-voicing-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </select>
             </div>
@@ -235,7 +276,7 @@
                 </select>
             </div>
             <div id="quad-chord-type-container" class="control-item hidden">
-                <label for="quad-chord-type-select" class="text-zinc-300 whitespace-nowrap">Tipo de Acorde:</label>
+                <label for="quad-chord-type-select" class="text-zinc-300 whitespace-nowrap">Tipo Acorde:</label>
                 <select id="quad-chord-type-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="all" selected>Todos</option>
                     <option value="maj7">Xmaj7</option>
@@ -246,10 +287,12 @@
                     <option value="custom">Personalizado</option>
                 </select>
             </div>
+            
             <div class="control-item">
                 <label for="tempo" class="text-zinc-300 whitespace-nowrap">Tempo (BPM):</label>
                 <input type="number" id="tempo" value="60" min="1" class="w-full p-2 text-center rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"/>
             </div>
+            
             <div class="control-item tooltip">
                 <label for="clef-select" class="text-zinc-300 whitespace-nowrap">Clave:</label>
                 <select id="clef-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -257,6 +300,7 @@
                 </select>
                  <span class="tooltiptext">Atajo: C</span>
             </div>
+            
              <div id="key-signature-container" class="control-item">
                 <label for="key-signature-select" class="text-zinc-300 whitespace-nowrap">Armadura:</label>
                 <select id="key-signature-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -303,15 +347,16 @@
                 <label for="custom-measures-input" class="text-zinc-300 whitespace-nowrap">Nº:</label>
                 <input type="number" id="custom-measures-input" value="10" placeholder="Nº" min="1" class="w-full p-2 text-center rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"/>
             </div>
-            <div id="info-aids-container" class="control-item flex-row sm:justify-start gap-4">
+
+            <div id="info-aids-container" class="control-item flex-row justify-start gap-6">
                 <div class="flex items-center gap-2 tooltip">
-                    <label for="show-note-names" class="text-zinc-300 whitespace-nowrap">Nombres:</label>
-                    <input type="checkbox" id="show-note-names" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                    <label for="show-note-names" class="text-zinc-300 whitespace-nowrap font-medium">Nombres:</label>
+                    <input type="checkbox" id="show-note-names" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2 cursor-pointer"/>
                     <span class="tooltiptext">Atajo: N</span>
                 </div>
                 <div class="flex items-center gap-2 tooltip">
-                    <label for="show-guide" class="text-zinc-300 whitespace-nowrap">Guía:</label>
-                    <input type="checkbox" id="show-guide" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                    <label for="show-guide" class="text-zinc-300 whitespace-nowrap font-medium">Guía:</label>
+                    <input type="checkbox" id="show-guide" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2 cursor-pointer"/>
                     <span class="tooltiptext">Atajo: G</span>
                 </div>
             </div>
@@ -330,27 +375,27 @@
                     <option value="drops">Drops</option>
                 </select>
             </div>
-             <div id="visual-aids-container" class="control-item flex-col items-start gap-2">
-                <div class="flex flex-row items-center gap-4">
+            
+             <div id="visual-aids-container" class="control-item flex-col items-start gap-4">
+                <div class="flex flex-row items-center flex-wrap gap-4 w-full">
                     <div id="fretboard-control-container" class="flex items-center gap-2 tooltip">
-                        <label for="show-fretboard" class="text-zinc-300 whitespace-nowrap">Mástil:</label>
-                        <input type="checkbox" id="show-fretboard" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                        <label for="show-fretboard" class="text-zinc-300 whitespace-nowrap font-medium">Mástil:</label>
+                        <input type="checkbox" id="show-fretboard" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2 cursor-pointer"/>
                         <span class="tooltiptext">Atajo: M</span>
                     </div>
                     <div class="flex items-center gap-2 tooltip" id="sound-control-container">
-                        <label for="enable-sound" class="text-zinc-300 whitespace-nowrap">Sonido:</label>
-                        <input type="checkbox" id="enable-sound" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                        <label for="enable-sound" class="text-zinc-300 whitespace-nowrap font-medium">Sonido:</label>
+                        <input type="checkbox" id="enable-sound" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2 cursor-pointer"/>
                         <span class="tooltiptext">Atajo: S</span>
                     </div>
-                    <!-- MICRÓFONO CON VISUALIZADOR DE NOTA -->
                     <div class="flex items-center gap-2 tooltip" id="mic-control-container">
                         <label for="enable-mic" class="text-zinc-300 whitespace-nowrap font-bold text-emerald-400">Micrófono:</label>
-                        <input type="checkbox" id="enable-mic" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2"/>
+                        <input type="checkbox" id="enable-mic" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2 cursor-pointer"/>
                         <span id="mic-detected-note" class="ml-2 text-xs font-bold text-sky-400 w-12 truncate text-center"></span>
                         <span class="tooltiptext">Evalúa precisión (Atajo: R)</span>
                     </div>
                 </div>
-                 <div id="enharmonic-control-container" class="w-full flex items-center justify-between tooltip hidden">
+                 <div id="enharmonic-control-container" class="w-full flex items-center justify-between tooltip hidden mt-2">
                     <label for="enharmonic-select" class="text-zinc-300 whitespace-nowrap">Enarmónicos (♯/♭):</label>
                     <select id="enharmonic-select" class="p-1 w-24 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                         <option value="auto" selected>Auto</option>
@@ -360,36 +405,50 @@
                     <span class="tooltiptext">Atajo: A</span>
                 </div>
             </div>
-             <div id="audio-controls-container" class="control-item flex-col items-start gap-2 pt-2 mt-2 border-t border-zinc-700">
+            
+             <div id="audio-controls-container" class="control-item flex-col items-start gap-4 p-4 rounded-xl bg-zinc-700/30 border border-zinc-600/50">
                 <div class="flex flex-row items-center justify-between w-full">
                     <div class="flex items-center gap-2 tooltip">
-                        <label for="enable-metronome" class="text-zinc-300 whitespace-nowrap">Metrónomo:</label>
-                        <input type="checkbox" id="enable-metronome" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2" checked/>
+                        <label for="enable-metronome" class="text-zinc-300 whitespace-nowrap font-bold">Metrónomo:</label>
+                        <input type="checkbox" id="enable-metronome" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2 cursor-pointer" checked/>
                         <span class="tooltiptext">Atajo: K</span>
                     </div>
+                    <!-- VOZ DEL METRÓNOMO -->
+                    <select id="metronome-sound-select" class="p-1 text-sm w-28 rounded bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                        <option value="classic" selected>Clásico</option>
+                        <option value="voice-es">Voz (ES)</option>
+                        <option value="voice-en">Voz (EN)</option>
+                    </select>
                 </div>
-                <div class="flex flex-row items-center justify-between w-full gap-2">
-                     <label for="note-volume" class="text-zinc-300 whitespace-nowrap text-sm">Vol. Sonido:</label>
+                <div class="flex flex-row items-center justify-between w-full gap-4">
+                     <label for="note-volume" class="text-zinc-400 whitespace-nowrap text-sm">Vol. Sonido:</label>
                      <input type="range" id="note-volume" min="0" max="1" step="0.01" value="0.3" class="w-full h-2 bg-zinc-600 rounded-lg appearance-none cursor-pointer">
                 </div>
-                <div class="flex flex-row items-center justify-between w-full gap-2">
-                     <label for="metronome-volume" class="text-zinc-300 whitespace-nowrap text-sm">Vol. Metrónomo:</label>
-                     <input type="range" id="metronome-volume" min="0" max="1" step="0.01" value="0.2" class="w-full h-2 bg-zinc-600 rounded-lg appearance-none cursor-pointer">
+                <div class="flex flex-row items-center justify-between w-full gap-4">
+                     <label for="metronome-volume" class="text-zinc-400 whitespace-nowrap text-sm">Vol. Metrónomo:</label>
+                     <!-- Metrónomo en 60% por defecto -->
+                     <input type="range" id="metronome-volume" min="0" max="1" step="0.01" value="0.6" class="w-full h-2 bg-zinc-600 rounded-lg appearance-none cursor-pointer">
                 </div>
             </div>
         </div>
+        
         <div id="change-beat-control" class="flex items-center justify-center space-x-2 mb-8">
-            <label for="change-beat-select" class="text-zinc-300">Adelantar Compás (Pulso):</label>
-            <select id="change-beat-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <label for="change-beat-select" class="text-zinc-300 font-medium">Adelantar Compás (Pulso):</label>
+            <select id="change-beat-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner">
             </select>
         </div>
-        <div class="flex justify-center items-center space-x-4 mb-8">
+        
+        <div class="flex flex-wrap justify-center items-center gap-4 mb-8">
              <div class="tooltip">
-                <button id="startStopButton" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Comenzar</button>
+                <button id="startStopButton" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Comenzar</button>
                  <span class="tooltiptext">Atajo: Espacio</span>
              </div>
              <div class="tooltip">
-                <button id="pauseResumeButton" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Pausar</button>
+                <button id="daily-challenge-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">⭐ Reto Diario</button>
+                <span class="tooltiptext">Misma semilla global</span>
+             </div>
+             <div class="tooltip">
+                <button id="pauseResumeButton" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Pausar</button>
                  <span class="tooltiptext">Atajo: Espacio</span>
              </div>
             <div class="tooltip">
@@ -416,12 +475,13 @@
                     <svg id="info-visible-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                     <svg id="info-hidden-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
                 </button>
-                <span class="tooltiptext">Mostrar/Ocultar Muestra (Atajo: V)</span>
+                <span class="tooltiptext">Mostrar/Ocultar Info (Atajo: V)</span>
             </div>
 
-            <div id="stave-viewer" class="relative bg-zinc-700 p-2 md:p-4 rounded-lg shadow-inner mb-4 w-full flex flex-col items-center h-64 sm:h-80 md:h-96">
-                
-                <div id="stave-container" class="w-full h-full bg-white rounded-lg shadow-md border border-zinc-600 overflow-hidden"></div>
+            <div id="stave-viewer" class="relative bg-zinc-700 p-2 md:p-4 rounded-xl shadow-inner mb-4 w-full flex flex-col items-center h-64 sm:h-80 md:h-96">
+                <div class="stave-scroll-wrapper">
+                    <div id="stave-container" class="w-full h-full bg-white rounded-lg shadow-md border border-zinc-600 overflow-hidden min-w-[600px] flex items-center justify-center"></div>
+                </div>
                 
                 <div class="tooltip">
                     <button id="fullscreen-toggle" class="absolute z-10 bottom-4 right-4 p-3 rounded-full bg-gray-800 text-white shadow-lg hover:bg-gray-700 transition-all duration-300">
@@ -431,6 +491,7 @@
                     <span class="tooltiptext">Atajo: F</span>
                 </div>
             </div>
+            
              <div id="fretboard-container" class="hidden w-full max-w-5xl mx-auto mt-4 p-2 sm:p-4 bg-zinc-900 rounded-lg shadow-inner">
             </div>
             
@@ -443,23 +504,31 @@
                     <h2 class="text-3xl font-extrabold text-emerald-400 mb-4">¡Ejercicio Completado!</h2>
                     <p class="text-zinc-400 mb-4">Precisión con tu instrumento/voz:</p>
                     <div id="results-score-percentage" class="text-6xl mb-4 font-bold text-emerald-400">100%</div>
-                    <div class="flex justify-around mb-6 text-lg bg-zinc-700 p-4 rounded-lg">
+                    <div class="flex justify-around mb-6 text-lg bg-zinc-700 p-4 rounded-lg border border-zinc-600">
                         <div class="text-zinc-300 flex flex-col">Total<span id="results-total" class="font-bold text-white text-2xl">0</span></div>
                         <div class="text-emerald-400 flex flex-col">Correctas<span id="results-correct" class="font-bold text-2xl">0</span></div>
                         <div class="text-red-400 flex flex-col">Falladas<span id="results-missed" class="font-bold text-2xl">0</span></div>
                     </div>
-                    <button id="close-results-btn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 w-full">Continuar</button>
+                    <button id="close-results-btn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 w-full">Continuar (Enter/Espacio)</button>
                 </div>
             </div>
 
-            <!-- AFINADOR -->
+            <div id="achievements-modal" class="modal-overlay hidden">
+                <div class="modal-content text-left bg-zinc-800 border-2 border-yellow-500" style="width: 600px;">
+                    <span class="modal-close text-yellow-500" id="close-achievements-modal">×</span>
+                    <h2 class="text-3xl font-extrabold text-yellow-400 mb-2">Tus Medallas</h2>
+                    <p class="text-zinc-400 mb-6">Completa ejercicios y mantén tu racha para desbloquear estos logros.</p>
+                    <div id="achievements-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2">
+                    </div>
+                </div>
+            </div>
+
             <div id="tuner-modal" class="modal-overlay hidden">
                 <div class="modal-content text-center bg-zinc-900 border-2 border-zinc-700 shadow-2xl !p-6 rounded-2xl max-w-md w-full">
-                    <span class="modal-close text-zinc-400 hover:text-white transition-colors" id="close-tuner-btn">×</span>
+                    <span class="modal-close text-zinc-400" id="close-tuner-btn">×</span>
                     <h2 class="text-xl font-bold text-zinc-300 mb-6 text-left tracking-wider">AFINADOR</h2>
                     
                     <div class="bg-black rounded-xl p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[250px] border border-zinc-800">
-                        
                         <div class="relative w-full max-w-[280px] aspect-[2/1] mb-8">
                             <svg viewBox="0 0 200 100" class="w-full h-full overflow-visible">
                                 <defs>
@@ -472,25 +541,16 @@
                                         <stop offset="100%" stop-color="#ef4444" />
                                     </linearGradient>
                                 </defs>
-                                
-                                <path d="M 10 90 A 80 80 0 0 1 190 90" 
-                                      fill="none" 
-                                      stroke="url(#arcGradient)" 
-                                      stroke-width="12" 
-                                      stroke-linecap="round" />
-                                
+                                <path d="M 10 90 A 80 80 0 0 1 190 90" fill="none" stroke="url(#arcGradient)" stroke-width="12" stroke-linecap="round" />
                                 <polygon points="95,0 105,0 100,8" fill="#10b981" />
-                                
                                 <text x="5" y="90" fill="#6b7280" font-size="8" font-family="monospace" text-anchor="start">-50</text>
                                 <text x="195" y="90" fill="#6b7280" font-size="8" font-family="monospace" text-anchor="end">+50</text>
-                                
                                 <g id="tuner-needle-group" class="transition-transform duration-75 ease-out" style="transform-origin: 100px 90px; transform: rotate(0deg);">
                                     <line x1="100" y1="90" x2="100" y2="15" stroke="#e5e7eb" stroke-width="3" stroke-linecap="round" />
                                     <circle cx="100" cy="90" r="5" fill="#9ca3af" />
                                 </g>
                             </svg>
                         </div>
-                        
                         <div class="flex justify-between items-end w-full px-4">
                             <div class="text-left">
                                 <div id="tuner-note-display" class="text-6xl font-bold text-zinc-600 transition-colors leading-none">-</div>
@@ -503,19 +563,17 @@
                     </div>
                 </div>
             </div>
-            
         </div>
     </div>
 
-    <!-- Modals -->
     <div id="tutorial-modal" class="modal-overlay hidden">
-        <div class="modal-content text-left">
+        <div class="modal-content text-left border-2 border-sky-500">
             <span class="modal-close" id="close-modal">×</span>
             <div id="tutorial-steps-container"></div>
-            <div class="flex justify-between items-center mt-4">
-                <button id="prev-tutorial-step" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full shadow-lg">Anterior</button>
-                <span id="tutorial-step-counter" class="text-zinc-400"></span>
-                <button id="next-tutorial-step" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-full shadow-lg">Siguiente</button>
+            <div class="flex justify-between items-center mt-6">
+                <button id="prev-tutorial-step" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-full shadow-lg">Anterior</button>
+                <span id="tutorial-step-counter" class="text-zinc-400 font-bold"></span>
+                <button id="next-tutorial-step" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-6 rounded-full shadow-lg">Siguiente</button>
             </div>
         </div>
     </div>
@@ -528,12 +586,11 @@
             <div id="missed-notes-stats" class="mb-6 bg-zinc-900 p-4 rounded-xl hidden border border-zinc-700 shadow-inner">
                 <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2">
                     <h3 class="text-emerald-400 font-bold m-0">Tus Puntos Débiles</h3>
-                    <select id="missed-notes-filter" class="p-1 rounded bg-zinc-800 text-xs text-zinc-300 border border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    <select id="missed-notes-filter" class="p-1.5 rounded bg-zinc-800 text-xs text-zinc-300 border border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500">
                         <option value="general">General</option>
                     </select>
                 </div>
                 <div id="missed-notes-chart" class="flex items-end justify-center gap-2 sm:gap-4 h-40 mt-2 border-b border-zinc-700 pb-2 overflow-visible">
-                    <!-- Barras inyectadas por JS -->
                 </div>
             </div>
 
@@ -541,14 +598,14 @@
                 <table class="w-full text-sm text-left text-zinc-300">
                     <thead class="text-xs text-sky-300 uppercase bg-zinc-700">
                         <tr>
-                            <th scope="col" class="px-4 py-3">Fecha</th>
+                            <th scope="col" class="px-4 py-3 rounded-tl-lg">Fecha</th>
                             <th scope="col" class="px-4 py-3">Hora</th>
                             <th scope="col" class="px-4 py-3">Duración</th>
                             <th scope="col" class="px-4 py-3">Ejercicio</th>
                             <th scope="col" class="px-4 py-3 text-center">Nivel</th>
                             <th scope="col" class="px-4 py-3 text-center">Compases</th>
                             <th scope="col" class="px-4 py-3 text-center">BPM</th>
-                            <th scope="col" class="px-4 py-3 text-center">Precisión</th>
+                            <th scope="col" class="px-4 py-3 text-center rounded-tr-lg">Precisión</th>
                         </tr>
                     </thead>
                     <tbody id="history-table-body">
@@ -583,6 +640,7 @@
             </div>
         </div>
     </div>
+    
     <div id="custom-voicing-modal" class="modal-overlay hidden">
         <div class="modal-content text-left">
             <span class="modal-close" id="close-voicing-modal">×</span>
@@ -621,12 +679,33 @@
     </div>
     
     <div id="tutorial-highlight-overlay" class="tutorial-highlight-overlay hidden"></div>
+    
     <script>
         const USERS_KEY = 'harmonicBlockProUsers';
         const USER_DATA_PREFIX = 'harmonicBlockProData_';
 
+        const ACHIEVEMENTS_DEF = [
+            { id: 'first_blood', name: 'Primeros Pasos', desc: 'Completa tu primer ejercicio con éxito.', condition: (stats) => stats.totalExercises >= 1, icon: '🌟' },
+            { id: 'streak_3', name: 'Constancia', desc: 'Alcanza una racha de 3 días practicando.', condition: (stats) => stats.maxStreak >= 3, icon: '🔥' },
+            { id: 'streak_7', name: 'Imparable', desc: 'Alcanza una racha de 7 días practicando.', condition: (stats) => stats.maxStreak >= 7, icon: '🚀' },
+            { id: 'notes_100', name: 'Buen Oído', desc: 'Acierta 100 notas con tu instrumento.', condition: (stats) => stats.totalCorrect >= 100, icon: '🎵' },
+            { id: 'notes_500', name: 'Maestro Lector', desc: 'Acierta 500 notas con tu instrumento.', condition: (stats) => stats.totalCorrect >= 500, icon: '🎸' },
+            { id: 'daily_hero', name: 'Héroe Diario', desc: 'Completa un Reto Diario.', condition: (stats) => stats.dailyChallengesCompleted >= 1, icon: '⭐' }
+        ];
+
         let ui, state, audio, notesData, currentUser, userData;
-        
+        let seededRNG = null;
+
+        function randomFloat() {
+            if (seededRNG !== null) {
+                let t = seededRNG += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+            return Math.random();
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             initializeLogin();
         });
@@ -636,22 +715,29 @@
             const clickedNote = event.currentTarget.dataset.note;
             if (clickedNote) {
                 try {
-                    if (!audio.context) {
-                        audio.context = new (window.AudioContext || window.webkitAudioContext)();
-                        audio.noteGain = audio.context.createGain();
-                        audio.metronomeGain = audio.context.createGain();
-                        audio.noteGain.connect(audio.context.destination);
-                        audio.metronomeGain.connect(audio.context.destination);
-                    }
-                    if (audio.context.state === 'suspended') await audio.context.resume();
+                    await initAudioEngine();
                     playNoteSound(clickedNote, audio.context.currentTime);
                 } catch (e) {
                     console.error("Error playing note sound on click:", e);
                 }
-                
                 state.manualNotesToDisplay = [clickedNote];
                 renderStave(state.manualNotesToDisplay); 
             }
+        }
+
+        async function initAudioEngine() {
+            if (!audio.context) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audio.context = new AudioContext();
+                audio.noteGain = audio.context.createGain();
+                audio.metronomeGain = audio.context.createGain();
+                audio.noteGain.connect(audio.context.destination);
+                audio.metronomeGain.connect(audio.context.destination);
+            }
+            if (audio.context.state === 'suspended') {
+                await audio.context.resume();
+            }
+            return true;
         }
 
         function getLocalISODate(date = new Date()) {
@@ -665,8 +751,10 @@
             return {
                 stats: {
                     totalExercises: 0, totalCorrect: 0, totalIncorrect: 0, currentStreak: 0, maxStreak: 0,
-                    lastPracticeDate: null, hintsUsed: 0, answersUsed: 0, missedNotes: {}, missedNotesByExercise: {}
+                    lastPracticeDate: null, hintsUsed: 0, answersUsed: 0, missedNotes: {}, missedNotesByExercise: {},
+                    dailyChallengesCompleted: 0
                 },
+                achievements: [],
                 customPractice: {
                     basic: { isActive: false, allowedChords: [] },
                     intermediate: { isActive: false, allowedChords: [] },
@@ -687,12 +775,15 @@
                 if (!userData.stats.missedNotes) userData.stats.missedNotes = {};
                 if (!userData.stats.missedNotesByExercise) userData.stats.missedNotesByExercise = {};
                 if (userData.stats.maxStreak === undefined) userData.stats.maxStreak = userData.stats.currentStreak || 0;
+                if (userData.stats.dailyChallengesCompleted === undefined) userData.stats.dailyChallengesCompleted = 0;
+                if (!userData.achievements) userData.achievements = [];
                 if (!userData.customPractice) userData.customPractice = getInitialUserData().customPractice;
                 if (!userData.practiceHistory) userData.practiceHistory = [];
             } else {
                 userData = getInitialUserData(); saveUserData();
             }
             checkStreak();
+            checkAchievements();
         }
 
         function saveUserData() {
@@ -729,8 +820,11 @@
                         if (userData.stats.maxStreak === undefined) userData.stats.maxStreak = userData.stats.currentStreak || 0;
                         if (!userData.stats.missedNotes) userData.stats.missedNotes = {};
                         if (!userData.stats.missedNotesByExercise) userData.stats.missedNotesByExercise = {};
+                        if (!userData.achievements) userData.achievements = [];
+                        if (userData.stats.dailyChallengesCompleted === undefined) userData.stats.dailyChallengesCompleted = 0;
                         saveUserData();
                         updateStreakDisplay();
+                        checkAchievements();
                         showTemporaryMessage('Datos importados correctamente.', false);
                     } else {
                         showTemporaryMessage('Archivo JSON no válido.', true);
@@ -747,9 +841,9 @@
             const msgEl = ui.exportImportMsg;
             if (!msgEl) return;
             msgEl.textContent = msg;
-            msgEl.className = `text-xs mt-1 ${isError ? 'text-red-400' : 'text-emerald-400'}`;
+            msgEl.className = `text-xs mt-2 font-semibold ${isError ? 'text-red-400' : 'text-emerald-400'}`;
             msgEl.classList.remove('hidden');
-            setTimeout(() => msgEl.classList.add('hidden'), 3000);
+            setTimeout(() => msgEl.classList.add('hidden'), 3500);
         }
         
         function deleteUser(username) {
@@ -783,25 +877,78 @@
             }
         }
 
+        function checkAchievements() {
+            if (!userData || !userData.stats) return;
+            let unlockedNew = false;
+            
+            ACHIEVEMENTS_DEF.forEach(ach => {
+                if (!userData.achievements.includes(ach.id) && ach.condition(userData.stats)) {
+                    userData.achievements.push(ach.id);
+                    unlockedNew = true;
+                    const notif = document.createElement('div');
+                    notif.className = 'fixed bottom-4 right-4 bg-yellow-600 text-white p-4 rounded-lg shadow-2xl z-[9999] flex items-center gap-4 transform translate-y-20 opacity-0 transition-all duration-500';
+                    notif.innerHTML = `<span class="text-3xl">${ach.icon}</span><div><p class="text-xs font-bold uppercase tracking-wider text-yellow-200">¡Logro Desbloqueado!</p><p class="font-bold">${ach.name}</p></div>`;
+                    document.body.appendChild(notif);
+                    setTimeout(() => { notif.classList.remove('translate-y-20', 'opacity-0'); }, 100);
+                    setTimeout(() => { 
+                        notif.classList.add('translate-y-20', 'opacity-0'); 
+                        setTimeout(() => notif.remove(), 500);
+                    }, 4000);
+                }
+            });
+
+            if (unlockedNew) saveUserData();
+        }
+
+        function renderAchievementsModal() {
+            ui.achievementsList.innerHTML = '';
+            ACHIEVEMENTS_DEF.forEach(ach => {
+                const isUnlocked = userData.achievements.includes(ach.id);
+                const card = document.createElement('div');
+                card.className = `achievement-card p-4 rounded-xl border-2 flex items-center gap-4 bg-zinc-700 ${isUnlocked ? 'unlocked border-emerald-500' : 'locked border-zinc-600'}`;
+                card.innerHTML = `
+                    <div class="text-4xl bg-zinc-800 w-16 h-16 rounded-full flex items-center justify-center border-2 ${isUnlocked ? 'border-yellow-500 text-yellow-400' : 'border-zinc-500 text-zinc-500'} flex-shrink-0 shadow-inner">
+                        ${ach.icon}
+                    </div>
+                    <div>
+                        <h4 class="font-bold ${isUnlocked ? 'text-white' : 'text-zinc-400'}">${ach.name}</h4>
+                        <p class="text-xs ${isUnlocked ? 'text-zinc-300' : 'text-zinc-500'} mt-1">${ach.desc}</p>
+                    </div>
+                `;
+                ui.achievementsList.appendChild(card);
+            });
+            ui.achievementsModal.classList.remove('hidden');
+        }
+
+        function startDailyChallenge() {
+            const today = getLocalISODate();
+            let hash = 0;
+            for (let i = 0; i < today.length; i++) hash = Math.imul(31, hash) + today.charCodeAt(i) | 0;
+            seededRNG = hash;
+            state.isDailyChallenge = true;
+
+            ui.exerciseTypeRadios[0].checked = true;
+            ui.exerciseTypeRadios[0].dispatchEvent(new Event('change'));
+            ui.difficultySelect.value = 'medium';
+            ui.difficultySelect.dispatchEvent(new Event('change'));
+            ui.keySigSelect.value = 'C';
+            ui.keySigSelect.dispatchEvent(new Event('change'));
+            ui.measuresSelect.value = '10';
+            ui.measuresSelect.dispatchEvent(new Event('change'));
+            ui.tempoInput.value = 60;
+
+            startExercise();
+        }
+
         function renderMissedNotesChart(filter) {
             const chartContainer = document.getElementById('missed-notes-chart');
             chartContainer.innerHTML = '';
-            
-            let dataToRender = {};
-            if (filter === 'general') {
-                dataToRender = userData.stats.missedNotes || {};
-            } else {
-                dataToRender = (userData.stats.missedNotesByExercise && userData.stats.missedNotesByExercise[filter]) ? userData.stats.missedNotesByExercise[filter] : {};
-            }
+            let dataToRender = filter === 'general' ? (userData.stats.missedNotes || {}) : ((userData.stats.missedNotesByExercise && userData.stats.missedNotesByExercise[filter]) || {});
 
-            const sortedMissed = Object.entries(dataToRender)
-                     .filter(([_, count]) => count > 0) 
-                     .sort((a, b) => b[1] - a[1]) 
-                     .slice(0, 7); 
+            const sortedMissed = Object.entries(dataToRender).filter(([_, count]) => count > 0).sort((a, b) => b[1] - a[1]).slice(0, 7); 
                  
              if (sortedMissed.length > 0) {
                  const maxCount = sortedMissed[0][1];
-                 
                  sortedMissed.forEach(([note, count]) => {
                     const heightPct = Math.max(15, (count / maxCount) * 100);
                     const barHtml = `
@@ -820,21 +967,17 @@
         
         function showHistoryModal() {
             ui.historyTableBody.innerHTML = '';
-            
             const statsContainer = document.getElementById('missed-notes-stats');
             const filterSelect = ui.missedNotesFilter;
             
             if (userData.stats && userData.stats.missedNotes && Object.keys(userData.stats.missedNotes).length > 0) {
                  statsContainer.classList.remove('hidden');
-                 
                  filterSelect.innerHTML = '<option value="general">General</option>';
                  if (userData.stats.missedNotesByExercise) {
                      Object.keys(userData.stats.missedNotesByExercise).forEach(exerciseName => {
-                         const hasNotes = Object.keys(userData.stats.missedNotesByExercise[exerciseName]).length > 0;
-                         if (hasNotes) {
+                         if (Object.keys(userData.stats.missedNotesByExercise[exerciseName]).length > 0) {
                              const opt = document.createElement('option');
-                             opt.value = exerciseName;
-                             opt.textContent = exerciseName;
+                             opt.value = exerciseName; opt.textContent = exerciseName;
                              filterSelect.appendChild(opt);
                          }
                      });
@@ -846,7 +989,6 @@
             }
 
             const history = userData.practiceHistory || [];
-
             if (history.length === 0) {
                 ui.noHistoryMessage.classList.remove('hidden');
                 ui.historyTableBody.parentElement.classList.add('hidden');
@@ -855,8 +997,7 @@
                 ui.historyTableBody.parentElement.classList.remove('hidden');
                 [...history].reverse().forEach(entry => {
                     const row = document.createElement('tr');
-                    row.className = 'bg-zinc-800 border-b border-zinc-700 hover:bg-zinc-600';
-                    
+                    row.className = 'bg-zinc-800 border-b border-zinc-700 hover:bg-zinc-600 transition-colors';
                     const scoreCell = entry.score && entry.score !== '-' 
                         ? `<td class="px-4 py-4 text-center font-bold ${parseInt(entry.score) >= 80 ? 'text-emerald-400' : (parseInt(entry.score) >= 50 ? 'text-amber-400' : 'text-red-400')}">${entry.score}</td>` 
                         : `<td class="px-4 py-4 text-center text-zinc-500">-</td>`;
@@ -981,10 +1122,8 @@
             const get = (id) => { 
                 const el = document.getElementById(id); 
                 if (!el) {
-                    console.warn(`Element "${id}" not found. Se creará dinámicamente para evitar bloqueos.`);
                     const placeholder = document.createElement('div');
-                    placeholder.id = id;
-                    placeholder.style.display = 'none';
+                    placeholder.id = id; placeholder.style.display = 'none';
                     document.body.appendChild(placeholder);
                     return placeholder;
                 }
@@ -1019,11 +1158,13 @@
                 customQuadChordTypeModal: get('custom-quad-chord-type-modal'), closeQuadChordTypeModalBtn: get('close-quad-chord-type-modal'), quadChordTypeCheckboxes: get('quad-chord-type-checkboxes'), cancelQuadChordTypeSelectionBtn: get('cancel-quad-chord-type-selection'), saveQuadChordTypeSelectionBtn: get('save-quad-chord-type-selection'),
                 customQuadInversionModal: get('custom-quad-inversion-modal'), closeQuadInversionModalBtn: get('close-quad-inversion-modal'), quadInversionCheckboxes: get('quad-inversion-checkboxes'), cancelQuadInversionSelectionBtn: get('cancel-quad-inversion-selection'), saveQuadInversionSelectionBtn: get('save-quad-inversion-selection'),
                 showFretboardToggle: get('show-fretboard'), enableSoundToggle: get('enable-sound'), fretboardContainer: get('fretboard-container'), soundControlContainer: get('sound-control-container'), fretboardControlContainer: get('fretboard-control-container'),
-                enharmonicSelect: get('enharmonic-select'), enharmonicControlContainer: get('enharmonic-control-container'), enableMetronome: get('enable-metronome'), noteVolume: get('note-volume'), metronomeVolume: get('metronome-volume'), audioControlsContainer: get('audio-controls-container'), userDisplay: get('user-display'), streakDisplay: get('streak-display'), changeUserButton: get('change-user-button'), historyButton: get('history-button'), historyModal: get('history-modal'), closeHistoryModal: get('close-history-modal'), historyTableBody: get('history-table-body'), noHistoryMessage: get('no-history-message'),
+                enharmonicSelect: get('enharmonic-select'), enharmonicControlContainer: get('enharmonic-control-container'), enableMetronome: get('enable-metronome'), noteVolume: get('note-volume'), metronomeVolume: get('metronome-volume'), metronomeSoundSelect: get('metronome-sound-select'), audioControlsContainer: get('audio-controls-container'), userDisplay: get('user-display'), streakDisplay: get('streak-display'), changeUserButton: get('change-user-button'), historyButton: get('history-button'), historyModal: get('history-modal'), closeHistoryModal: get('close-history-modal'), historyTableBody: get('history-table-body'), noHistoryMessage: get('no-history-message'),
                 exportBtn: get('export-button'), importBtn: get('import-button'), importInput: get('import-file'), exportImportMsg: get('export-import-msg'),
                 enableMicToggle: get('enable-mic'), micControlContainer: get('mic-control-container'), resultsModal: get('results-modal'), closeResultsBtn: get('close-results-btn'), resultsTotal: get('results-total'), resultsCorrect: get('results-correct'), resultsMissed: get('results-missed'), resultsPercentage: get('results-score-percentage'),
                 micDetectedNote: get('mic-detected-note'), showTunerBtn: get('show-tuner-btn'), tunerModal: get('tuner-modal'), closeTunerBtn: get('close-tuner-btn'), tunerNoteDisplay: get('tuner-note-display'), tunerCentsDisplay: get('tuner-cents-display'), tunerNeedleGroup: get('tuner-needle-group'), tunerHzDisplay: get('tuner-hz-display'),
-                missedNotesFilter: get('missed-notes-filter')
+                missedNotesFilter: get('missed-notes-filter'), themeToggleBtn: get('theme-toggle-btn'), 
+                achievementsButton: get('achievements-button'), achievementsModal: get('achievements-modal'), closeAchievementsModal: get('close-achievements-modal'), achievementsList: get('achievements-list'),
+                dailyChallengeBtn: get('daily-challenge-btn')
             };
         }
 
@@ -1035,32 +1176,15 @@
                 timeSignatureBeats: 4, measuresChangeBeat: 4, measuresPerExercise: 10, showNoteNames: false, keySignature: 'C',
                 showGuide: false, notePositionsX: [], lastScale: 1, spacebarPressCount: 0, spacebarTimeout: null,
                 selectedCustomIntervals: new Set(['2', '3', '4', '5', '6', '7']), selectedCustomTriads: new Set(['triad_fundamental', 'triad_inv1', 'triad_inv2', 'shell_voicing']), selectedCustomVoicings: new Set(['drop2', 'drop3']), selectedCustomQuadChordTypes: new Set(['maj7', 'm7', 'dom7']), selectedCustomQuadInversions: new Set(['0', '1', '2', '3']),
-                lastMelodicNote: null, showFretboard: false, soundEnabled: false, metronomeEnabled: true, noteVolume: 0.3, metronomeVolume: 0.2, displayedMeasureContent: [], enharmonicPreference: 'auto',
-                
+                lastMelodicNote: null, showFretboard: false, soundEnabled: false, metronomeEnabled: true, noteVolume: 0.3, metronomeVolume: 0.6, metronomeSound: 'classic', displayedMeasureContent: [], enharmonicPreference: 'auto',
                 manualNotesToDisplay: null,
-                
-                logicalMetronomeCount: 0,
-                logicalMeasureIndex: -1,
-                logicalIsPreRoll: false,
-                visualIsPreRoll: false,
-                visualQueue: [],
-                activeVisualEvent: null, 
-                currentDisplayedContent: null,
-                drawFrameId: null,
-                currentVisualBeat: 1,
-                totalPausedTime: 0,
-                pauseStartTimeReal: null,
-                showDisplayInfo: true,
-                
-                micEnabled: false,
-                scheduledSynthNotes: [], 
-                tunerSoundPlayed: false,
-                tunerLastNote: null,
-                tunerSilenceFrames: 0, 
-                tunerStableFrames: 0,
-                tunerSmoothedCents: 0,
-                tunerSmoothedHz: 0,
-                score: { total: 0, hits: new Set(), status: {}, expectedNotes: {}, wrongFrames: 0, currentHitKey: null }
+                logicalMetronomeCount: 0, logicalMeasureIndex: -1, logicalIsPreRoll: false, visualIsPreRoll: false,
+                visualQueue: [], activeVisualEvent: null, currentDisplayedContent: null, drawFrameId: null,
+                currentVisualBeat: 1, totalPausedTime: 0, pauseStartTimeReal: null, showDisplayInfo: true,
+                micEnabled: false, scheduledSynthNotes: [], tunerSoundPlayed: false, tunerLastNote: null,
+                tunerSilenceFrames: 0, tunerStableFrames: 0, tunerSmoothedCents: 0, tunerSmoothedHz: 0,
+                score: { total: 0, hits: new Set(), status: {}, expectedNotes: {}, wrongFrames: 0, consecutiveHits: 0, currentHitKey: null },
+                isDailyChallenge: false
             };
             audio = { context: null, noteGain: null, metronomeGain: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0, micStream: null, micAnalyser: null, micDataArray: null, micFreqArray: null, micSource: null };
             notesData = {
@@ -1147,28 +1271,11 @@
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 throw new Error("Permiso denegado o conexión no segura (requiere HTTPS o Localhost).");
             }
-            if (!audio.context) {
-                 audio.context = new (window.AudioContext || window.webkitAudioContext)();
-                 audio.noteGain = audio.context.createGain();
-                 audio.metronomeGain = audio.context.createGain();
-                 audio.noteGain.connect(audio.context.destination);
-                 audio.metronomeGain.connect(audio.context.destination);
-            }
-            if (audio.context.state === 'suspended') await audio.context.resume();
-            
-            if (!audio.micStream) {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: { echoCancellation: false, autoGainControl: false, noiseSuppression: false } 
-                });
-                audio.micStream = stream;
-                audio.micAnalyser = audio.context.createAnalyser();
-                // Aumentado a 8192 para mejor resolución espectral en los graves (Acordes)
-                audio.micAnalyser.fftSize = 8192; 
-                audio.micDataArray = new Float32Array(audio.micAnalyser.fftSize);
-                audio.micFreqArray = new Float32Array(audio.micAnalyser.frequencyBinCount);
-                audio.micSource = audio.context.createMediaStreamSource(stream);
-                audio.micSource.connect(audio.micAnalyser);
-            }
+            await initAudioEngine();
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: { echoCancellation: false, autoGainControl: false, noiseSuppression: false } 
+            });
+            return stream;
         }
 
         function stopMicStream() {
@@ -1185,14 +1292,22 @@
         async function toggleMicrophone(enable) {
             if (enable) {
                 try {
-                    await getMicStream();
+                    const stream = await getMicStream();
+                    audio.micStream = stream;
+                    audio.micAnalyser = audio.context.createAnalyser();
+                    audio.micAnalyser.fftSize = 8192; 
+                    audio.micDataArray = new Float32Array(audio.micAnalyser.fftSize);
+                    audio.micFreqArray = new Float32Array(audio.micAnalyser.frequencyBinCount);
+                    audio.micSource = audio.context.createMediaStreamSource(stream);
+                    audio.micSource.connect(audio.micAnalyser);
+
                     state.micEnabled = true;
                     showTemporaryMessage("Micrófono activado. ¡Toca algo!", false);
                 } catch (err) {
                     console.error("Error accessing mic:", err);
                     ui.enableMicToggle.checked = false;
                     state.micEnabled = false;
-                    showTemporaryMessage(err.message, true);
+                    showTemporaryMessage("Error de micrófono: " + err.message, true);
                 }
             } else {
                 state.micEnabled = false;
@@ -1202,18 +1317,119 @@
                 }
             }
         }
+
+        // ALGORITMO MEJORADO PARA ACORDES (FFT)
+        function verifyChord(expectedMidis) {
+            if (!audio.micAnalyser || !audio.context || !audio.micFreqArray) return false;
+            audio.micAnalyser.getFloatFrequencyData(audio.micFreqArray);
+            const sampleRate = audio.context.sampleRate;
+            const binCount = audio.micAnalyser.frequencyBinCount;
+            const nyquist = sampleRate / 2;
+
+            let maxDb = -Infinity;
+            for (let i = 0; i < binCount; i++) {
+                if (audio.micFreqArray[i] > maxDb) maxDb = audio.micFreqArray[i];
+            }
+            // Gate de ruido más permisivo
+            if (maxDb < -50) return false; 
+            const threshold = maxDb - 15; 
+
+            let foundCount = 0;
+            for (let midi of expectedMidis) {
+                let foundThisNote = false;
+                // Busca la nota en varias octavas (inmunidad a octava)
+                for (let octaveOffset = -1; octaveOffset <= 1; octaveOffset++) {
+                    let testMidi = midi + (octaveOffset * 12);
+                    if (testMidi < 40 || testMidi > 90) continue;
+
+                    const freq = 440 * Math.pow(2, (testMidi - 69) / 12);
+                    const bin = Math.round((freq / nyquist) * binCount);
+                    let localMax = -Infinity;
+                    
+                    // Ventana más ancha (±2.5%) para tolerar la inarmonía y entonación de la guitarra
+                    const windowSize = Math.max(2, Math.round(bin * 0.025)); 
+                    
+                    for(let i = Math.max(0, bin - windowSize); i <= Math.min(binCount - 1, bin + windowSize); i++) {
+                        if (audio.micFreqArray[i] > localMax) localMax = audio.micFreqArray[i];
+                    }
+                    if (localMax >= threshold) { foundThisNote = true; break; }
+                }
+                if (foundThisNote) foundCount++;
+            }
+            return foundCount === expectedMidis.length;
+        }
+
+        // ALGORITMO ROBUSTO PARA MELODÍA Y GUITARRA (Correlación Mejorada)
+        function detectPitch() {
+            if (!audio.micAnalyser || !audio.micDataArray || !audio.context) return -1;
+            audio.micAnalyser.getFloatTimeDomainData(audio.micDataArray);
+            let buf = audio.micDataArray;
+            let SIZE = buf.length;
+            let rms = 0;
+            for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+            rms = Math.sqrt(rms / SIZE);
+
+            // Gate de ruido bajo, para guitarras sin pastilla o lejos
+            if (rms < 0.01) return -1;
+
+            // Función de Autocorrelación
+            let max_samples = Math.floor(SIZE / 2);
+            let c = new Float32Array(max_samples);
+            for (let i = 0; i < max_samples; i++) {
+                let sum = 0;
+                for (let j = 0; j < max_samples; j++) sum += buf[j] * buf[j + i];
+                c[i] = sum;
+            }
+
+            // Primer pico real (saltamos el pico en el retraso 0)
+            let d = 0;
+            while (d < max_samples - 1 && c[d] > c[d + 1]) d++;
+
+            let maxval = -1, maxpos = -1;
+            for (let i = d; i < max_samples; i++) {
+                if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
+            }
+
+            let T0 = maxpos;
+            if (T0 === -1 || T0 === 0) return -1;
+
+            // FILTRO DE CONFIANZA: Si no tiene forma de nota musical (ej. ruido o golpe), ignóralo
+            if (maxval < 0.8 * c[0]) return -1;
+
+            let x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
+            if (x1 !== undefined && x3 !== undefined) {
+                let a = (x1 + x3 - 2 * x2) / 2;
+                let b = (x3 - x1) / 2;
+                if (a) T0 = T0 - b / (2 * a);
+            }
+
+            let pitch = audio.context.sampleRate / T0;
+            // Solo aceptamos frecuencias lógicas de guitarra/voz (70Hz - 1200Hz)
+            if (pitch < 70 || pitch > 1200) return -1;
+
+            return pitch;
+        }
+
+        function noteFromPitch(frequency) {
+            let noteNum = 12 * (Math.log(frequency / 440) / Math.log(2));
+            return Math.round(noteNum) + 69;
+        }
         
         let tunerRafId = null;
         async function openTuner() {
             ui.tunerModal.classList.remove('hidden');
             try {
-                await getMicStream();
-                state.tunerSoundPlayed = false;
-                state.tunerLastNote = null;
-                state.tunerSilenceFrames = 0;
-                state.tunerStableFrames = 0;
-                state.tunerSmoothedCents = 0; 
-                state.tunerSmoothedHz = 0;
+                if (!audio.context) audio.context = new (window.AudioContext || window.webkitAudioContext)();
+                if (audio.context.state === 'suspended') await audio.context.resume();
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, autoGainControl: false, noiseSuppression: false } });
+                audio.micStream = stream;
+                audio.micAnalyser = audio.context.createAnalyser();
+                audio.micAnalyser.fftSize = 2048; 
+                audio.micDataArray = new Float32Array(audio.micAnalyser.fftSize);
+                audio.micSource = audio.context.createMediaStreamSource(stream);
+                audio.micSource.connect(audio.micAnalyser);
+
+                state.tunerSoundPlayed = false; state.tunerLastNote = null; state.tunerSilenceFrames = 0; state.tunerStableFrames = 0; state.tunerSmoothedCents = 0; state.tunerSmoothedHz = 0;
                 tunerLoop();
             } catch (err) {
                 ui.tunerNoteDisplay.textContent = 'Error';
@@ -1225,7 +1441,7 @@
         function closeTuner() {
             ui.tunerModal.classList.add('hidden');
             if (tunerRafId) { cancelAnimationFrame(tunerRafId); tunerRafId = null; }
-            if (!state.micEnabled) { stopMicStream(); }
+            if (!state.micEnabled) stopMicStream();
         }
 
         function playTunerDing() {
@@ -1233,202 +1449,72 @@
             const time = audio.context.currentTime;
             const osc = audio.context.createOscillator();
             const gain = audio.context.createGain();
-            osc.connect(gain);
-            gain.connect(audio.context.destination);
-            
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(1046.50, time); // C6
-            
-            gain.gain.setValueAtTime(0, time);
-            gain.gain.linearRampToValueAtTime(0.1, time + 0.05); // Sonido suave (0.1)
-            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3); // Corto
-            
-            osc.start(time);
-            osc.stop(time + 0.3);
+            osc.connect(gain); gain.connect(audio.context.destination);
+            osc.type = 'sine'; osc.frequency.setValueAtTime(1046.50, time);
+            gain.gain.setValueAtTime(0, time); gain.gain.linearRampToValueAtTime(0.1, time + 0.05); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+            osc.start(time); osc.stop(time + 0.3);
         }
 
         function tunerLoop() {
             if (ui.tunerModal.classList.contains('hidden')) return;
-            
             let rawPitch = detectPitch();
-            
             if (rawPitch > 0) {
                 state.tunerSilenceFrames = 0; 
-                
-                if (state.tunerSmoothedHz === 0 || Math.abs(rawPitch - state.tunerSmoothedHz) > 50) {
-                    state.tunerSmoothedHz = rawPitch; 
-                } else {
-                    state.tunerSmoothedHz = (0.2 * rawPitch) + (0.8 * state.tunerSmoothedHz); 
-                }
+                if (state.tunerSmoothedHz === 0 || Math.abs(rawPitch - state.tunerSmoothedHz) > 50) state.tunerSmoothedHz = rawPitch; 
+                else state.tunerSmoothedHz = (0.2 * rawPitch) + (0.8 * state.tunerSmoothedHz); 
 
                 let pitch = state.tunerSmoothedHz;
                 let noteNum = 12 * (Math.log(pitch / 440) / Math.log(2)) + 69;
                 let closestMidi = Math.round(noteNum);
                 let rawCents = (noteNum - closestMidi) * 100;
-                
                 if (Math.abs(rawCents) < 1.0) rawCents = 0;
-
                 state.tunerSmoothedCents = (0.3 * rawCents) + (0.7 * state.tunerSmoothedCents);
                 let displayCents = state.tunerSmoothedCents;
-
                 let noteName = getEnharmonicName(closestMidi);
                 let octave = Math.floor(closestMidi / 12) - 1;
                 ui.tunerNoteDisplay.textContent = noteName + octave;
-                
                 ui.tunerCentsDisplay.textContent = (displayCents > 0 ? "+" : "") + displayCents.toFixed(1) + "c";
                 if(ui.tunerHzDisplay) ui.tunerHzDisplay.textContent = pitch.toFixed(1) + " Hz";
                 
                 let clampedCents = Math.max(-50, Math.min(50, displayCents));
-                let rotationDegrees = clampedCents * 1.4; 
+                ui.tunerNeedleGroup.style.transform = `rotate(${clampedCents * 1.4}deg)`;
                 
-                ui.tunerNeedleGroup.style.transform = `rotate(${rotationDegrees}deg)`;
-                
-                if (state.tunerLastNote !== closestMidi) {
-                    state.tunerSoundPlayed = false;
-                    state.tunerLastNote = closestMidi;
-                    state.tunerStableFrames = 0;
-                }
-
+                if (state.tunerLastNote !== closestMidi) { state.tunerSoundPlayed = false; state.tunerLastNote = closestMidi; state.tunerStableFrames = 0; }
                 if (Math.abs(displayCents) < 5) { 
                     state.tunerStableFrames = (state.tunerStableFrames || 0) + 1;
-                    
-                    if (state.tunerStableFrames > 15 && !state.tunerSoundPlayed) { 
-                        playTunerDing();
-                        state.tunerSoundPlayed = true;
-                    }
-                    ui.tunerNoteDisplay.style.color = '#10b981'; 
-                    ui.tunerCentsDisplay.style.color = '#10b981';
+                    if (state.tunerStableFrames > 15 && !state.tunerSoundPlayed) { playTunerDing(); state.tunerSoundPlayed = true; }
+                    ui.tunerNoteDisplay.style.color = '#10b981'; ui.tunerCentsDisplay.style.color = '#10b981';
                 } else {
-                    if (Math.abs(displayCents) > 15) { 
-                        state.tunerSoundPlayed = false; 
-                    }
+                    if (Math.abs(displayCents) > 15) state.tunerSoundPlayed = false; 
                     state.tunerStableFrames = 0; 
-                    if (Math.abs(displayCents) < 20) {
-                        ui.tunerNoteDisplay.style.color = '#fbbf24'; 
-                        ui.tunerCentsDisplay.style.color = '#fbbf24';
-                    } else {
-                        ui.tunerNoteDisplay.style.color = '#ef4444'; 
-                        ui.tunerCentsDisplay.style.color = '#ef4444';
-                    }
+                    ui.tunerNoteDisplay.style.color = Math.abs(displayCents) < 20 ? '#fbbf24' : '#ef4444'; 
+                    ui.tunerCentsDisplay.style.color = Math.abs(displayCents) < 20 ? '#fbbf24' : '#ef4444';
                 }
             } else {
                 state.tunerSmoothedCents = state.tunerSmoothedCents * 0.9;
                 if (Math.abs(state.tunerSmoothedCents) < 1) state.tunerSmoothedCents = 0;
-                
                 ui.tunerNeedleGroup.style.transform = `rotate(${state.tunerSmoothedCents * 1.4}deg)`;
-                ui.tunerNoteDisplay.style.color = '#52525b'; 
-                ui.tunerCentsDisplay.style.color = '#9ca3af'; 
-                
+                ui.tunerNoteDisplay.style.color = '#52525b'; ui.tunerCentsDisplay.style.color = '#9ca3af'; 
                 state.tunerStableFrames = 0;
                 state.tunerSilenceFrames = (state.tunerSilenceFrames || 0) + 1;
-                
-                if (state.tunerSilenceFrames > 30) { 
-                     state.tunerLastNote = null;
-                     state.tunerSoundPlayed = false;
-                     state.tunerSmoothedHz = 0; 
-                }
+                if (state.tunerSilenceFrames > 30) { state.tunerLastNote = null; state.tunerSoundPlayed = false; state.tunerSmoothedHz = 0; }
             }
             tunerRafId = requestAnimationFrame(tunerLoop);
         }
 
-        // VERIFICACIÓN ESPECTRAL PARA ACORDES (FFT)
-        function verifyChord(expectedMidis) {
-            if (!audio.micAnalyser || !audio.context || !audio.micFreqArray) return false;
-
-            audio.micAnalyser.getFloatFrequencyData(audio.micFreqArray);
-            const sampleRate = audio.context.sampleRate;
-            const binCount = audio.micAnalyser.frequencyBinCount; // Mitad del fftSize
-            const nyquist = sampleRate / 2;
-
-            let maxDb = -Infinity;
-            for (let i = 0; i < binCount; i++) {
-                if (audio.micFreqArray[i] > maxDb) maxDb = audio.micFreqArray[i];
-            }
-
-            // Umbral absoluto de ruido ambiente
-            if (maxDb < -60) return false; 
-
-            // Umbral relativo ajustado para mayor precisión y rechazo de armónicos falsos.
-            const threshold = maxDb - 24; 
-
-            let foundCount = 0;
-            for (let midi of expectedMidis) {
-                const freq = 440 * Math.pow(2, (midi - 69) / 12);
-                const bin = Math.round((freq / nyquist) * binCount);
-
-                // Ventana de búsqueda más ajustada (1.5% de tolerancia a la desafinación)
-                let localMax = -Infinity;
-                const windowSize = Math.max(1, Math.round(bin * 0.015)); 
-                
-                for(let i = Math.max(0, bin - windowSize); i <= Math.min(binCount - 1, bin + windowSize); i++) {
-                    if (audio.micFreqArray[i] > localMax) localMax = audio.micFreqArray[i];
-                }
-
-                // Las guitarras a veces tienen frecuencias fundamentales débiles en los bajos.
-                // Damos un poco más de tolerancia (-6dB extra) a las notas graves para no fallar injustamente.
-                let currentThreshold = threshold;
-                if (midi < 50) currentThreshold -= 6;
-
-                if (localMax >= currentThreshold) {
-                    foundCount++;
-                }
-            }
-            
-            // ELIMINADA LA FLEXIBILIDAD. 
-            // Para evitar que acordes similares den falsos positivos (Ej. C Mayor pasando por Am7),
-            // ahora se exige de manera estricta que TODAS las notas solicitadas estén vibrando.
-            return foundCount === expectedMidis.length;
-        }
-
-        function detectPitch() {
-            if (!audio.micAnalyser || !audio.micDataArray || !audio.context || !audio.context.sampleRate) return -1;
-            audio.micAnalyser.getFloatTimeDomainData(audio.micDataArray);
-            let buf = audio.micDataArray;
-            let sampleRate = audio.context.sampleRate;
-            let SIZE = buf.length;
-            
-            let rms = 0;
-            for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
-            rms = Math.sqrt(rms / SIZE);
-            
-            if (rms < 0.02) return -1; 
-
-            let max_samples = Math.floor(SIZE / 2);
-            let c = new Float32Array(max_samples);
-            for (let i = 0; i < max_samples; i++) {
-                let sum = 0;
-                for (let j = 0; j < max_samples; j++) {
-                    sum += buf[j] * buf[j + i];
-                }
-                c[i] = sum;
-            }
-
-            let d = 0; 
-            while (d < max_samples - 1 && c[d] > c[d + 1]) d++;
-            
-            let maxval = -1, maxpos = -1;
-            for (let i = d; i < max_samples; i++) {
-                if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
-            }
-            let T0 = maxpos;
-            if (T0 === -1 || T0 === 0) return -1;
-
-            let x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
-            if (x1 !== undefined && x3 !== undefined) {
-                let a = (x1 + x3 - 2 * x2) / 2;
-                let b = (x3 - x1) / 2;
-                if (a) T0 = T0 - b / (2 * a);
-            }
-
-            return sampleRate / T0;
-        }
-
-        function noteFromPitch(frequency) {
-            let noteNum = 12 * (Math.log(frequency / 440) / Math.log(2));
-            return Math.round(noteNum) + 69;
-        }
-        
         function attachEventListeners() {
+            ui.themeToggleBtn.addEventListener('click', () => {
+                document.body.classList.toggle('light-mode');
+                const isLight = document.body.classList.contains('light-mode');
+                ui.themeToggleBtn.innerHTML = isLight ? '🌙 Tema' : '☀️ Tema';
+                ui.themeToggleBtn.classList.toggle('bg-slate-700', isLight);
+                ui.themeToggleBtn.classList.toggle('bg-amber-500', !isLight);
+            });
+
+            ui.achievementsButton.addEventListener('click', renderAchievementsModal);
+            ui.closeAchievementsModal.addEventListener('click', () => ui.achievementsModal.classList.add('hidden'));
+            ui.dailyChallengeBtn.addEventListener('click', () => { if (state.exerciseStarted) stopExercise(false); startDailyChallenge(); });
+
             ui.startStopButton.addEventListener('click', () => state.exerciseStarted ? stopExercise(false) : startExercise());
             ui.pauseResumeButton.addEventListener('click', togglePause);
             ui.changeUserButton.addEventListener('click', () => { saveUserData(); location.reload(); });
@@ -1465,7 +1551,7 @@
             ui.cancelQuadInversionSelectionBtn.addEventListener('click', () => hideCustomSelectionModal('quadInversion'));
             ui.saveQuadInversionSelectionBtn.addEventListener('click', () => { saveCustomSelection('quadInversion'); if(state.exerciseStarted) stopExercise(false); });
 
-            ui.closeResultsBtn.addEventListener('click', () => { ui.resultsModal.classList.add('hidden'); });
+            ui.closeResultsBtn.addEventListener('click', () => ui.resultsModal.classList.add('hidden'));
 
             function toggleDisplayInfo() {
                 state.showDisplayInfo = !state.showDisplayInfo;
@@ -1482,7 +1568,7 @@
             ui.toggleInfoBtn.addEventListener('click', toggleDisplayInfo);
 
             let staveClickTimer = null; let staveClickCount = 0;
-            ui.staveContainer.addEventListener('click', (e) => {
+            ui.staveContainer.addEventListener('click', () => {
                 staveClickCount++;
                 if (staveClickTimer) clearTimeout(staveClickTimer);
                 staveClickTimer = setTimeout(() => {
@@ -1497,21 +1583,29 @@
                 updateHarmonyControlsVisibility(); 
                 renderStave(state.exerciseStarted ? state.currentDisplayedContent : state.manualNotesToDisplay); 
             });
-            ui.showGuideToggle.addEventListener('change', () => { state.showGuide = ui.showGuideToggle.checked; if (!state.exerciseStarted) { if (ui.guideLine) ui.guideLine.style.display = 'none'; } });
+            ui.showGuideToggle.addEventListener('change', () => { state.showGuide = ui.showGuideToggle.checked; if (!state.exerciseStarted && ui.guideLine) ui.guideLine.style.display = 'none'; });
             ui.showFretboardToggle.addEventListener('change', (e) => {
                 state.showFretboard = e.target.checked;
                 ui.fretboardContainer.classList.toggle('hidden', !state.showFretboard);
                 ui.enharmonicControlContainer.classList.toggle('hidden', !state.showFretboard);
                 if (state.showFretboard) drawFretboardWithCurrentSettings();
             });
-            ui.enableSoundToggle.addEventListener('change', (e) => { state.soundEnabled = e.target.checked; });
-            ui.enableMetronome.addEventListener('change', (e) => { state.metronomeEnabled = e.target.checked; });
+            ui.enableSoundToggle.addEventListener('change', (e) => state.soundEnabled = e.target.checked);
+            ui.enableMetronome.addEventListener('change', (e) => state.metronomeEnabled = e.target.checked);
             
-            ui.enableMicToggle.addEventListener('change', (e) => { toggleMicrophone(e.target.checked); });
+            // Requisito iOS/Safari: el resume() debe ser directo en la interacción del usuario
+            ui.enableMicToggle.addEventListener('change', async (e) => {
+                if (audio.context && audio.context.state === 'suspended') {
+                    await audio.context.resume();
+                }
+                toggleMicrophone(e.target.checked);
+            });
+            
             ui.missedNotesFilter.addEventListener('change', (e) => renderMissedNotesChart(e.target.value));
             
-            ui.noteVolume.addEventListener('input', (e) => { state.noteVolume = parseFloat(e.target.value); });
-            ui.metronomeVolume.addEventListener('input', (e) => { state.metronomeVolume = parseFloat(e.target.value); });
+            ui.noteVolume.addEventListener('input', (e) => state.noteVolume = parseFloat(e.target.value));
+            ui.metronomeVolume.addEventListener('input', (e) => state.metronomeVolume = parseFloat(e.target.value));
+            ui.metronomeSoundSelect.addEventListener('change', (e) => state.metronomeSound = e.target.value);
             ui.enharmonicSelect.addEventListener('change', (e) => { state.enharmonicPreference = e.target.value; if (state.showFretboard) drawFretboardWithCurrentSettings(); });
             ui.cipherTypeSelect.addEventListener('change', (e) => { 
                 state.cipherType = e.target.value; 
@@ -1550,8 +1644,7 @@
             ui.measuresSelect.addEventListener('change', handleMeasuresChange);
             ui.customMeasuresInput.addEventListener('input', handleMeasuresChange);
             ui.difficultySelect.addEventListener('change', () => { 
-                updateHarmonyControlsVisibility(); 
-                updateDropVoicingOptions(); 
+                updateHarmonyControlsVisibility(); updateDropVoicingOptions(); 
                 if(state.showFretboard) drawFretboardWithCurrentSettings(); 
                 if (state.exerciseStarted) stopExercise(false); 
                 renderStave(state.exerciseStarted ? state.currentDisplayedContent : state.manualNotesToDisplay); 
@@ -1586,17 +1679,23 @@
             window.addEventListener('resize', () => { 
                 clearTimeout(window.resizeTimeout); 
                 window.resizeTimeout = setTimeout(() => {
-                    if (!state.exerciseStarted) {
-                        renderStave(state.manualNotesToDisplay);
-                    } else {
-                        renderStave(state.currentDisplayedContent);
-                        updateGuidePosition(state.activeVisualEvent);
-                    }
+                    if (!state.exerciseStarted) renderStave(state.manualNotesToDisplay);
+                    else { renderStave(state.currentDisplayedContent); updateGuidePosition(state.activeVisualEvent); }
                 }, 150); 
             });
             window.addEventListener('keydown', (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
                 const key = e.key.toLowerCase();
+                
+                // Cierre rápido de resultados
+                if (!ui.resultsModal.classList.contains('hidden')) {
+                    if (key === 'enter' || key === ' ') {
+                        e.preventDefault();
+                        ui.resultsModal.classList.add('hidden');
+                        return; 
+                    }
+                }
+
                 if (key === 'f') { e.preventDefault(); toggleFullscreen(); }
                 else if (key === ' ') {
                     e.preventDefault(); state.spacebarPressCount++;
@@ -1628,14 +1727,14 @@
                 else if (key === '?') { e.preventDefault(); if(ui.tutorialModal.classList.contains('hidden')) showTutorial(); else hideTutorial(); }
             });
         }
-        
+
         function showCustomSelectionModal(type) {
             let capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
             if (type === 'quadInversion') capitalizedType = 'QuadInversion'; if (type === 'quadChordType') capitalizedType = 'QuadChordType'; if (type === 'voicing') capitalizedType = 'Voicing';
             const modal = ui[`custom${capitalizedType}Modal`]; const checkboxes = ui[`${type}Checkboxes`].querySelectorAll('input[type="checkbox"]');
             let selectedSetKey = `selectedCustom${capitalizedType}s`; if (type === 'voicing') selectedSetKey = 'selectedCustomVoicings';
             const selectedSet = state[selectedSetKey];
-            checkboxes.forEach(checkbox => { checkbox.checked = selectedSet.has(checkbox.value); });
+            checkboxes.forEach(checkbox => checkbox.checked = selectedSet.has(checkbox.value));
             modal.classList.remove('hidden');
         }
 
@@ -1697,7 +1796,6 @@
             const isHarmony = state.exerciseType === 'armonia'; const notes = parseInt(ui.notesPerChordSelect.value, 10);
             const showNames = ui.showNoteNamesToggle.checked; const difficulty = ui.difficultySelect.value;
             ui.keySigContainer.classList.toggle('hidden', isHarmony);
-            
             ui.micControlContainer.classList.toggle('hidden', isHarmony);
             if (isHarmony && state.micEnabled) {
                 ui.enableMicToggle.checked = false;
@@ -1745,7 +1843,7 @@
             if (!voicings) { ui.quadVoicingSelect.innerHTML = ''; return; }
             const currentVoicing = ui.quadVoicingSelect.value; ui.quadVoicingSelect.innerHTML = '';
             const addOption = (val, text) => { const option = document.createElement('option'); option.value = val; option.textContent = text; ui.quadVoicingSelect.appendChild(option); }
-            for (const key in voicings) { addOption(key, voicings[key]); }
+            for (const key in voicings) addOption(key, voicings[key]);
             addOption('custom', 'Personalizado');
             if (Array.from(ui.quadVoicingSelect.options).some(opt => opt.value === currentVoicing)) ui.quadVoicingSelect.value = currentVoicing; else ui.quadVoicingSelect.value = 'all';
             state.selectedQuadVoicing = ui.quadVoicingSelect.value;
@@ -1774,33 +1872,21 @@
 
         async function startExercise() {
             try {
-                if (!audio.context) {
-                    audio.context = new (window.AudioContext || window.webkitAudioContext)();
-                    audio.noteGain = audio.context.createGain(); audio.metronomeGain = audio.context.createGain();
-                    audio.noteGain.connect(audio.context.destination); audio.metronomeGain.connect(audio.context.destination);
-                }
-                if (audio.context.state === 'suspended') await audio.context.resume();
-                
+                await initAudioEngine();
                 state.keySignature = ui.keySigSelect.value;
                 state.exerciseStartTime = new Date();
                 handleMeasuresChange(); 
                 state.exerciseMeasures = generateExercise();
                 if (state.exerciseMeasures.length === 0) { console.error("Failed to generate measures."); stopExercise(false); return; }
                 
-                state.score = { total: state.exerciseMeasures.reduce((acc, measure) => acc + measure.length, 0), hits: new Set(), status: {}, expectedNotes: {}, wrongFrames: 0, currentHitKey: null };
+                state.score = { total: state.exerciseMeasures.reduce((acc, measure) => acc + measure.length, 0), hits: new Set(), status: {}, expectedNotes: {}, wrongFrames: 0, consecutiveHits: 0, currentHitKey: null };
                 state.scheduledSynthNotes = [];
 
                 Object.assign(state, { 
-                    exerciseStarted: true, 
-                    isPlaying: true, 
-                    isPaused: false, 
-                    logicalIsPreRoll: true, 
-                    visualIsPreRoll: true,
-                    logicalMetronomeCount: 0, 
-                    logicalMeasureIndex: -1,
-                    visualQueue: [],
-                    activeVisualEvent: null, 
-                    currentDisplayedContent: null,
+                    exerciseStarted: true, isPlaying: true, isPaused: false, 
+                    logicalIsPreRoll: true, visualIsPreRoll: true,
+                    logicalMetronomeCount: 0, logicalMeasureIndex: -1,
+                    visualQueue: [], activeVisualEvent: null, currentDisplayedContent: null,
                     currentVisualBeat: 1
                 });
 
@@ -1811,10 +1897,7 @@
                 ui.pauseResumeButton.textContent = 'Pausar'; 
                 ui.pauseResumeButton.classList.remove('hidden');
                 
-                if (!audio.context || audio.context.state !== 'running') {
-                    console.warn("AudioContext no está listo");
-                    return;
-                }
+                if (!audio.context || audio.context.state !== 'running') return;
 
                 audio.nextNoteTime = audio.context.currentTime + 0.1;
                 scheduler(); 
@@ -1829,10 +1912,10 @@
                 if (completedSuccessfully) {
                     userData.stats.totalExercises++; 
                     userData.stats.totalCorrect++; 
+                    if (state.isDailyChallenge) userData.stats.dailyChallengesCompleted++;
                 }
                 const endTime = new Date(); 
                 let durationMs = endTime - state.exerciseStartTime;
-                
                 if (state.pauseStartTimeReal) durationMs -= (endTime - state.pauseStartTimeReal);
                 durationMs -= (state.totalPausedTime || 0);
                 durationMs = Math.max(0, durationMs); 
@@ -1859,14 +1942,12 @@
                         Object.keys(state.score.expectedNotes).forEach(hitKey => {
                             const notes = state.score.expectedNotes[hitKey];
                             if (!notes || notes.length === 0) return;
-                            
                             const isHit = state.score.status[hitKey] === 'hit';
 
                             notes.forEach(note => {
                                 let [baseName, octave] = note.split('/');
                                 const letter = baseName[0];
                                 const accidental = baseName.slice(1);
-                                
                                 const latinName = notesData.noteToLatin[letter.toUpperCase()] + accidental + octave;
                                 
                                 if (!userData.stats.missedNotes) userData.stats.missedNotes = {};
@@ -1895,7 +1976,7 @@
                     date: endTime.toLocaleDateString('es-ES'), 
                     time: endTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
                     duration: durationString, 
-                    exercise: exerciseInfo + (!completedSuccessfully ? ' (Incompleto)' : ''), 
+                    exercise: exerciseInfo + (!completedSuccessfully ? ' (Incompleto)' : '') + (state.isDailyChallenge ? ' ⭐' : ''), 
                     level: ui.difficultySelect.options[ui.difficultySelect.selectedIndex].text, 
                     measures: state.measuresPerExercise, 
                     bpm: ui.tempoInput.value,
@@ -1913,6 +1994,7 @@
                     }
                     updateStreakDisplay(); 
                 }
+                checkAchievements(); 
                 saveUserData();
             }
 
@@ -1927,26 +2009,22 @@
                     ui.resultsCorrect.textContent = correct;
                     ui.resultsMissed.textContent = missed;
                     ui.resultsPercentage.textContent = `${percentage}%`;
-
                     ui.resultsPercentage.className = `text-6xl mb-4 font-bold ${percentage >= 80 ? 'text-emerald-400' : percentage >= 50 ? 'text-amber-400' : 'text-red-400'}`;
-
                     ui.resultsModal.classList.remove('hidden');
                 }
             }
 
-            if (state.drawFrameId) {
-                cancelAnimationFrame(state.drawFrameId);
-                state.drawFrameId = null;
-            }
+            if (state.drawFrameId) { cancelAnimationFrame(state.drawFrameId); state.drawFrameId = null; }
             state.visualQueue = [];
+            seededRNG = null;
+
             Object.assign(state, { 
                 exerciseStarted: false, isPlaying: false, isPaused: false, 
                 logicalIsPreRoll: false, visualIsPreRoll: false,
                 logicalMeasureIndex: -1, logicalMetronomeCount: 0,
                 currentMeasureIndex: -1, currentMetronomeCount: 0,
                 lastMelodicNote: null, currentDisplayedContent: null, exerciseStartTime: null,
-                pauseStartTimeReal: null,
-                activeVisualEvent: null
+                pauseStartTimeReal: null, activeVisualEvent: null, isDailyChallenge: false 
             });
             ui.startStopButton.textContent = 'Comenzar'; ui.pauseResumeButton.classList.add('hidden'); ui.displayArea.classList.add('hidden'); ui.toggleInfoBtn.classList.add('hidden');
             if (state.metronomeTimer) { clearTimeout(state.metronomeTimer); state.metronomeTimer = null; }
@@ -1986,7 +2064,6 @@
 
         function drawLoop() {
             if (!state.exerciseStarted || state.isPaused) return;
-
             if (!audio.context) return;
             const currentTime = audio.context.currentTime;
             let newEventProcessed = false;
@@ -1998,10 +2075,7 @@
 
             if (newEventProcessed && state.activeVisualEvent) {
                 const currentEvent = state.activeVisualEvent;
-                if (currentEvent.type === 'stop') {
-                    stopExercise(true);
-                    return; 
-                }
+                if (currentEvent.type === 'stop') { stopExercise(true); return; }
 
                 state.visualIsPreRoll = currentEvent.isPreRoll;
                 state.currentVisualBeat = currentEvent.metronomeCount;
@@ -2011,7 +2085,6 @@
                     ui.displayArea.classList.add('hidden');
                     ui.toggleInfoBtn.classList.add('hidden');
                     ui.preRollCount.textContent = currentEvent.metronomeCount;
-                    
                     if (state.currentDisplayedContent !== currentEvent.displayedContent) {
                         state.currentDisplayedContent = currentEvent.displayedContent;
                         renderStave(currentEvent.displayedContent);
@@ -2020,7 +2093,6 @@
                     ui.preRollMessage.classList.add('hidden'); 
                     ui.displayArea.classList.remove('hidden');
                     ui.toggleInfoBtn.classList.remove('hidden');
-                    
                     ui.metronomeCount.textContent = currentEvent.metronomeCount;
                     ui.measuresCount.textContent = `${currentEvent.measureIndex + 1} / ${state.measuresPerExercise}`;
 
@@ -2028,7 +2100,6 @@
                         state.currentDisplayedContent = currentEvent.displayedContent;
                         renderStave(currentEvent.displayedContent);
                     }
-
                     updateFretboard(currentEvent.playingNotes, currentEvent.rootName);
                 }
             }
@@ -2038,31 +2109,25 @@
                 const hitKey = `${currentEvent.measureIndex}-${currentEvent.metronomeCount}`;
 
                 if (state.micEnabled && !state.visualIsPreRoll && currentEvent.playingNotes && currentEvent.playingNotes.length > 0) {
-                    
                     if (state.score.currentHitKey !== hitKey) {
                         state.score.currentHitKey = hitKey;
                         state.score.wrongFrames = 0;
+                        state.score.consecutiveHits = 0;
                     }
                     
                     if (state.score && state.score.status) {
-                        if (!state.score.status[hitKey]) {
-                            state.score.status[hitKey] = 'waiting';
-                        }
+                        if (!state.score.status[hitKey]) state.score.status[hitKey] = 'waiting';
 
                         const expectedMidis = currentEvent.playingNotes.map(n => notesData.chromaticMap[n]);
-                        
                         let isSynthBleed = false;
                         if (state.soundEnabled && state.scheduledSynthNotes) {
                             const now = audio.context.currentTime;
                             state.scheduledSynthNotes = state.scheduledSynthNotes.filter(n => n.end > now);
-                            if (state.scheduledSynthNotes.some(n => now >= n.start && now <= n.end)) {
-                                isSynthBleed = true;
-                            }
+                            if (state.scheduledSynthNotes.some(n => now >= n.start && now <= n.end)) isSynthBleed = true;
                         }
 
                         if (!isSynthBleed) {
-                            let isHit = false;
-
+                            let detectedCorrectPitch = false;
                             if (state.exerciseType === 'melodia') {
                                 const pitch = detectPitch();
                                 if (pitch > 0) {
@@ -2070,34 +2135,35 @@
                                     const noteName = getEnharmonicName(detectedMidi);
                                     if(ui.micDetectedNote) ui.micDetectedNote.textContent = noteName;
                                     
-                                    const isMetronomeBleed = (detectedMidi === 69 || detectedMidi === 81) && !expectedMidis.some(m => m % 12 === 9);
-                                    
-                                    if (!isMetronomeBleed) {
-                                        isHit = expectedMidis.some(expectedMidi =>
-                                            detectedMidi === expectedMidi ||
-                                            detectedMidi === expectedMidi - 12 ||
-                                            detectedMidi === expectedMidi + 12 ||
-                                            detectedMidi === expectedMidi - 24 || 
-                                            detectedMidi === expectedMidi + 24
-                                        );
-                                    }
+                                    // IGNORA OCTAVA PERO EXIGE CLARIDAD
+                                    detectedCorrectPitch = expectedMidis.some(expectedMidi =>
+                                        (detectedMidi % 12) === (expectedMidi % 12)
+                                    );
                                 } else {
                                     if(ui.micDetectedNote) ui.micDetectedNote.textContent = '';
                                 }
                             } else {
-                                // MODO ARMONÍA: Llamada al Verificador Espectral
                                 if(ui.micDetectedNote) ui.micDetectedNote.textContent = '...';
-                                isHit = verifyChord(expectedMidis);
+                                detectedCorrectPitch = verifyChord(expectedMidis);
                             }
 
-                            if (isHit) {
-                                state.score.hits.add(hitKey);
-                                state.score.status[hitKey] = 'hit'; 
-                                state.score.wrongFrames = 0; 
-                            } else if (state.score.status[hitKey] !== 'hit') {
-                                state.score.wrongFrames++;
-                                if (state.score.wrongFrames >= 5) {
-                                    state.score.status[hitKey] = 'miss'; 
+                            if (detectedCorrectPitch) {
+                                state.score.consecutiveHits = (state.score.consecutiveHits || 0) + 1;
+                                // 2 fotogramas aseguran que sea estable antes de darle el "Hit"
+                                if (state.score.consecutiveHits >= 2) { 
+                                    if (state.score.status[hitKey] !== 'hit' && state.score.status[hitKey] !== 'imprecise') {
+                                        const timeDiff = Math.abs(audio.context.currentTime - currentEvent.time);
+                                        state.score.status[hitKey] = timeDiff <= 0.35 ? 'hit' : 'imprecise';
+                                        state.score.hits.add(hitKey);
+                                    }
+                                }
+                            } else {
+                                state.score.consecutiveHits = 0;
+                                if (state.score.status[hitKey] !== 'hit') {
+                                    state.score.wrongFrames++;
+                                    if (state.score.wrongFrames >= 12) { 
+                                        state.score.status[hitKey] = 'miss';
+                                    }
                                 }
                             }
                         } else {
@@ -2121,11 +2187,9 @@
                 const beatDuration = 60.0 / tempo;
                 
                 state.logicalMetronomeCount++; 
-                if (state.logicalMetronomeCount > state.timeSignatureBeats) {
-                    state.logicalMetronomeCount = 1;
-                }
+                if (state.logicalMetronomeCount > state.timeSignatureBeats) state.logicalMetronomeCount = 1;
                 
-                playMetronomeSound(audio.nextNoteTime, state.logicalMetronomeCount === 1);
+                playMetronomeSound(audio.nextNoteTime, state.logicalMetronomeCount === 1, state.logicalMetronomeCount);
 
                 let playingNotes = [];
                 let rootNoteNameForFretboard = null;
@@ -2133,21 +2197,12 @@
 
                 if (state.logicalIsPreRoll) {
                     displayedContent = state.exerciseMeasures.length > 0 ? state.exerciseMeasures[0] : [];
-                    
                     state.visualQueue.push({
-                        time: audio.nextNoteTime,
-                        type: 'tick',
-                        isPreRoll: true,
-                        metronomeCount: state.logicalMetronomeCount,
-                        measureIndex: -1,
-                        displayedContent: displayedContent,
-                        playingNotes: [],
-                        rootName: null
+                        time: audio.nextNoteTime, type: 'tick', isPreRoll: true,
+                        metronomeCount: state.logicalMetronomeCount, measureIndex: -1,
+                        displayedContent: displayedContent, playingNotes: [], rootName: null
                     });
-
-                    if (state.logicalMetronomeCount === state.timeSignatureBeats) { 
-                        state.logicalIsPreRoll = false; 
-                    }
+                    if (state.logicalMetronomeCount === state.timeSignatureBeats) state.logicalIsPreRoll = false; 
                 } else {
                     if (state.logicalMetronomeCount === 1) {
                          if (state.logicalMeasureIndex === -1) state.logicalMeasureIndex = 0; 
@@ -2173,9 +2228,7 @@
                          if (state.notesPerChord === 4) itemIndex = Math.floor(beatIndex / 2);
                          if (itemIndex >= 0 && contentForPlayback && itemIndex < contentForPlayback.length) {
                              playingNotes = contentForPlayback[itemIndex];
-                             if (playingNotes && playingNotes.length > 1) { 
-                                 rootNoteNameForFretboard = getChordName(playingNotes).root; 
-                             }
+                             if (playingNotes && playingNotes.length > 1) rootNoteNameForFretboard = getChordName(playingNotes).root; 
                          }
                     }
 
@@ -2186,36 +2239,70 @@
                     }
 
                     const hitKey = `${state.logicalMeasureIndex}-${state.logicalMetronomeCount}`;
-                    if (playingNotes && playingNotes.length > 0) {
-                         state.score.expectedNotes[hitKey] = playingNotes;
-                    }
+                    if (playingNotes && playingNotes.length > 0) state.score.expectedNotes[hitKey] = playingNotes;
 
                     if (state.logicalMetronomeCount >= state.measuresChangeBeat) {
                         const nextMeasureIndex = state.logicalMeasureIndex + 1;
-                        if (nextMeasureIndex < state.measuresPerExercise) {
-                            displayedContent = state.exerciseMeasures[nextMeasureIndex];
-                        } else {
-                            displayedContent = [];
-                        } 
+                        displayedContent = nextMeasureIndex < state.measuresPerExercise ? state.exerciseMeasures[nextMeasureIndex] : [];
                     } else { 
                         displayedContent = contentForPlayback;
                     }
                     
                     state.visualQueue.push({
-                        time: audio.nextNoteTime,
-                        type: 'tick',
-                        isPreRoll: false,
-                        metronomeCount: state.logicalMetronomeCount,
-                        measureIndex: state.logicalMeasureIndex,
-                        displayedContent: displayedContent,
-                        playingNotes: playingNotes,
-                        rootName: rootNoteNameForFretboard
+                        time: audio.nextNoteTime, type: 'tick', isPreRoll: false,
+                        metronomeCount: state.logicalMetronomeCount, measureIndex: state.logicalMeasureIndex,
+                        displayedContent: displayedContent, playingNotes: playingNotes, rootName: rootNoteNameForFretboard
                     });
                 }
-                
                 audio.nextNoteTime += beatDuration;
             }
             state.metronomeTimer = setTimeout(scheduler, audio.lookahead);
+        }
+
+        function playNoteSound(note, time) {
+            if (!audio.context || !note) return; const freq = notesData.noteToFrequency[note]; if (!freq) return;
+            const osc = audio.context.createOscillator(); osc.connect(audio.noteGain); osc.frequency.value = freq;
+            const currentClef = ui.clefSelect.value;
+             if (currentClef === 'F' || currentClef === 'C') {
+                osc.type = 'triangle'; audio.noteGain.gain.cancelScheduledValues(time); audio.noteGain.gain.setValueAtTime(0, time);
+                audio.noteGain.gain.linearRampToValueAtTime(state.noteVolume * 0.8, time + 0.02); audio.noteGain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+            } else { 
+                osc.type = 'sine'; audio.noteGain.gain.cancelScheduledValues(time); audio.noteGain.gain.setValueAtTime(0, time);
+                audio.noteGain.gain.linearRampToValueAtTime(state.noteVolume, time + 0.02); audio.noteGain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+            }
+            osc.start(time); osc.stop(time + 0.5);
+        }
+
+        function playMetronomeSound(time, isAccent, beatNumber = 1) {
+            if (!audio.context || !state.metronomeEnabled) return;
+
+            if (state.metronomeSound !== 'classic') {
+                const delay = Math.max(0, (time - audio.context.currentTime) * 1000);
+                setTimeout(() => {
+                    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+                    const msg = new SpeechSynthesisUtterance();
+                    if (state.metronomeSound === 'voice-es') {
+                        const wordsEs = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez'];
+                        msg.text = wordsEs[beatNumber - 1] || beatNumber.toString();
+                        msg.lang = 'es-MX';
+                    } else {
+                        msg.text = beatNumber.toString();
+                        msg.lang = 'en-US';
+                    }
+                    msg.rate = 1.6; msg.volume = state.metronomeVolume;
+                    window.speechSynthesis.speak(msg);
+                }, delay);
+                return;
+            }
+
+            const osc = audio.context.createOscillator();
+            const gainNode = audio.context.createGain();
+            osc.connect(gainNode); gainNode.connect(audio.metronomeGain);
+            osc.frequency.setValueAtTime(isAccent ? 1000 : 500, time);
+            osc.frequency.exponentialRampToValueAtTime(10, time + 0.05);
+            gainNode.gain.setValueAtTime(state.metronomeVolume, time);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+            osc.start(time); osc.stop(time + 0.1);
         }
 
         function getNoteRangeForDifficulty() {
@@ -2241,16 +2328,13 @@
             if (state.exerciseType === 'armonia' && state.notesPerChord === 4) notesPerMeasure = 2;
             
             for (let i = 0; i < state.measuresPerExercise; i++) {
-                const measureContent = []; 
-                let measureTries = 0;
-                
+                const measureContent = []; let measureTries = 0;
                 while(measureContent.length < notesPerMeasure && measureTries < 200) {
                     let item;
                     if (state.exerciseType === 'melodia') {
                         const noteRange = getNoteRangeForDifficulty(); 
                         const scaleNotes = notesData.keySignatures[state.keySignature].notes;
                         const diatonicNotePool = noteRange.filter(note => scaleNotes.includes(note.split('/')[0]));
-                        
                         if (diatonicNotePool.length === 0) item = noteRange[0]; 
                         else {
                             let lastNote = measureContent.length > 0 ? measureContent[measureContent.length - 1] : (i > 0 ? allMeasures[i-1].slice(-1)[0] : null);
@@ -2261,12 +2345,11 @@
                         const noteRange = getNoteRangeForDifficulty(); 
                         item = generateHarmonicItem(noteRange); 
                     }
-                    
                     if (item) measureContent.push(item);
                     measureTries++;
                 }
                 if (measureContent.length === notesPerMeasure) allMeasures.push(measureContent);
-                else { console.warn(`Failed to generate a full measure for measure #${i}. Retrying.`); i--; }
+                else { i--; }
             }
             return allMeasures;
         }
@@ -2274,9 +2357,9 @@
         function generateMelodicNote(notePool, lastNote, previousNote) {
              let nextNote = null; let attempts = 0; const difficulty = ui.difficultySelect.value;
             const maxInterval = difficulty === 'advanced' ? 7 : 5; 
-            if (!lastNote) return notePool[Math.floor(Math.random() * notePool.length)];
+            if (!lastNote) return notePool[Math.floor(randomFloat() * notePool.length)];
             const lastNoteIndex = notePool.indexOf(lastNote);
-            if (lastNoteIndex === -1) return notePool[Math.floor(Math.random() * notePool.length)];
+            if (lastNoteIndex === -1) return notePool[Math.floor(randomFloat() * notePool.length)];
             if (previousNote) {
                 const prevNoteIndex = notePool.indexOf(previousNote);
                 if(prevNoteIndex !== -1) {
@@ -2289,13 +2372,13 @@
                 }
             }
             while (nextNote === null && attempts < 100) {
-                const randomChoice = Math.random(); let chosenInterval;
-                if (randomChoice < 0.6) { chosenInterval = 1; } else if (randomChoice < 0.85) { chosenInterval = 2; } else { chosenInterval = Math.floor(Math.random() * (maxInterval - 2)) + 3; } 
-                const direction = Math.random() < 0.5 ? 1 : -1; const nextIndex = lastNoteIndex + (chosenInterval * direction);
-                if (nextIndex >= 0 && nextIndex < notePool.length) { nextNote = notePool[nextIndex]; }
+                const randomChoice = randomFloat(); let chosenInterval;
+                if (randomChoice < 0.6) chosenInterval = 1; else if (randomChoice < 0.85) chosenInterval = 2; else chosenInterval = Math.floor(randomFloat() * (maxInterval - 2)) + 3; 
+                const direction = randomFloat() < 0.5 ? 1 : -1; const nextIndex = lastNoteIndex + (chosenInterval * direction);
+                if (nextIndex >= 0 && nextIndex < notePool.length) nextNote = notePool[nextIndex];
                 attempts++;
             }
-            return nextNote || notePool[Math.floor(Math.random() * notePool.length)];
+            return nextNote || notePool[Math.floor(randomFloat() * notePool.length)];
         }
         
         function alterNote(note, semitones) {
@@ -2313,43 +2396,25 @@
             if (numNotes === 2) {
                 const diatonicScale = notesData.keySignatures['C'].notes; 
                 const diatonicNotePool = noteRange.filter(note => diatonicScale.includes(note.split('/')[0]));
-
-                let intervalStepsList = [];
-                if (state.selectedInterval === 'custom') {
-                    if (state.selectedCustomIntervals.size === 0) return null;
-                    intervalStepsList = Array.from(state.selectedCustomIntervals).map(i => parseInt(i, 10));
-                } else {
-                    intervalStepsList = state.selectedInterval == 0 ? [1,2,3,4,5,6,7] : [parseInt(state.selectedInterval, 10)];
-                }
+                let intervalStepsList = state.selectedInterval === 'custom' ? Array.from(state.selectedCustomIntervals).map(i => parseInt(i, 10)) : (state.selectedInterval == 0 ? [1,2,3,4,5,6,7] : [parseInt(state.selectedInterval, 10)]);
 
                 for (let rootIndex = 0; rootIndex < diatonicNotePool.length; rootIndex++) {
                     const rootNote = diatonicNotePool[rootIndex];
                     for (let steps of intervalStepsList) {
                         const topNoteIndex = rootIndex + steps;
-                        if (topNoteIndex < diatonicNotePool.length) {
-                            validPool.push([rootNote, diatonicNotePool[topNoteIndex]]);
-                        }
+                        if (topNoteIndex < diatonicNotePool.length) validPool.push([rootNote, diatonicNotePool[topNoteIndex]]);
                     }
                 }
             } else if (numNotes === 3) {
                 const diatonicScale = notesData.keySignatures['C'].notes;
                 const diatonicNotePool = noteRange.filter(note => diatonicScale.includes(note.split('/')[0]));
-                
-                let triadTypes = [];
-                if (state.selectedTriad === 'all') {
-                    triadTypes = Array.from(ui.triadSelect.options).filter(o => !['all', 'custom'].includes(o.value)).map(o => o.value);
-                } else if (state.selectedTriad === 'custom') {
-                    triadTypes = Array.from(state.selectedCustomTriads);
-                } else {
-                    triadTypes = [state.selectedTriad];
-                }
+                let triadTypes = state.selectedTriad === 'all' ? Array.from(ui.triadSelect.options).filter(o => !['all', 'custom'].includes(o.value)).map(o => o.value) : (state.selectedTriad === 'custom' ? Array.from(state.selectedCustomTriads) : [state.selectedTriad]);
 
                 for (let rootNote of diatonicNotePool) {
                     const rootName = rootNote.split('/')[0];
                     for (let triadType of triadTypes) {
                         const [chordFamily] = triadType.split('_');
                         let fundamentalNoteNames;
-                        
                         if (chordFamily === 'shell') fundamentalNoteNames = notesData.diatonicShellVoicings[rootName];
                         else if (chordFamily === 'sus2') {
                             const rootIdx = diatonicScale.indexOf(rootName);
@@ -2357,13 +2422,12 @@
                         } else if (chordFamily === 'sus4') {
                             const rootIdx = diatonicScale.indexOf(rootName);
                             fundamentalNoteNames = [diatonicScale[rootIdx], diatonicScale[(rootIdx+3)%7], diatonicScale[(rootIdx+4)%7]];
-                        } else { fundamentalNoteNames = notesData.diatonicTriads[rootName]; }
+                        } else fundamentalNoteNames = notesData.diatonicTriads[rootName];
 
                         const closeChord = findClosestNotes(rootNote, fundamentalNoteNames, noteRange);
                         if (!closeChord || closeChord.length !== 3) continue;
 
                         let chordVariants = [closeChord];
-                        
                         if (chordFamily === 'shell') {
                             const thirdUp = alterNote(closeChord[1], 12);
                             if (thirdUp && noteRange.includes(thirdUp)) chordVariants.push([closeChord[0], closeChord[2], thirdUp]);
@@ -2375,54 +2439,31 @@
                             const newFifth = alterNote(closeChord[2], -12);
                             if (newFifth && noteRange.includes(newFifth)) chordVariants = [[newFifth, closeChord[0], closeChord[1]]];
                             else {
-                                const newRoot = alterNote(closeChord[0], 12);
-                                const newThird = alterNote(closeChord[1], 12);
-                                if (newRoot && newThird && noteRange.includes(newRoot) && noteRange.includes(newThird)) {
-                                    chordVariants = [[closeChord[2], newRoot, newThird]];
-                                } else chordVariants = [];
+                                const newRoot = alterNote(closeChord[0], 12); const newThird = alterNote(closeChord[1], 12);
+                                if (newRoot && newThird && noteRange.includes(newRoot) && noteRange.includes(newThird)) chordVariants = [[closeChord[2], newRoot, newThird]];
+                                else chordVariants = [];
                             }
                         }
 
                         for (let variant of chordVariants) {
                             variant.sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
-                            let targetPositions = [];
-                            if (chordFamily.startsWith('sus') || chordFamily === 'shell') targetPositions = ['cerrada'];
-                            else if (state.triadPosition === 'all') targetPositions = ['cerrada', 'abierta'];
-                            else targetPositions = [state.triadPosition];
-
+                            let targetPositions = chordFamily.startsWith('sus') || chordFamily === 'shell' ? ['cerrada'] : (state.triadPosition === 'all' ? ['cerrada', 'abierta'] : [state.triadPosition]);
                             for (let pos of targetPositions) {
-                                if (pos === 'cerrada') {
-                                    if (notesData.chromaticMap[variant[0]] >= notesData.chromaticMap['A/3']) validPool.push(variant);
-                                } else if (pos === 'abierta') {
+                                if (pos === 'cerrada' && notesData.chromaticMap[variant[0]] >= notesData.chromaticMap['A/3']) validPool.push(variant);
+                                else if (pos === 'abierta') {
                                     const midUp = alterNote(variant[1], 12);
-                                    if (midUp && noteRange.includes(midUp)) {
-                                        const openVar = [variant[0], variant[2], midUp].sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
-                                        validPool.push(openVar);
-                                    }
+                                    if (midUp && noteRange.includes(midUp)) validPool.push([variant[0], variant[2], midUp].sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]));
                                 }
                             }
                         }
                     }
                 }
             } else if (numNotes === 4) {
-                let chordTypes = [];
-                if (state.selectedQuadChordType === 'custom') chordTypes = Array.from(state.selectedCustomQuadChordTypes);
-                else if (state.selectedQuadChordType === 'all') chordTypes = ['maj7','m7','dom7','m7b5','dim7'];
-                else chordTypes = [state.selectedQuadChordType];
+                let chordTypes = state.selectedQuadChordType === 'custom' ? Array.from(state.selectedCustomQuadChordTypes) : (state.selectedQuadChordType === 'all' ? ['maj7','m7','dom7','m7b5','dim7'] : [state.selectedQuadChordType]);
+                let inversions = state.selectedQuadInversion === 'custom' ? Array.from(state.selectedCustomQuadInversions) : (state.selectedQuadInversion === 'all' ? ['0','1','2','3'] : [state.selectedQuadInversion]);
+                let voicings = state.selectedQuadVoicing === 'custom' ? Array.from(state.selectedCustomVoicings) : (state.selectedQuadVoicing === 'all' ? Object.keys(notesData.voicingInversionMap) : [state.selectedQuadVoicing]);
 
-                let inversions = [];
-                if (state.selectedQuadInversion === 'custom') inversions = Array.from(state.selectedCustomQuadInversions);
-                else if (state.selectedQuadInversion === 'all') inversions = ['0','1','2','3'];
-                else inversions = [state.selectedQuadInversion];
-
-                let voicings = [];
-                if (state.selectedQuadVoicing === 'custom') voicings = Array.from(state.selectedCustomVoicings);
-                else if (state.selectedQuadVoicing === 'all') voicings = Object.keys(notesData.voicingInversionMap);
-                else voicings = [state.selectedQuadVoicing];
-
-                const rootNames = Object.keys(notesData.allowedFourNoteChords);
-                
-                for (let rootName of rootNames) {
+                for (let rootName of Object.keys(notesData.allowedFourNoteChords)) {
                     const chords = notesData.allowedFourNoteChords[rootName];
                     for (let chordType of chordTypes) {
                         let suffix = chordType === 'dom7' ? '7' : (chordType === 'dim7' ? '°7' : chordType);
@@ -2431,16 +2472,13 @@
                              if (suffix === '7') return c.name.endsWith('7') && !c.name.endsWith('maj7') && !c.name.endsWith('m7') && !c.name.endsWith('°7');
                              return c.name.endsWith(suffix);
                         });
-                        
                         if (!chordDef) continue;
 
                         for (let inv of inversions) {
                             if (chordDef.name.includes('°7') && inv !== '0') continue;
-
                             for (let voicing of voicings) {
                                 const sourceInversion = notesData.voicingInversionMap[voicing] ? notesData.voicingInversionMap[voicing][inv] : inv;
                                 const possibleCloseChords = getAllClosePositionInversions(chordDef.notes, parseInt(sourceInversion, 10), noteRange);
-                                
                                 for (let closeChord of possibleCloseChords) {
                                     const voicedChord = applyVoicing(closeChord, voicing, noteRange);
                                     if (voicedChord && voicedChord.every(n => n && noteRange.includes(n))) {
@@ -2453,41 +2491,31 @@
                     }
                 }
             }
-
             if (validPool.length === 0) return null;
-            return validPool[Math.floor(Math.random() * validPool.length)];
+            return validPool[Math.floor(randomFloat() * validPool.length)];
         }
 
         function getAllClosePositionInversions(noteNames, inversion, noteRange) {
             const results = [];
             if (inversion >= noteNames.length) return results;
             const bassNoteName = noteNames[inversion];
-            
             for(let octave = 2; octave <= 6; octave++) {
                 const bassNote = `${bassNoteName}/${octave}`;
                 if (!noteRange.includes(bassNote)) continue;
-
                 const chord = [bassNote];
                 let lastNoteValue = notesData.chromaticMap[bassNote];
                 let success = true;
 
                 for (let i = 1; i < noteNames.length; i++) {
                     const targetName = noteNames[(inversion + i) % noteNames.length];
-                    let nextNote = null;
-                    const lastOctave = parseInt(chord[i-1].split('/')[1]);
-
-                     for (let oct_offset = 0; oct_offset <= 2; oct_offset++) {
+                    let nextNote = null; const lastOctave = parseInt(chord[i-1].split('/')[1]);
+                    for (let oct_offset = 0; oct_offset <= 2; oct_offset++) {
                         const currentOctave = lastOctave + oct_offset;
                         const candidateNote = `${targetName}/${currentOctave}`;
-                        if (notesData.all.includes(candidateNote) && notesData.chromaticMap[candidateNote] > lastNoteValue) {
-                             nextNote = candidateNote; break;
-                        }
+                        if (notesData.all.includes(candidateNote) && notesData.chromaticMap[candidateNote] > lastNoteValue) { nextNote = candidateNote; break; }
                     }
-                     if (nextNote && noteRange.includes(nextNote)) { 
-                         chord.push(nextNote); 
-                         lastNoteValue = notesData.chromaticMap[nextNote]; 
-                     } 
-                     else { success = false; break; }
+                    if (nextNote && noteRange.includes(nextNote)) { chord.push(nextNote); lastNoteValue = notesData.chromaticMap[nextNote]; } 
+                    else { success = false; break; }
                 }
                 if (success) results.push(chord);
             }
@@ -2521,53 +2549,19 @@
                     const candidateNote = `${targetName}/${oct}`;
                     if (noteRange.includes(candidateNote) && notesData.chromaticMap[candidateNote] > lastNoteValue) { bestCandidate = candidateNote; break; }
                 }
-                if (bestCandidate) { result.push(bestCandidate); lastNoteValue = notesData.chromaticMap[bestCandidate]; } else { return null; }
+                if (bestCandidate) { result.push(bestCandidate); lastNoteValue = notesData.chromaticMap[bestCandidate]; } else return null;
             }
             return result.length === noteNames.length ? result : null;
         }
 
-        function playNoteSound(note, time) {
-            if (!audio.context || !note) return; const freq = notesData.noteToFrequency[note]; if (!freq) return;
-            const osc = audio.context.createOscillator(); osc.connect(audio.noteGain); osc.frequency.value = freq;
-            const currentClef = ui.clefSelect.value;
-             if (currentClef === 'F' || currentClef === 'C') {
-                osc.type = 'triangle'; audio.noteGain.gain.cancelScheduledValues(time); audio.noteGain.gain.setValueAtTime(0, time);
-                audio.noteGain.gain.linearRampToValueAtTime(state.noteVolume * 0.8, time + 0.02); audio.noteGain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
-            } else { 
-                osc.type = 'sine'; audio.noteGain.gain.cancelScheduledValues(time); audio.noteGain.gain.setValueAtTime(0, time);
-                audio.noteGain.gain.linearRampToValueAtTime(state.noteVolume, time + 0.02); audio.noteGain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
-            }
-            osc.start(time); osc.stop(time + 0.5);
-        }
-
-        function playMetronomeSound(time, isAccent) {
-            if (!audio.context || !state.metronomeEnabled) return;
-            const osc = audio.context.createOscillator(); osc.connect(audio.metronomeGain);
-            osc.frequency.value = isAccent ? 880 : 440; osc.type = 'square';
-            const volume = isAccent ? state.metronomeVolume * 1.5 : state.metronomeVolume;
-            audio.metronomeGain.gain.cancelScheduledValues(time); audio.metronomeGain.gain.setValueAtTime(Math.min(1.0, volume), time);
-            audio.metronomeGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05); 
-            osc.start(time); osc.stop(time + 0.1);
-        }
-        
         function getIntervalAbbreviation(notes) {
             if (notes.length !== 2) return { name: '' };
             const [note1, note2] = notes.sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
             const [name1, oct1_str] = note1.split('/'); const [name2, oct2_str] = note2.split('/');
-            const oct1 = parseInt(oct1_str, 10); const oct2 = parseInt(oct2_str, 10);
             const diatonicIndex1 = notesData.letterToDiatonic[name1[0]]; const diatonicIndex2 = notesData.letterToDiatonic[name2[0]];
-            const diatonicDiff = (oct2 - oct1) * 7 + (diatonicIndex2 - diatonicIndex1) + 1;
+            const diatonicDiff = (parseInt(oct2_str) - parseInt(oct1_str)) * 7 + (diatonicIndex2 - diatonicIndex1) + 1;
             const chromaticDiff = notesData.chromaticMap[note2] - notesData.chromaticMap[note1];
-            const key = `${diatonicDiff}-${chromaticDiff}`;
-            return { name: notesData.intervalAbbreviations[key] || diatonicDiff.toString() };
-        }
-
-        function getDiatonicInterval(note1, note2) {
-            if (notesData.chromaticMap[note1] > notesData.chromaticMap[note2]) [note1, note2] = [note2, note1];
-            const [name1, oct1_str] = note1.split('/'); const [name2, oct2_str] = note2.split('/');
-            const oct1 = parseInt(oct1_str, 10); const oct2 = parseInt(oct2_str, 10);
-            const diatonicIndex1 = notesData.letterToDiatonic[name1[0]]; const diatonicIndex2 = notesData.letterToDiatonic[name2[0]];
-            return (oct2 - oct1) * 7 + (diatonicIndex2 - diatonicIndex1) + 1;
+            return { name: notesData.intervalAbbreviations[`${diatonicDiff}-${chromaticDiff}`] || diatonicDiff.toString() };
         }
         
         function getChordName(notes) {
@@ -2588,10 +2582,8 @@
                     let chordName = rootNoteName === bassNoteName ? `${rootNoteName}${quality}` : `${rootNoteName}${quality}/${bassNoteName}`;
                     let figuredBass = []; const isInversion = rootNoteName !== bassNoteName;
                     if (notes.length === 3 && isInversion) {
-                        const isStandardTriad = (quality === '' || quality === 'm' || quality === '°' || quality === '+');
-                        if(isStandardTriad){
-                            const rootDiatonicIndex = notesData.letterToDiatonic[rootNoteName[0]]; const bassDiatonicIndex = notesData.letterToDiatonic[bassNoteName[0]];
-                            let interval = (bassDiatonicIndex - rootDiatonicIndex + 7) % 7;
+                        if (['','m','°','+'].includes(quality)) {
+                            let interval = (notesData.letterToDiatonic[bassNoteName[0]] - notesData.letterToDiatonic[rootNoteName[0]] + 7) % 7;
                             if (interval === 2) figuredBass = ['6']; else if (interval === 4) figuredBass = ['6', '4'];
                         }
                     }
@@ -2606,24 +2598,21 @@
             if (names.sharp === names.flat) return names.sharp;
             if (state.enharmonicPreference === 'sharps') return names.sharp;
             if (state.enharmonicPreference === 'flats') return names.flat;
-            const keyInfo = notesData.keySignatures[state.keySignature];
-            return (keyInfo.type === 'flat') ? names.flat : names.sharp;
+            return notesData.keySignatures[state.keySignature].type === 'flat' ? names.flat : names.sharp;
         }
 
         function drawFretboardWithCurrentSettings() {
             if (state.exerciseType === 'melodia') {
                 const scaleNoteNames = notesData.keySignatures[state.keySignature].notes;
-                const range = getNoteRangeForDifficulty();
-                const notesToDraw = range.filter(note => scaleNoteNames.includes(note.split('/')[0]));
-                drawFretboard(notesToDraw);
-            } else { drawFretboard([]); }
+                drawFretboard(getNoteRangeForDifficulty().filter(note => scaleNoteNames.includes(note.split('/')[0])));
+            } else drawFretboard([]);
         }
 
         function drawFretboard(staticNotes = []) {
             const container = ui.fretboardContainer; container.innerHTML = '';
-            const NUM_FRETS = 15; const NUM_STRINGS = 6;
-            const tuningLabels = ['E', 'B', 'G', 'D', 'A', 'E']; const tuning = ['E/5', 'B/4', 'G/4', 'D/4', 'A/3', 'E/3'];
-            const fretWidth = 50; const stringHeight = 20; const startX = 35; const startY = 20;
+            const NUM_FRETS = 15, NUM_STRINGS = 6;
+            const tuning = ['E/5', 'B/4', 'G/4', 'D/4', 'A/3', 'E/3'];
+            const fretWidth = 50, stringHeight = 20, startX = 35, startY = 20;
             const svgWidth = startX + (NUM_FRETS * fretWidth) + fretWidth / 2 + 10; const svgHeight = startY + (NUM_STRINGS * stringHeight) + 30;
 
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -2637,15 +2626,13 @@
             wood.setAttribute('x', startX); wood.setAttribute('y', startY); wood.setAttribute('width', NUM_FRETS * fretWidth);
             wood.setAttribute('height', (NUM_STRINGS - 1) * stringHeight); wood.setAttribute('fill', '#6b462a'); wood.setAttribute('rx', '5'); svg.appendChild(wood);
 
-            const markers = [3, 5, 7, 9, 15];
-            markers.forEach(fret => {
+            [3, 5, 7, 9, 15].forEach(fret => {
                 const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 marker.setAttribute('cx', startX + (fret * fretWidth) - fretWidth / 2); marker.setAttribute('cy', startY + (NUM_STRINGS * stringHeight) / 2 - stringHeight / 2);
                 marker.setAttribute('r', 4); marker.setAttribute('fill', '#a1a1aa'); marker.setAttribute('opacity', '0.5'); svg.appendChild(marker);
             });
-            const doubleMarkerFret = 12;
-            const marker1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); marker1.setAttribute('cx', startX + (doubleMarkerFret * fretWidth) - fretWidth / 2); marker1.setAttribute('cy', startY + 1.5 * stringHeight); marker1.setAttribute('r', 4); marker1.setAttribute('fill', '#a1a1aa'); marker1.setAttribute('opacity', '0.5'); svg.appendChild(marker1);
-            const marker2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); marker2.setAttribute('cx', startX + (doubleMarkerFret * fretWidth) - fretWidth / 2); marker2.setAttribute('cy', startY + 3.5 * stringHeight); marker2.setAttribute('r', 4); marker2.setAttribute('fill', '#a1a1aa'); marker2.setAttribute('opacity', '0.5'); svg.appendChild(marker2);
+            const marker1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); marker1.setAttribute('cx', startX + (12 * fretWidth) - fretWidth / 2); marker1.setAttribute('cy', startY + 1.5 * stringHeight); marker1.setAttribute('r', 4); marker1.setAttribute('fill', '#a1a1aa'); marker1.setAttribute('opacity', '0.5'); svg.appendChild(marker1);
+            const marker2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); marker2.setAttribute('cx', startX + (12 * fretWidth) - fretWidth / 2); marker2.setAttribute('cy', startY + 3.5 * stringHeight); marker2.setAttribute('r', 4); marker2.setAttribute('fill', '#a1a1aa'); marker2.setAttribute('opacity', '0.5'); svg.appendChild(marker2);
 
             for (let i = 0; i <= NUM_FRETS; i++) {
                 const x = startX + (i * fretWidth); const fret = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -2667,8 +2654,8 @@
                 g.classList.add('clickable-note'); g.dataset.note = openNote; g.addEventListener('click', handleFretboardNoteClick);
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('cx', startX - 20); circle.setAttribute('cy', startY + (i * stringHeight)); circle.setAttribute('r', 9);
-                const keyNotes = notesData.keySignatures[state.keySignature].notes; const rootNoteName = keyNotes[0];
-                if (openNote.startsWith(rootNoteName)) circle.setAttribute('fill', '#ef4444'); else circle.setAttribute('fill', '#3b82f6');
+                const rootNoteName = notesData.keySignatures[state.keySignature].notes[0];
+                circle.setAttribute('fill', openNote.startsWith(rootNoteName) ? '#ef4444' : '#3b82f6');
                 g.appendChild(circle);
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('x', startX - 20); text.setAttribute('y', startY + (i * stringHeight));
@@ -2676,8 +2663,7 @@
                 staticNotesGroup.appendChild(g);
             });
 
-            const fretNumbers = [3, 5, 7, 9, 12, 15];
-            fretNumbers.forEach(fret => {
+            [3, 5, 7, 9, 12, 15].forEach(fret => {
                 if (fret > NUM_FRETS) return;
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('x', startX + (fret * fretWidth) - fretWidth / 2); text.setAttribute('y', svgHeight - 10);
@@ -2700,8 +2686,8 @@
                 g.classList.add('clickable-note'); g.dataset.note = note; g.addEventListener('click', handleFretboardNoteClick);
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('cx', cx); circle.setAttribute('cy', cy); circle.setAttribute('r', 9);
-                const keyNotes = notesData.keySignatures[state.keySignature].notes; const rootNoteName = keyNotes[0];
-                if (note.startsWith(rootNoteName)) circle.setAttribute('fill', '#ef4444'); else circle.setAttribute('fill', '#3b82f6');
+                const rootNoteName = notesData.keySignatures[state.keySignature].notes[0];
+                circle.setAttribute('fill', note.startsWith(rootNoteName) ? '#ef4444' : '#3b82f6');
                 circle.setAttribute('stroke', '#18181b'); circle.setAttribute('stroke-width', '1.5');
                 g.appendChild(circle);
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -2717,7 +2703,7 @@
             const highlightsGroup = document.getElementById('fretboard-highlights'); if (!highlightsGroup) return;
             highlightsGroup.innerHTML = '';
             if (!Array.isArray(playingNotes) || playingNotes.length === 0) return;
-            const NUM_FRETS = 15; const fretWidth = 50; const stringHeight = 20; const startX = 35; const startY = 20;
+            const NUM_FRETS = 15, fretWidth = 50, stringHeight = 20, startX = 35, startY = 20;
             const notePositions = new Set();
             
             playingNotes.forEach(note => {
@@ -2729,7 +2715,7 @@
             notePositions.forEach((posString) => {
                 const {note, string, fret} = JSON.parse(posString);
                 const midiVal = notesData.chromaticMap[note]; const noteName = getEnharmonicName(midiVal);
-                const cx = (fret === 0) ? startX - 20 : startX + (fret * fretWidth) - (fretWidth / 2); const cy = startY + (string * stringHeight);
+                const cx = fret === 0 ? startX - 20 : startX + (fret * fretWidth) - (fretWidth / 2); const cy = startY + (string * stringHeight);
                 
                 const glow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 glow.setAttribute('cx', cx); glow.setAttribute('cy', cy); glow.setAttribute('r', 13); glow.setAttribute('fill', '#fde047'); glow.setAttribute('opacity', '0.75');
@@ -2741,9 +2727,8 @@
                 circle.setAttribute('class', 'note-marker'); circle.setAttribute('cx', cx); circle.setAttribute('cy', cy); circle.setAttribute('r', 9); circle.setAttribute('stroke', '#fde047'); circle.setAttribute('stroke-width', '2.5');
 
                 if (state.exerciseType === 'armonia' && rootNoteName && playingNotes.length > 1) {
-                    const currentNoteNameOnly = note.split('/')[0];
-                    if (currentNoteNameOnly === rootNoteName) circle.setAttribute('fill', '#ef4444'); else circle.setAttribute('fill', '#3b82f6'); 
-                } else { circle.setAttribute('fill', '#16a34a'); }
+                    circle.setAttribute('fill', note.split('/')[0] === rootNoteName ? '#ef4444' : '#3b82f6'); 
+                } else circle.setAttribute('fill', '#16a34a');
                 highlightsGroup.appendChild(circle);
 
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -2754,7 +2739,6 @@
 
         function renderStave(notesToShow = null) {
             ui.staveContainer.innerHTML = '';
-            
             if (typeof Vex === 'undefined') {
                 ui.staveContainer.innerHTML = '<p class="text-red-500">Cargando motor de partituras (VexFlow)...</p>';
                 setTimeout(() => renderStave(notesToShow), 200);
@@ -2764,30 +2748,24 @@
             const VF = Vex.Flow;
             const containerWidth = ui.staveContainer.clientWidth;
             const containerHeight = ui.staveContainer.clientHeight;
-            
             if (containerWidth === 0 || containerHeight === 0) return;
 
             const renderer = new VF.Renderer(ui.staveContainer, VF.Renderer.Backends.SVG);
             renderer.resize(containerWidth, containerHeight);
             const context = renderer.getContext();
 
-            const logicalWidth = 340;
-            const logicalHeight = 225;
-            
+            const logicalWidth = 340, logicalHeight = 225;
             const svgElement = ui.staveContainer.querySelector("svg");
             if (svgElement) {
                 svgElement.setAttribute("viewBox", `0 0 ${logicalWidth} ${logicalHeight}`);
                 svgElement.setAttribute("preserveAspectRatio", "xMidYMid meet");
             }
 
-            const staveY = 40; 
-            const stave = new VF.Stave(10, staveY, logicalWidth - 20); 
+            const stave = new VF.Stave(10, 40, logicalWidth - 20); 
             const vfClef = ui.clefSelect.value === 'G' ? 'treble' : (ui.clefSelect.value === 'F' ? 'bass' : 'alto');
             stave.addClef(vfClef).addTimeSignature(ui.timeSigSelect.value);
 
-            if (state.exerciseType === 'melodia' && state.keySignature !== 'C') {
-                stave.addKeySignature(state.keySignature);
-            }
+            if (state.exerciseType === 'melodia' && state.keySignature !== 'C') stave.addKeySignature(state.keySignature);
             stave.setContext(context).draw();
 
             let contentToDraw = notesToShow;
@@ -2800,29 +2778,23 @@
                 if (svgElement) {
                     let guideLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
                     guideLine.setAttribute('id', 'guide-line');
-                    guideLine.setAttribute('y1', '5');
-                    guideLine.setAttribute('y2', '165');
-                    guideLine.setAttribute('stroke', 'rgba(239, 68, 68, 0.8)');
-                    guideLine.setAttribute('stroke-width', '1.5');
-                    guideLine.style.display = 'none';
-                    guideLine.style.transition = 'transform 0.05s ease-out';
+                    guideLine.setAttribute('y1', '5'); guideLine.setAttribute('y2', '165');
+                    guideLine.setAttribute('stroke', 'rgba(56, 189, 248, 0.8)'); guideLine.setAttribute('stroke-width', '2');
+                    guideLine.style.display = 'none'; guideLine.style.transition = 'transform 0.05s linear';
                     svgElement.appendChild(guideLine);
                     ui.guideLine = guideLine;
                 }
                 return;
             }
 
-            const vfNotes = [];
-            const duration = "q"; 
-            const activeAccidentals = {};
-
+            const vfNotes = []; const activeAccidentals = {};
             contentToDraw.forEach((item) => {
                 if (!item || item.length === 0) return;
                 const isChord = Array.isArray(item);
                 const rawNotes = isChord ? [...item].sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]) : [item];
                 const keys = rawNotes.map(n => n.toLowerCase().replace('##', '##').replace('bb', 'bb'));
 
-                const staveNote = new VF.StaveNote({ clef: vfClef, keys: keys, duration: duration });
+                const staveNote = new VF.StaveNote({ clef: vfClef, keys: keys, duration: "q" });
                 staveNote.hasStem = () => false;
 
                 keys.forEach((key, keyIndex) => {
@@ -2830,22 +2802,17 @@
                     const accidental = key.split('/')[0].slice(1);
                     const keyNotes = notesData.keySignatures[state.keySignature].notes;
                     const noteInKey = keyNotes.find(n => n.toLowerCase().startsWith(noteLetter));
-                    const keyAccidental = noteInKey && noteInKey.length > 1 ? noteInKey.slice(1).toLowerCase().replace('##', '##').replace('bb', 'bb') : '';
-                    
+                    const keyAccidental = noteInKey && noteInKey.length > 1 ? noteInKey.slice(1).toLowerCase() : '';
                     const currentAccidentalInMeasure = activeAccidentals[noteLetter] === undefined ? keyAccidental : activeAccidentals[noteLetter];
 
                     if (state.exerciseType === 'armonia' || accidental !== currentAccidentalInMeasure) {
-                        if (accidental) {
-                            staveNote.addModifier(new VF.Accidental(accidental), keyIndex);
-                        } else if (state.exerciseType !== 'armonia' && keyAccidental !== '') {
-                            staveNote.addModifier(new VF.Accidental("n"), keyIndex);
-                        }
+                        if (accidental) staveNote.addModifier(new VF.Accidental(accidental), keyIndex);
+                        else if (state.exerciseType !== 'armonia' && keyAccidental !== '') staveNote.addModifier(new VF.Accidental("n"), keyIndex);
                         activeAccidentals[noteLetter] = accidental;
                     }
                 });
 
                 let customTexts = [];
-
                 if (state.showNoteNames) {
                     if (isChord) {
                         let bottomParts = [];
@@ -2855,20 +2822,13 @@
                              const voicingText = notesData.voicingAbbreviations[item.voicingApplied];
                              if(voicingText) bottomParts.push(voicingText);
                         }
-
                         if ((state.cipherType === 'americano' || state.cipherType === 'todos') && rawNotes.length > 2) {
                              const chordInfo = getChordName(rawNotes);
-                             if (chordInfo.name) {
-                                 customTexts.push({ text: chordInfo.name, position: 'top', size: 16 });
-                             }
+                             if (chordInfo.name) customTexts.push({ text: chordInfo.name, position: 'top', size: 16 });
                         }
-
-                        bottomParts.forEach((part, idx) => {
-                             customTexts.push({ text: part, position: 'bottom', offset: idx * 16, size: 14 });
-                        });
+                        bottomParts.forEach((part, idx) => customTexts.push({ text: part, position: 'bottom', offset: idx * 16, size: 14 }));
                     } else {
-                        const baseLetter = rawNotes[0].charAt(0);
-                        let latinName = notesData.noteToLatin[baseLetter.toUpperCase()];
+                        let latinName = notesData.noteToLatin[rawNotes[0].charAt(0).toUpperCase()];
                         if (state.melodyNoteNameStyle === 'con-alteracion') {
                             const accidental = rawNotes[0].split('/')[0].slice(1);
                             if (accidental) latinName += accidental;
@@ -2876,15 +2836,12 @@
                         customTexts.push({ text: latinName, position: 'bottom', offset: 0, size: 14 });
                     }
                 }
-                
                 staveNote.customTexts = customTexts;
                 vfNotes.push(staveNote);
             });
 
             const voice = new VF.Voice({ num_beats: contentToDraw.length, beat_value: 4 });
-            voice.setStrict(false); 
-            voice.addTickables(vfNotes);
-
+            voice.setStrict(false); voice.addTickables(vfNotes);
             new VF.Formatter().joinVoices([voice]).format([voice], logicalWidth - 80);
             voice.draw(context, stave);
 
@@ -2894,16 +2851,10 @@
                     if (note.customTexts && note.customTexts.length > 0) {
                         const x = note.getAbsoluteX();
                         note.customTexts.forEach(ann => {
-                            const y = ann.position === 'top' ? 25 : 180 + (ann.offset || 0);
                             const textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                            textEl.textContent = ann.text;
-                            textEl.setAttribute("x", x);
-                            textEl.setAttribute("y", y);
-                            textEl.style.fontFamily = "Inter, sans-serif";
-                            textEl.style.fontSize = `${ann.size}px`;
-                            textEl.style.fontWeight = "900"; 
-                            textEl.setAttribute("fill", "#000000"); 
-                            textEl.setAttribute("text-anchor", "middle");
+                            textEl.textContent = ann.text; textEl.setAttribute("x", x); textEl.setAttribute("y", ann.position === 'top' ? 25 : 180 + (ann.offset || 0));
+                            textEl.style.fontFamily = "Inter, sans-serif"; textEl.style.fontSize = `${ann.size}px`; textEl.style.fontWeight = "900"; 
+                            textEl.setAttribute("fill", "#000000"); textEl.setAttribute("text-anchor", "middle");
                             annGroup.appendChild(textEl);
                         });
                     }
@@ -2913,71 +2864,70 @@
                 if (!guideLine) {
                     guideLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
                     guideLine.setAttribute('id', 'guide-line');
-                    guideLine.setAttribute('y1', '5');
-                    guideLine.setAttribute('y2', '210');
-                    guideLine.setAttribute('stroke', 'rgba(239, 68, 68, 0.8)');
-                    guideLine.setAttribute('stroke-width', '1.5');
-                    guideLine.style.display = 'none';
-                    guideLine.style.transition = 'transform 0.05s ease-out';
+                    guideLine.setAttribute('y1', '5'); guideLine.setAttribute('y2', '210');
+                    guideLine.setAttribute('stroke', 'rgba(56, 189, 248, 0.8)'); guideLine.setAttribute('stroke-width', '2');
+                    guideLine.style.display = 'none'; guideLine.style.transition = 'transform 0.05s linear';
                     annGroup.appendChild(guideLine);
                     ui.guideLine = guideLine;
                 }
-                
                 svgElement.appendChild(annGroup);
             }
-
             state.notePositionsX = vfNotes.map(n => n.getAbsoluteX());
         }
 
         function updateGuidePosition(currentEvent = null) {
+            if (state.exerciseStarted && !state.visualIsPreRoll && currentEvent && state.micEnabled) {
+                const staveNotes = document.querySelectorAll('#stave-container .vf-stavenote');
+                staveNotes.forEach((noteEl, index) => {
+                    let targetBeat = index + 1;
+                    if (state.exerciseType === 'armonia' && state.notesPerChord === 4) targetBeat = (index * 2) + 1;
+                    
+                    const hitKey = `${currentEvent.measureIndex}-${targetBeat}`;
+                    let status = state.score?.status?.[hitKey] || 'waiting';
+
+                    // Si pasaste la nota y no la tocaste, márcala como fallida.
+                    if (state.currentVisualBeat > targetBeat + 1 && status === 'waiting') {
+                        status = 'miss';
+                        if (state.score && state.score.status) state.score.status[hitKey] = 'miss';
+                    }
+
+                    let noteColor = status === 'hit' ? '#34d399' : (status === 'imprecise' ? '#facc15' : (status === 'miss' ? '#ef4444' : ''));
+                    if (noteColor && noteEl.dataset.currentColor !== noteColor) {
+                        noteEl.querySelectorAll('path, rect').forEach(el => {
+                            if (el.getAttribute('fill') && el.getAttribute('fill') !== 'none') el.setAttribute('fill', noteColor);
+                            if (el.getAttribute('stroke') && el.getAttribute('stroke') !== 'none') el.setAttribute('stroke', noteColor);
+                        });
+                        noteEl.dataset.currentColor = noteColor; 
+                        if (status === 'hit') noteEl.classList.add('note-hit-anim');
+                    }
+                });
+            }
+
             if (!state.showGuide || !state.exerciseStarted || state.visualIsPreRoll) { 
                 if (ui.guideLine) ui.guideLine.style.display = 'none'; 
-                return; 
-            }
-            if (ui.guideLine && state.notePositionsX && state.notePositionsX.length > 0) {
+            } else if (ui.guideLine && state.notePositionsX && state.notePositionsX.length > 0) {
                 ui.guideLine.style.display = 'block';
                 let beatIndex = state.currentVisualBeat - 1;
                 if (state.exerciseType === 'armonia' && state.notesPerChord === 4) beatIndex = Math.floor(beatIndex / 2);
-
                 if (beatIndex >= 0 && beatIndex < state.notePositionsX.length) {
-                    const logicalX = state.notePositionsX[beatIndex] + 12; 
-                    ui.guideLine.setAttribute('transform', `translate(${logicalX}, 0)`);
-                    
-                    if (currentEvent && state.micEnabled) {
-                        const hitKey = `${currentEvent.measureIndex}-${currentEvent.metronomeCount}`;
-                        const status = state.score?.status?.[hitKey] || 'waiting';
-
-                        if (status === 'hit') {
-                            ui.guideLine.setAttribute('stroke', '#34d399');
-                            ui.guideLine.setAttribute('stroke-width', '4');
-                        } else if (status === 'miss') {
-                            ui.guideLine.setAttribute('stroke', '#ef4444');
-                            ui.guideLine.setAttribute('stroke-width', '4');
-                        } else {
-                            ui.guideLine.setAttribute('stroke', '#fbbf24');
-                            ui.guideLine.setAttribute('stroke-width', '3');
-                        }
-                    } else {
-                        ui.guideLine.setAttribute('stroke', 'rgba(239, 68, 68, 0.8)');
-                        ui.guideLine.setAttribute('stroke-width', '1.5');
-                    }
+                    ui.guideLine.setAttribute('transform', `translate(${state.notePositionsX[beatIndex] + 12}, 0)`);
                 }
             }
         }
-        
-       const tutorialSteps = [
-             { id: 'main-content', text: '<h2 class="text-2xl font-bold text-emerald-400">¡Bienvenido a Lectura a Primera Vista!</h2><p>Esta aplicación está pensada principalmente para guitarristas, pero es una herramienta versátil para cualquier músico.</p><p class="mt-2">La sección de <strong>Melodía</strong> y la <strong>Armonía a 2 voces (intervalos)</strong> están disponibles en clave de Sol, Fa y Do, siendo útiles para cualquier instrumento o para practicar solfeo.</p><p class="mt-2">La <strong>Armonía a 3 y 4 voces</strong> ha sido diseñada específicamente con la guitarra en mente, por lo que estos ejercicios solo están disponibles en <strong>clave de Sol</strong>.</p><p class="mt-4">¡Vamos a explorar cómo funciona!</p>' },
-             { id: 'user-info-panel', text: '<h3><strong>2. Panel de Usuario</strong></h3><p>Aquí puedes ver tu nombre de perfil, tu racha de práctica diaria y gestionar tus datos:</p><ul><li class="mt-2"><strong>Historial (Atajo: H):</strong> Abre una ventana para ver un registro de tus sesiones de práctica y tus debilidades actuales.</li><li class="mt-2"><strong>Usuario (Atajo: U):</strong> Guarda tu progreso y te permite cambiar de perfil o entrar como invitado.</li><li class="mt-2"><strong>Exportar / Importar (Atajos: X / I):</strong> Descarga tu progreso en un archivo (.json) para respaldarlo o cargarlo en otro dispositivo. ¡Úsalo para no perder tus datos!</li></ul>' },
+
+        const tutorialSteps = [
+             { id: 'main-content', text: '<h2 class="text-2xl font-bold text-emerald-400">¡Bienvenido a Lectura a Primera Vista!</h2><p>Esta aplicación está pensada principalmente para guitarristas, pero es una herramienta versátil para cualquier músico.</p><p class="mt-2">La sección de <strong>Melodía</strong> y la <strong>Armonía a 2 voces (intervalos)</strong> están disponibles en clave de Sol, Fa y Do.</p><p class="mt-2">La <strong>Armonía a 3 y 4 voces</strong> ha sido diseñada específicamente con la guitarra en mente, por lo que estos ejercicios solo están disponibles en <strong>clave de Sol</strong>.</p><p class="mt-4">¡Vamos a explorar cómo funciona!</p>' },
+             { id: 'user-info-panel', text: '<h3><strong>2. Panel de Usuario</strong></h3><p>Aquí puedes ver tu nombre de perfil, tu racha de práctica diaria y gestionar tus datos:</p><ul><li class="mt-2"><strong>Historial (Atajo: H):</strong> Abre una ventana para ver un registro de tus sesiones de práctica y tus debilidades actuales.</li><li class="mt-2"><strong>Usuario (Atajo: U):</strong> Guarda tu progreso y te permite cambiar de perfil.</li><li class="mt-2"><strong>Exportar / Importar (Atajos: X / I):</strong> Descarga tu progreso en un archivo (.json) para respaldarlo.</li></ul>' },
              { id: 'exercise-type-control', text: '<h3><strong>3. Tipo de Ejercicio</strong></h3><p>Elige tu modo de práctica:</p><ul><li class="mt-2"><strong>Melodía:</strong> Para notas individuales.</li><li class="mt-2"><strong>Armonía:</strong> Para notas simultáneas.</li></ul><p class="mt-2">Puedes cambiar rápidamente entre modos con la tecla <strong>E</strong>.</p>' },
-             { id: 'harmony-options-container', text: '<h3><strong>4. Opciones de Armonía</strong></h3><p>Si eliges <strong>Armonía</strong>, podrás configurar:</p><ul><li class="mt-2"><strong>Notas:</strong> Define si practicarás con 2, 3 o 4 notas.</li><li class="mt-2"><strong>Filtros específicos:</strong> Elige tipos de intervalos, acordes o voicings. ¡Usa la opción <strong>"Personalizado"</strong> para un control total!</li></ul>' },
-             { id: 'difficulty-select', text: '<h3><strong>5. Nivel de Dificultad</strong></h3><p>Ajusta la complejidad y el rango de notas:</p><ul class="text-sm mt-2"><li class="mt-2"><strong>Básico:</strong> Sol (E4-F5), Fa (G2-A3), Do (F3-G4).</li><li class="mt-2"><strong>Medio:</strong> Sol (E3-A5), Fa (E2-C4), Do (D3-B4).</li><li class="mt-2"><strong>Avanzado:</strong> Sol (E3-E6), Fa (C2-F4), Do (A2-D5).</li></ul>' },
-             { id: 'clef-select', text: `<h3><strong>6. Configuración del Pentagrama</strong></h3><p>Personaliza la escritura musical:</p><ul><li class="mt-2"><strong>Clave:</strong> Elige entre Sol, Fa y Do (Atajo: <strong>C</strong>).</li><li class="mt-2"><strong>Armadura:</strong> Selecciona la tonalidad (solo en modo Melodía).</li><li class="mt-2"><strong>Compás:</strong> Define el compás del ejercicio.</li></ul><div class="mt-4 p-2 bg-sky-800 rounded-md text-sm"><p><strong>🧠 Trabajo Mental en Armonía:</strong></p><p class="mt-1">El modo <strong>Armonía</strong> siempre se muestra sin armadura. ¡El ejercicio es mental! Si decides practicar en <strong>Re Mayor</strong>, debes leer todas las notas F y C como si fueran F♯ y C♯.</p></div><div class="mt-4 p-2 bg-zinc-600 rounded-md text-sm"><p><strong>Nota de Compatibilidad:</strong></p><p class="mt-1">La aplicación está optimizada para <strong>móviles y tablets</strong>. En algunas computadoras, las claves pueden verse más pequeñas o no alineadas perfectamente debido al renderizado de fuentes del sistema operativo. Sin embargo, las posiciones son las correctas: <strong>Sol en 2ª línea, Fa en 4ª y Do en 3ª</strong>.</p></div>` },
+             { id: 'harmony-options-container', text: '<h3><strong>4. Opciones de Armonía</strong></h3><p>Si eliges <strong>Armonía</strong>, podrás configurar:</p><ul><li class="mt-2"><strong>Notas:</strong> Define si practicarás con 2, 3 o 4 notas.</li><li class="mt-2"><strong>Filtros:</strong> Elige tipos de intervalos, acordes o voicings. ¡Usa <strong>Personalizado</strong> para más control!</li></ul>' },
+             { id: 'difficulty-select', text: '<h3><strong>5. Nivel de Dificultad</strong></h3><p>Ajusta la complejidad y el rango de notas:</p><ul class="text-sm mt-2"><li class="mt-2"><strong>Básico:</strong> Rango limitado.</li><li class="mt-2"><strong>Medio:</strong> Rango intermedio.</li><li class="mt-2"><strong>Avanzado:</strong> Todo el registro del instrumento.</li></ul>' },
+             { id: 'clef-select', text: `<h3><strong>6. Configuración del Pentagrama</strong></h3><p>Personaliza la escritura musical:</p><ul><li class="mt-2"><strong>Clave:</strong> Elige entre Sol, Fa y Do (Atajo: <strong>C</strong>).</li><li class="mt-2"><strong>Armadura:</strong> Selecciona la tonalidad (solo en modo Melodía).</li><li class="mt-2"><strong>Compás:</strong> Define el compás del ejercicio.</li></ul>` },
              { id: 'tempo', text: '<h3><strong>7. Duración y Velocidad</strong></h3><ul><li class="mt-2"><strong>Tempo (BPM):</strong> Establece la velocidad del metrónomo.</li><li class="mt-2"><strong>Compases:</strong> Elige cuántos compases durará el ejercicio.</li></ul>' },
              { id: 'change-beat-control', text: '<h3><strong>8. Lectura Adelantada</strong></h3><p>Una herramienta clave para mejorar tu fluidez. Elige en qué <strong>pulso</strong> del compás actual quieres que aparezcan las notas del <strong>siguiente compás</strong>. ¡Esto te fuerza a leer siempre por delante!</p>' },
-             { id: 'info-aids-container', text: '<h3><strong>9. Ayudas de Lectura</strong></h3><p>Activa estas opciones para facilitar el aprendizaje:</p><ul><li class="mt-2"><strong>Nombres (Atajo: N):</strong> Muestra el nombre de las notas o el cifrado de los acordes.</li><li class="mt-2"><strong>Guía (Atajo: G):</strong> Muestra una línea vertical que se mueve pulso a pulso.</li></ul>' },
-             { id: 'visual-aids-container', text: '<h3><strong>10. Ayudas Interactivas</strong></h3><p>Usa estas herramientas para una práctica más completa:</p><ul><li class="mt-2"><strong>Mástil (Atajo: M):</strong> Visualiza las notas en un diapasón de guitarra.</li><li class="mt-2"><strong>Sonido (Atajo: S):</strong> Reproduce cada nota o acorde.</li><li class="mt-2"><strong>Enarmónicos (Atajo: A):</strong> Elige si prefieres ver ♯ o ♭ en el mástil.</li><li class="mt-2 text-emerald-400"><strong>Micrófono (Atajo: R):</strong> Actívalo para que la app evalúe si tocas la nota correcta. ¡La guía te dirá si aciertas!</li></ul>' },
-             { id: 'audio-controls-container', text: '<h3><strong>11. Controles de Audio</strong></h3><p>Personaliza el sonido a tu gusto:</p><ul><li class="mt-2"><strong>Metrónomo (Atajo: K):</strong> Activa o desactiva el clic.</li><li class="mt-2"><strong>Volúmenes:</strong> Ajusta el volumen del sonido y del metrónomo.</li></ul>' },
-             { id: 'startStopButton', text: '<h3><strong>12. Resumen de Atajos</strong></h3><p>Usa los botones o los atajos del teclado para manejar el ejercicio de forma más fluida.</p><p class="mt-2"><strong>Controles (Barra Espaciadora o Clic en Pentagrama):</strong></p><ul><li class="mt-1">Un toque para Iniciar/Pausar, doble toque para Detener.</li></ul><p class="mt-2"><strong>Teclas Rápidas:</strong></p><ul class="grid grid-cols-2 sm:grid-cols-3 gap-x-2 text-sm mt-2"><li><strong>U:</strong> Usuario</li><li><strong>H:</strong> Historial</li><li><strong>X/I:</strong> Export / Import</li><li><strong>E:</strong> Tipo de Ejercicio</li><li><strong>C:</strong> Cambiar Clave</li><li><strong>N:</strong> Ver Nombres</li><li><strong>G:</strong> Guía Visual</li><li><strong>M:</strong> Ver Mástil</li><li><strong>S:</strong> Activar Sonido</li><li><strong>K:</strong> Metrónomo</li><li><strong>A:</strong> ♯ / ♭</li><li><strong>R:</strong> Micrófono</li><li><strong>T:</strong> Afinador</li><li><strong>F:</strong> Pantalla Comp.</li><li><strong>V:</strong> Ocultar/Ver Info</li><li><strong>?:</strong> Tutorial</li></ul>' }
+             { id: 'info-aids-container', text: '<h3><strong>9. Ayudas de Lectura</strong></h3><p>Activa estas opciones para facilitar el aprendizaje:</p><ul><li class="mt-2"><strong>Nombres (Atajo: N):</strong> Muestra el nombre de las notas.</li><li class="mt-2"><strong>Guía (Atajo: G):</strong> Muestra una línea vertical que se mueve pulso a pulso.</li></ul>' },
+             { id: 'visual-aids-container', text: '<h3><strong>10. Ayudas Interactivas</strong></h3><p>Usa estas herramientas para una práctica más completa:</p><ul><li class="mt-2"><strong>Mástil (Atajo: M):</strong> Visualiza las notas en un diapasón de guitarra.</li><li class="mt-2"><strong>Sonido (Atajo: S):</strong> Reproduce cada nota o acorde.</li><li class="mt-2"><strong>Enarmónicos (Atajo: A):</strong> Elige si prefieres ver ♯ o ♭ en el mástil.</li><li class="mt-2 text-emerald-400"><strong>Micrófono (Atajo: R):</strong> Actívalo para que la app evalúe si tocas la nota correcta. Las notas se colorearán verde, amarillo o rojo.</li></ul>' },
+             { id: 'audio-controls-container', text: '<h3><strong>11. Controles de Audio</strong></h3><p>Personaliza el sonido a tu gusto:</p><ul><li class="mt-2"><strong>Metrónomo (Atajo: K):</strong> Activa o desactiva el clic. Puedes usar la voz en español que cuenta para guiarte.</li><li class="mt-2"><strong>Volúmenes:</strong> Ajusta el volumen del sonido y del metrónomo.</li></ul>' },
+             { id: 'startStopButton', text: '<h3><strong>12. Resumen de Atajos</strong></h3><p>Usa los botones o los atajos del teclado para manejar el ejercicio de forma más fluida.</p><p class="mt-2"><strong>Controles (Barra Espaciadora o Clic en Pentagrama):</strong></p><ul><li class="mt-1">Un toque para Iniciar/Pausar, doble toque para Detener. Oculta el modal de fin.</li></ul><p class="mt-2"><strong>Teclas Rápidas:</strong></p><ul class="grid grid-cols-2 sm:grid-cols-3 gap-x-2 text-sm mt-2"><li><strong>U:</strong> Usuario</li><li><strong>H:</strong> Historial</li><li><strong>X/I:</strong> Export / Import</li><li><strong>E:</strong> Tipo de Ejercicio</li><li><strong>C:</strong> Cambiar Clave</li><li><strong>N:</strong> Ver Nombres</li><li><strong>G:</strong> Guía Visual</li><li><strong>M:</strong> Ver Mástil</li><li><strong>S:</strong> Activar Sonido</li><li><strong>K:</strong> Metrónomo</li><li><strong>A:</strong> ♯ / ♭</li><li><strong>R:</strong> Micrófono</li><li><strong>T:</strong> Afinador</li><li><strong>F:</strong> Pantalla Comp.</li><li><strong>V:</strong> Ocultar Info</li><li><strong>?:</strong> Tutorial</li></ul>' }
         ];
         let currentTutorialStep = 0;
         function showTutorial() { currentTutorialStep = 0; ui.tutorialModal.classList.remove('hidden'); updateTutorialStep(); }
@@ -2988,12 +2938,12 @@
             const step = tutorialSteps[currentTutorialStep]; ui.tutorialStepsContainer.innerHTML = `<div class="tutorial-step active">${step.text}</div>`;
             ui.tutorialStepCounter.textContent = `${currentTutorialStep + 1} / ${tutorialSteps.length}`;
             ui.prevTutorialStepBtn.classList.toggle('hidden', currentTutorialStep === 0);
-            ui.nextTutorialStepBtn.textContent = (currentTutorialStep === tutorialSteps.length - 1) ? 'Finalizar' : 'Siguiente';
+            ui.nextTutorialStepBtn.textContent = currentTutorialStep === tutorialSteps.length - 1 ? 'Finalizar' : 'Siguiente';
             const targetElement = document.getElementById(step.id);
             if (targetElement) {
                 const rect = targetElement.getBoundingClientRect(); const highlight = ui.tutorialHighlight;
                 highlight.style.left = `${rect.left - 10}px`; highlight.style.top = `${rect.top - 10}px`; highlight.style.width = `${rect.width + 20}px`; highlight.style.height = `${rect.height + 20}px`; highlight.style.boxShadow = '0 0 0 9999px rgba(0, 0, 0, 0.7)'; highlight.classList.remove('hidden');
-            } else { ui.tutorialHighlight.classList.add('hidden'); }
+            } else ui.tutorialHighlight.classList.add('hidden');
         }
     </script>
 </body>
