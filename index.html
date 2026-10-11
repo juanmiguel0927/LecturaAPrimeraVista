@@ -14,7 +14,7 @@
         body { font-family: 'Inter', sans-serif; background-color: #111827; transition: background-color 0.3s, color 0.3s; overscroll-behavior: none; }
         
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1000; background-color: #1f2937; color: white; padding: 2rem; border-radius: 0.75rem; font-size: 1.5rem; font-weight: bold; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.3s ease-in-out; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; transition: opacity 0.3s ease-in-out; }
         .modal-content { background-color: #374151; color: #d1d5db; padding: 2rem; border-radius: 1rem; max-width: 90%; width: 500px; max-height: 90%; overflow-y: auto; position: relative; transition: background-color 0.3s; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
         .modal-content h2, .modal-content h3 { margin-bottom: 1.5rem; }
         .modal-content p, .modal-content ul { line-height: 1.6; }
@@ -24,7 +24,7 @@
         .modal-close:hover { color: #fff; }
         .stave-container { position: relative; overflow: hidden; width: 100%; }
         
-        .tutorial-highlight-overlay { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 99; transition: all 0.5s ease-in-out; box-shadow: 0 0 0 0 transparent; border-radius: 1rem; }
+        .tutorial-highlight-overlay { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 999; transition: all 0.5s ease-in-out; box-shadow: 0 0 0 0 transparent; border-radius: 1rem; }
         
         .pre-roll-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #34d399; font-size: 3rem; font-weight: 800; text-shadow: 0 4px 8px rgba(0,0,0,0.4); }
         .pre-roll-message-count { font-size: 6rem; line-height: 1; }
@@ -69,15 +69,15 @@
         .tooltip .tooltiptext { visibility: hidden; width: max-content; max-width: 200px; background-color: #27272a; color: #fff; text-align: center; border-radius: 6px; padding: 5px 10px; position: absolute; z-index: 100; bottom: 125%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.15s; font-size: 0.75rem; pointer-events: none; }
         .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
 
+        /* ARREGLO DEL BRINCO (Salto visual de la nota) */
         @keyframes arcadePop {
-            0% { transform: scale(1); filter: brightness(1); }
-            50% { transform: scale(1.4); filter: brightness(1.3) drop-shadow(0 0 6px currentColor); }
-            100% { transform: scale(1); filter: brightness(1); }
+            0% { filter: brightness(1); }
+            30% { filter: brightness(1.5) drop-shadow(0 0 8px currentColor); }
+            100% { filter: brightness(1); }
         }
         .note-hit-anim path, .note-hit-anim rect { 
-            animation: arcadePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
-            transform-origin: center; 
-            transform-box: fill-box; 
+            animation: arcadePop 0.4s ease-out forwards; 
+            /* Se ha eliminado transform: scale() para evitar que la nota se mueva del pentagrama */
         }
 
         .stave-scroll-wrapper { 
@@ -100,6 +100,10 @@
         .achievement-card { transition: all 0.3s ease; }
         .achievement-card.locked { opacity: 0.4; filter: grayscale(100%); }
         .achievement-card.unlocked { filter: drop-shadow(0 4px 6px rgba(16, 185, 129, 0.2)); border-color: #10b981; }
+
+        /* Survival Mode Hearts */
+        .heart-icon { transition: all 0.3s ease; }
+        .heart-icon.lost { filter: grayscale(100%); opacity: 0.3; transform: scale(0.8); }
     </style>
 </head>
 
@@ -163,46 +167,63 @@
     
     <div id="main-content" class="hidden bg-zinc-800 rounded-2xl text-center border-2 shadow-2xl p-6 md:p-10 w-full max-w-5xl border-emerald-500 relative">
         
-        <!-- CABECERA PERFECTAMENTE CENTRADA -->
-        <div class="flex flex-col items-center w-full gap-4 mb-8">
+        <!-- CABECERA PERFECTAMENTE CENTRADA Y APILADA -->
+        <div class="flex flex-col items-center justify-center w-full gap-6 mb-8">
             <div class="text-center w-full">
                 <h1 class="text-4xl md:text-5xl font-extrabold text-emerald-400 drop-shadow-md">Lectura a Primera Vista</h1>
                 <p class="text-zinc-500 text-sm mt-2">Aplicación realizada por Juan Miguel Rios Redondo</p>
             </div>
             
             <div id="user-info-panel" class="bg-zinc-700 p-4 rounded-xl flex flex-col items-center shadow-lg w-full max-w-md border border-zinc-600">
-                <div id="user-display" class="text-emerald-400 font-semibold text-lg"></div>
-                <div id="streak-display" class="text-amber-400 text-sm mb-3 font-medium tracking-wide"></div>
-                
-                <div class="flex flex-wrap justify-center gap-2 w-full">
-                    <div class="tooltip">
-                         <button id="achievements-button" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs transition-colors">🏆 Logros</button>
-                         <span class="tooltiptext">Tus Medallas</span>
-                    </div>
-                    <div class="tooltip">
-                         <button id="theme-toggle-btn" class="bg-amber-500 hover:bg-amber-400 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs transition-colors">☀️ Tema</button>
-                         <span class="tooltiptext">Alternar Claro/Oscuro</span>
-                    </div>
-                    <div class="tooltip">
-                        <button id="history-button" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs">Historial</button>
-                        <span class="tooltiptext">Historial (Atajo: H)</span>
-                    </div>
+                <div class="w-full text-right">
+                    <div id="user-display" class="text-emerald-400 font-semibold text-lg"></div>
+                    <div id="streak-display" class="text-amber-400 text-sm mb-2 font-medium tracking-wide"></div>
                 </div>
                 
-                <div class="flex flex-wrap justify-center gap-2 mt-2 w-full">
-                    <div class="tooltip">
-                         <button id="change-user-button" class="bg-zinc-600 hover:bg-zinc-500 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs">Usuario</button>
+                <!-- Barra de XP Elegante -->
+                <div class="w-full mb-4">
+                    <div class="flex justify-between text-xs text-zinc-300 mb-1 font-semibold">
+                        <span>XP: <span id="current-xp" class="text-sky-400">0</span></span>
+                        <span>Meta: <span id="next-level-xp" class="text-sky-400">1000</span></span>
+                    </div>
+                    <div class="w-full bg-zinc-800 rounded-full h-1">
+                        <div id="xp-progress-bar" class="bg-sky-500 h-1 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Botones originales en cuadrícula -->
+                <div class="grid grid-cols-3 gap-2 w-full">
+                    <div class="tooltip w-full">
+                         <button id="achievements-button" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-1.5 px-2 rounded-full shadow text-xs transition-colors">🏆 Logros</button>
+                         <span class="tooltiptext">Tus Medallas</span>
+                    </div>
+                    <div class="tooltip w-full">
+                         <button id="theme-toggle-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-white font-bold py-1.5 px-2 rounded-full shadow text-xs transition-colors">☀️ Tema</button>
+                         <span class="tooltiptext">Alternar Claro/Oscuro</span>
+                    </div>
+                    <div class="tooltip w-full">
+                        <button id="history-button" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-1.5 px-2 rounded-full shadow text-xs">Historial</button>
+                        <span class="tooltiptext">Historial (Atajo: H)</span>
+                    </div>
+                    
+                    <div class="tooltip w-full">
+                         <button id="change-user-button" class="w-full bg-zinc-600 hover:bg-zinc-500 text-white font-bold py-1.5 px-2 rounded-full shadow text-xs">Usuario</button>
                          <span class="tooltiptext">Atajo: U</span>
                     </div>
-                    <div class="tooltip">
-                        <button id="export-button" class="bg-green-600 hover:bg-green-500 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs">Exportar</button>
+                    <div class="tooltip w-full">
+                        <button id="export-button" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-1.5 px-2 rounded-full shadow text-xs">Exportar</button>
                         <span class="tooltiptext">Atajo: X</span>
                     </div>
-                    <div class="tooltip">
-                        <button id="import-button" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs">Importar</button>
+                    <div class="tooltip w-full">
+                        <button id="import-button" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-1.5 px-2 rounded-full shadow text-xs">Importar</button>
                         <span class="tooltiptext">Atajo: I</span>
                     </div>
                     <input type="file" id="import-file" accept=".json" class="hidden">
+                </div>
+
+                <!-- Botón de Mapa de Calor debajo -->
+                <div class="mt-3 w-full">
+                    <button id="heatmap-button" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs transition-colors">🔥 Mapa de Calor de Notas</button>
                 </div>
                 <p id="export-import-msg" class="text-xs mt-2 hidden text-center w-full font-semibold"></p>
             </div>
@@ -331,10 +352,12 @@
                     <option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option>
                 </select>
             </div>
-            <div class="control-item">
+            <div class="control-item tooltip">
                 <label for="difficulty-select" class="text-zinc-300 whitespace-nowrap">Nivel:</label>
                 <select id="difficulty-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    <option value="basico">Básico</option><option value="medium">Medio</option><option value="advanced">Avanzado</option>
+                    <option value="basico">Básico</option>
+                    <option value="medium" id="opt-medium">Medio</option>
+                    <option value="advanced" id="opt-advanced">Avanzado</option>
                 </select>
             </div>
             <div class="control-item">
@@ -415,8 +438,8 @@
                     </div>
                     <!-- VOZ DEL METRÓNOMO -->
                     <select id="metronome-sound-select" class="p-1 text-sm w-28 rounded bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                        <option value="classic" selected>Clásico</option>
-                        <option value="voice-es">Voz (ES)</option>
+                        <option value="classic">Clásico</option>
+                        <option value="voice-es" selected>Voz (ES)</option>
                         <option value="voice-en">Voz (EN)</option>
                     </select>
                 </div>
@@ -426,7 +449,6 @@
                 </div>
                 <div class="flex flex-row items-center justify-between w-full gap-4">
                      <label for="metronome-volume" class="text-zinc-400 whitespace-nowrap text-sm">Vol. Metrónomo:</label>
-                     <!-- Metrónomo en 60% por defecto -->
                      <input type="range" id="metronome-volume" min="0" max="1" step="0.01" value="0.6" class="w-full h-2 bg-zinc-600 rounded-lg appearance-none cursor-pointer">
                 </div>
             </div>
@@ -438,35 +460,53 @@
             </select>
         </div>
         
-        <div class="flex flex-wrap justify-center items-center gap-4 mb-8">
-             <div class="tooltip">
-                <button id="startStopButton" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Comenzar</button>
-                 <span class="tooltiptext">Atajo: Espacio</span>
-             </div>
-             <div class="tooltip">
-                <button id="daily-challenge-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">⭐ Reto Diario</button>
-                <span class="tooltiptext">Misma semilla global</span>
-             </div>
-             <div class="tooltip">
-                <button id="pauseResumeButton" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Pausar</button>
-                 <span class="tooltiptext">Atajo: Espacio</span>
-             </div>
-            <div class="tooltip">
-                <button id="show-tutorial" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Tutorial</button>
-                <span class="tooltiptext">Atajo: ?</span>
+        <!-- Botones de Acción -->
+        <div class="flex flex-col items-center gap-4 mb-8">
+            <!-- Primera Fila -->
+            <div class="flex flex-wrap justify-center items-center gap-4">
+                 <div class="tooltip">
+                    <button id="startStopButton" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Comenzar</button>
+                     <span class="tooltiptext">Atajo: Espacio</span>
+                 </div>
+                 <div class="tooltip">
+                    <button id="daily-challenge-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">⭐ Reto Diario</button>
+                    <span class="tooltiptext">Misma semilla global</span>
+                 </div>
+                 <div class="tooltip">
+                    <button id="pauseResumeButton" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Pausar</button>
+                     <span class="tooltiptext">Atajo: Espacio</span>
+                 </div>
             </div>
-            <div class="tooltip">
-                <button id="show-tuner-btn" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Afinador</button>
-                <span class="tooltiptext">Atajo: T</span>
+
+            <!-- Segunda Fila (Modo Supervivencia, Tutorial, Afinador) -->
+            <div class="flex flex-wrap justify-center items-center gap-4">
+                <div class="tooltip">
+                    <button id="survival-mode-btn" class="bg-orange-600 hover:bg-orange-500 text-white font-bold py-2 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">🔥 Supervivencia</button>
+                    <span class="tooltiptext">Juego infinito. 3 Vidas.</span>
+                </div>
+                <div class="tooltip">
+                    <button id="show-tutorial" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Tutorial</button>
+                    <span class="tooltiptext">Atajo: ?</span>
+                </div>
+                <div class="tooltip">
+                    <button id="show-tuner-btn" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Afinador</button>
+                    <span class="tooltiptext">Atajo: T</span>
+                </div>
             </div>
         </div>
         
         <div id="main-display-area" class="relative w-full">
             
-            <div id="displayArea" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-zinc-800/90 backdrop-blur px-6 py-2 rounded-full shadow-lg z-20 border border-zinc-600 transition-all duration-300 hidden opacity-100">
+            <div id="displayArea" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-zinc-800/90 backdrop-blur px-6 py-2 rounded-full shadow-lg z-20 border border-zinc-600 transition-all duration-300 hidden opacity-100 flex flex-col items-center">
                 <div class="flex justify-center items-center space-x-6">
                     <span class="text-zinc-300 font-mono text-sm sm:text-base">Tiempo: <span id="metronomeCount" class="text-xl sm:text-2xl font-bold ml-2 text-zinc-100">0</span></span>
                     <span class="text-zinc-300 font-mono text-sm sm:text-base">Compases: <span id="measuresCount" class="text-lg sm:text-xl font-bold text-sky-400">0 / 10</span></span>
+                </div>
+                <!-- Vidas del Modo Supervivencia -->
+                <div id="survival-hearts" class="hidden mt-2 flex gap-2">
+                    <span class="heart-icon text-red-500 text-xl" id="heart-1">❤️</span>
+                    <span class="heart-icon text-red-500 text-xl" id="heart-2">❤️</span>
+                    <span class="heart-icon text-red-500 text-xl" id="heart-3">❤️</span>
                 </div>
             </div>
 
@@ -499,11 +539,16 @@
                 <span>Preparación</span><span id="preRollCount" class="pre-roll-message-count"></span>
             </div>
 
-            <div id="results-modal" class="modal-overlay hidden">
+            <!-- Modal de Resultados -->
+            <div id="results-modal" class="modal-overlay hidden z-[1000]">
                 <div class="modal-content text-center bg-zinc-800 border-2 border-emerald-500 shadow-2xl">
-                    <h2 class="text-3xl font-extrabold text-emerald-400 mb-4">¡Ejercicio Completado!</h2>
-                    <p class="text-zinc-400 mb-4">Precisión con tu instrumento/voz:</p>
+                    <h2 class="text-3xl font-extrabold text-emerald-400 mb-4" id="results-title">¡Ejercicio Completado!</h2>
+                    <p class="text-zinc-400 mb-4" id="results-subtitle">Precisión con tu instrumento/voz:</p>
                     <div id="results-score-percentage" class="text-6xl mb-4 font-bold text-emerald-400">100%</div>
+                    
+                    <!-- XP Ganada -->
+                    <div id="results-xp-earned" class="text-xl mb-4 font-bold text-sky-400 hidden">+0 XP</div>
+
                     <div class="flex justify-around mb-6 text-lg bg-zinc-700 p-4 rounded-lg border border-zinc-600">
                         <div class="text-zinc-300 flex flex-col">Total<span id="results-total" class="font-bold text-white text-2xl">0</span></div>
                         <div class="text-emerald-400 flex flex-col">Correctas<span id="results-correct" class="font-bold text-2xl">0</span></div>
@@ -519,6 +564,19 @@
                     <h2 class="text-3xl font-extrabold text-yellow-400 mb-2">Tus Medallas</h2>
                     <p class="text-zinc-400 mb-6">Completa ejercicios y mantén tu racha para desbloquear estos logros.</p>
                     <div id="achievements-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Mapa de Calor -->
+            <div id="heatmap-modal" class="modal-overlay hidden">
+                <div class="modal-content text-left bg-zinc-800 border-2 border-rose-500" style="width: 600px;">
+                    <span class="modal-close text-rose-500" id="close-heatmap-modal">×</span>
+                    <h2 class="text-3xl font-extrabold text-rose-400 mb-2">Mapa de Calor (Tu Dominio)</h2>
+                    <p class="text-zinc-400 mb-6">Visualiza qué porcentaje de acierto tienes en cada nota de la guitarra.</p>
+                    
+                    <div id="heatmap-grid" class="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[60vh] overflow-y-auto pr-2">
+                        <!-- Las notas se llenarán aquí vía JS -->
                     </div>
                 </div>
             </div>
@@ -566,6 +624,7 @@
         </div>
     </div>
 
+    <!-- TUTORIAL RESTAURADO POR COMPLETO -->
     <div id="tutorial-modal" class="modal-overlay hidden">
         <div class="modal-content text-left border-2 border-sky-500">
             <span class="modal-close" id="close-modal">×</span>
@@ -752,7 +811,8 @@
                 stats: {
                     totalExercises: 0, totalCorrect: 0, totalIncorrect: 0, currentStreak: 0, maxStreak: 0,
                     lastPracticeDate: null, hintsUsed: 0, answersUsed: 0, missedNotes: {}, missedNotesByExercise: {},
-                    dailyChallengesCompleted: 0
+                    dailyChallengesCompleted: 0,
+                    xp: 0, globalNoteStats: {} 
                 },
                 achievements: [],
                 customPractice: {
@@ -776,6 +836,8 @@
                 if (!userData.stats.missedNotesByExercise) userData.stats.missedNotesByExercise = {};
                 if (userData.stats.maxStreak === undefined) userData.stats.maxStreak = userData.stats.currentStreak || 0;
                 if (userData.stats.dailyChallengesCompleted === undefined) userData.stats.dailyChallengesCompleted = 0;
+                if (userData.stats.xp === undefined) userData.stats.xp = 0;
+                if (!userData.stats.globalNoteStats) userData.stats.globalNoteStats = {};
                 if (!userData.achievements) userData.achievements = [];
                 if (!userData.customPractice) userData.customPractice = getInitialUserData().customPractice;
                 if (!userData.practiceHistory) userData.practiceHistory = [];
@@ -784,6 +846,7 @@
             }
             checkStreak();
             checkAchievements();
+            updateXPDisplay();
         }
 
         function saveUserData() {
@@ -822,8 +885,11 @@
                         if (!userData.stats.missedNotesByExercise) userData.stats.missedNotesByExercise = {};
                         if (!userData.achievements) userData.achievements = [];
                         if (userData.stats.dailyChallengesCompleted === undefined) userData.stats.dailyChallengesCompleted = 0;
+                        if (userData.stats.xp === undefined) userData.stats.xp = 0;
+                        if (!userData.stats.globalNoteStats) userData.stats.globalNoteStats = {};
                         saveUserData();
                         updateStreakDisplay();
+                        updateXPDisplay();
                         checkAchievements();
                         showTemporaryMessage('Datos importados correctamente.', false);
                     } else {
@@ -877,6 +943,70 @@
             }
         }
 
+        function updateXPDisplay() {
+            if (!userData || !userData.stats) return;
+            const xp = userData.stats.xp || 0;
+            ui.currentXp.textContent = xp;
+            
+            let nextTarget = 1000;
+            let progress = 0;
+            
+            if (xp < 1000) {
+                nextTarget = 1000;
+                progress = (xp / 1000) * 100;
+            } else if (xp < 3000) {
+                nextTarget = 3000;
+                progress = ((xp - 1000) / 2000) * 100;
+            } else {
+                nextTarget = "Max";
+                progress = 100;
+            }
+            
+            ui.nextLevelXp.textContent = nextTarget;
+            ui.xpProgressBar.style.width = `${progress}%`;
+        }
+
+        function renderHeatmapModal() {
+            ui.heatmapGrid.innerHTML = '';
+            const stats = userData.stats.globalNoteStats || {};
+            
+            const notesOrder = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const allNotes = [];
+            for (let oct = 2; oct <= 6; oct++) {
+                notesOrder.forEach(n => allNotes.push(`${n}/${oct}`));
+            }
+
+            allNotes.forEach(noteName => {
+                const noteData = stats[noteName];
+                if (!noteData) return; 
+
+                const total = noteData.hits + noteData.misses;
+                if (total === 0) return;
+
+                const hitRate = noteData.hits / total;
+                let bgColor = 'bg-zinc-700'; 
+                if (total >= 5) {
+                    if (hitRate >= 0.8) bgColor = 'bg-green-500';
+                    else if (hitRate >= 0.5) bgColor = 'bg-yellow-500';
+                    else bgColor = 'bg-red-500';
+                }
+
+                const card = document.createElement('div');
+                card.className = `${bgColor} text-white p-2 rounded-lg text-center shadow-md flex flex-col justify-center items-center h-16`;
+                card.innerHTML = `
+                    <span class="font-bold text-sm leading-none">${noteName}</span>
+                    <span class="text-[10px] mt-1 bg-black/30 px-1.5 py-0.5 rounded">${Math.round(hitRate * 100)}%</span>
+                `;
+                ui.heatmapGrid.appendChild(card);
+            });
+
+            if (ui.heatmapGrid.children.length === 0) {
+                ui.heatmapGrid.innerHTML = '<p class="col-span-full text-center text-zinc-500 py-8">Aún no hay suficientes datos. ¡Activa el micrófono y practica un poco!</p>';
+            }
+            
+            ui.heatmapModal.classList.remove('hidden');
+        }
+
         function checkAchievements() {
             if (!userData || !userData.stats) return;
             let unlockedNew = false;
@@ -926,18 +1056,53 @@
             for (let i = 0; i < today.length; i++) hash = Math.imul(31, hash) + today.charCodeAt(i) | 0;
             seededRNG = hash;
             state.isDailyChallenge = true;
+            state.isSurvivalMode = false;
 
             ui.exerciseTypeRadios[0].checked = true;
             ui.exerciseTypeRadios[0].dispatchEvent(new Event('change'));
+            
             ui.difficultySelect.value = 'medium';
-            ui.difficultySelect.dispatchEvent(new Event('change'));
+            
             ui.keySigSelect.value = 'C';
             ui.keySigSelect.dispatchEvent(new Event('change'));
+            
             ui.measuresSelect.value = '10';
             ui.measuresSelect.dispatchEvent(new Event('change'));
+            
             ui.tempoInput.value = 60;
 
             startExercise();
+        }
+
+        function startSurvivalMode() {
+            seededRNG = null;
+            state.isDailyChallenge = false;
+            state.isSurvivalMode = true;
+            
+            ui.measuresSelect.value = 'custom';
+            ui.customMeasuresContainer.classList.remove('hidden');
+            ui.customMeasuresInput.value = 100; 
+            
+            state.survivalHearts = 3;
+            updateHeartsUI();
+
+            startExercise();
+        }
+
+        function updateHeartsUI() {
+            if (state.isSurvivalMode) {
+                ui.survivalHeartsContainer.classList.remove('hidden');
+                for (let i = 1; i <= 3; i++) {
+                    const heart = document.getElementById(`heart-${i}`);
+                    if (i <= state.survivalHearts) {
+                        heart.classList.remove('lost');
+                    } else {
+                        heart.classList.add('lost');
+                    }
+                }
+            } else {
+                ui.survivalHeartsContainer.classList.add('hidden');
+            }
         }
 
         function renderMissedNotesChart(filter) {
@@ -1106,6 +1271,7 @@
                     ui.userDisplay.textContent = `Usuario: ${currentUser}`; 
                 }
                 updateStreakDisplay();
+                updateXPDisplay();
                 window.addEventListener('beforeunload', saveUserData);
             } catch (e) {
                 console.error('Fatal error during initialization:', e);
@@ -1135,6 +1301,7 @@
                 staveContainer: get('stave-container'), clefSelect: get('clef-select'), timeSigSelect: get('time-signature-select'),
                 measuresSelect: get('measures-select'), measuresCount: get('measuresCount'), customMeasuresContainer: get('custom-measures-input-container'),
                 customMeasuresInput: get('custom-measures-input'), preRollMessage: get('pre-roll-message'), difficultySelect: get('difficulty-select'),
+                optMedium: get('opt-medium'), optAdvanced: get('opt-advanced'),
                 changeBeatSelect: get('change-beat-select'), showTutorialBtn: get('show-tutorial'), tutorialModal: get('tutorial-modal'),
                 closeModalBtn: get('close-modal'), tutorialStepsContainer: get('tutorial-steps-container'), nextTutorialStepBtn: get('next-tutorial-step'),
                 prevTutorialStepBtn: get('prev-tutorial-step'), tutorialStepCounter: get('tutorial-step-counter'),
@@ -1160,11 +1327,14 @@
                 showFretboardToggle: get('show-fretboard'), enableSoundToggle: get('enable-sound'), fretboardContainer: get('fretboard-container'), soundControlContainer: get('sound-control-container'), fretboardControlContainer: get('fretboard-control-container'),
                 enharmonicSelect: get('enharmonic-select'), enharmonicControlContainer: get('enharmonic-control-container'), enableMetronome: get('enable-metronome'), noteVolume: get('note-volume'), metronomeVolume: get('metronome-volume'), metronomeSoundSelect: get('metronome-sound-select'), audioControlsContainer: get('audio-controls-container'), userDisplay: get('user-display'), streakDisplay: get('streak-display'), changeUserButton: get('change-user-button'), historyButton: get('history-button'), historyModal: get('history-modal'), closeHistoryModal: get('close-history-modal'), historyTableBody: get('history-table-body'), noHistoryMessage: get('no-history-message'),
                 exportBtn: get('export-button'), importBtn: get('import-button'), importInput: get('import-file'), exportImportMsg: get('export-import-msg'),
-                enableMicToggle: get('enable-mic'), micControlContainer: get('mic-control-container'), resultsModal: get('results-modal'), closeResultsBtn: get('close-results-btn'), resultsTotal: get('results-total'), resultsCorrect: get('results-correct'), resultsMissed: get('results-missed'), resultsPercentage: get('results-score-percentage'),
+                enableMicToggle: get('enable-mic'), micControlContainer: get('mic-control-container'), 
+                resultsModal: get('results-modal'), closeResultsBtn: get('close-results-btn'), resultsTotal: get('results-total'), resultsCorrect: get('results-correct'), resultsMissed: get('results-missed'), resultsPercentage: get('results-score-percentage'),
+                resultsXpEarned: get('results-xp-earned'), resultsTitle: get('results-title'), resultsSubtitle: get('results-subtitle'),
                 micDetectedNote: get('mic-detected-note'), showTunerBtn: get('show-tuner-btn'), tunerModal: get('tuner-modal'), closeTunerBtn: get('close-tuner-btn'), tunerNoteDisplay: get('tuner-note-display'), tunerCentsDisplay: get('tuner-cents-display'), tunerNeedleGroup: get('tuner-needle-group'), tunerHzDisplay: get('tuner-hz-display'),
                 missedNotesFilter: get('missed-notes-filter'), themeToggleBtn: get('theme-toggle-btn'), 
                 achievementsButton: get('achievements-button'), achievementsModal: get('achievements-modal'), closeAchievementsModal: get('close-achievements-modal'), achievementsList: get('achievements-list'),
-                dailyChallengeBtn: get('daily-challenge-btn')
+                dailyChallengeBtn: get('daily-challenge-btn'), currentXp: get('current-xp'), nextLevelXp: get('next-level-xp'), xpProgressBar: get('xp-progress-bar'),
+                survivalModeBtn: get('survival-mode-btn'), survivalHeartsContainer: get('survival-hearts'), heatmapButton: get('heatmap-button'), heatmapModal: get('heatmap-modal'), closeHeatmapModal: get('close-heatmap-modal'), heatmapGrid: get('heatmap-grid')
             };
         }
 
@@ -1176,15 +1346,15 @@
                 timeSignatureBeats: 4, measuresChangeBeat: 4, measuresPerExercise: 10, showNoteNames: false, keySignature: 'C',
                 showGuide: false, notePositionsX: [], lastScale: 1, spacebarPressCount: 0, spacebarTimeout: null,
                 selectedCustomIntervals: new Set(['2', '3', '4', '5', '6', '7']), selectedCustomTriads: new Set(['triad_fundamental', 'triad_inv1', 'triad_inv2', 'shell_voicing']), selectedCustomVoicings: new Set(['drop2', 'drop3']), selectedCustomQuadChordTypes: new Set(['maj7', 'm7', 'dom7']), selectedCustomQuadInversions: new Set(['0', '1', '2', '3']),
-                lastMelodicNote: null, showFretboard: false, soundEnabled: false, metronomeEnabled: true, noteVolume: 0.3, metronomeVolume: 0.6, metronomeSound: 'classic', displayedMeasureContent: [], enharmonicPreference: 'auto',
+                lastMelodicNote: null, showFretboard: false, soundEnabled: false, metronomeEnabled: true, noteVolume: 0.3, metronomeVolume: 0.6, metronomeSound: 'voice-es', displayedMeasureContent: [], enharmonicPreference: 'auto',
                 manualNotesToDisplay: null,
                 logicalMetronomeCount: 0, logicalMeasureIndex: -1, logicalIsPreRoll: false, visualIsPreRoll: false,
                 visualQueue: [], activeVisualEvent: null, currentDisplayedContent: null, drawFrameId: null,
                 currentVisualBeat: 1, totalPausedTime: 0, pauseStartTimeReal: null, showDisplayInfo: true,
                 micEnabled: false, scheduledSynthNotes: [], tunerSoundPlayed: false, tunerLastNote: null,
                 tunerSilenceFrames: 0, tunerStableFrames: 0, tunerSmoothedCents: 0, tunerSmoothedHz: 0,
-                score: { total: 0, hits: new Set(), status: {}, expectedNotes: {}, wrongFrames: 0, consecutiveHits: 0, currentHitKey: null },
-                isDailyChallenge: false
+                score: { total: 0, hits: new Set(), status: {}, expectedNotes: {} },
+                isDailyChallenge: false, isSurvivalMode: false, survivalHearts: 3
             };
             audio = { context: null, noteGain: null, metronomeGain: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0, micStream: null, micAnalyser: null, micDataArray: null, micFreqArray: null, micSource: null };
             notesData = {
@@ -1269,9 +1439,8 @@
         
         async function getMicStream() {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                throw new Error("Permiso denegado o conexión no segura (requiere HTTPS o Localhost).");
+                throw new Error("Permiso denegado o conexión no segura.");
             }
-            await initAudioEngine();
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: { echoCancellation: false, autoGainControl: false, noiseSuppression: false } 
             });
@@ -1292,6 +1461,7 @@
         async function toggleMicrophone(enable) {
             if (enable) {
                 try {
+                    await initAudioEngine();
                     const stream = await getMicStream();
                     audio.micStream = stream;
                     audio.micAnalyser = audio.context.createAnalyser();
@@ -1318,7 +1488,6 @@
             }
         }
 
-        // ALGORITMO MEJORADO PARA ACORDES (FFT)
         function verifyChord(expectedMidis) {
             if (!audio.micAnalyser || !audio.context || !audio.micFreqArray) return false;
             audio.micAnalyser.getFloatFrequencyData(audio.micFreqArray);
@@ -1330,14 +1499,12 @@
             for (let i = 0; i < binCount; i++) {
                 if (audio.micFreqArray[i] > maxDb) maxDb = audio.micFreqArray[i];
             }
-            // Gate de ruido más permisivo
-            if (maxDb < -50) return false; 
-            const threshold = maxDb - 15; 
+            if (maxDb < -60) return false;
+            const threshold = maxDb - 20;
 
             let foundCount = 0;
             for (let midi of expectedMidis) {
                 let foundThisNote = false;
-                // Busca la nota en varias octavas (inmunidad a octava)
                 for (let octaveOffset = -1; octaveOffset <= 1; octaveOffset++) {
                     let testMidi = midi + (octaveOffset * 12);
                     if (testMidi < 40 || testMidi > 90) continue;
@@ -1346,8 +1513,7 @@
                     const bin = Math.round((freq / nyquist) * binCount);
                     let localMax = -Infinity;
                     
-                    // Ventana más ancha (±2.5%) para tolerar la inarmonía y entonación de la guitarra
-                    const windowSize = Math.max(2, Math.round(bin * 0.025)); 
+                    const windowSize = Math.max(5, Math.round(bin * 0.08)); 
                     
                     for(let i = Math.max(0, bin - windowSize); i <= Math.min(binCount - 1, bin + windowSize); i++) {
                         if (audio.micFreqArray[i] > localMax) localMax = audio.micFreqArray[i];
@@ -1359,7 +1525,6 @@
             return foundCount === expectedMidis.length;
         }
 
-        // ALGORITMO ROBUSTO PARA MELODÍA Y GUITARRA (Correlación Mejorada)
         function detectPitch() {
             if (!audio.micAnalyser || !audio.micDataArray || !audio.context) return -1;
             audio.micAnalyser.getFloatTimeDomainData(audio.micDataArray);
@@ -1369,10 +1534,8 @@
             for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
             rms = Math.sqrt(rms / SIZE);
 
-            // Gate de ruido bajo, para guitarras sin pastilla o lejos
-            if (rms < 0.01) return -1;
+            if (rms < 0.02) return -1; 
 
-            // Función de Autocorrelación
             let max_samples = Math.floor(SIZE / 2);
             let c = new Float32Array(max_samples);
             for (let i = 0; i < max_samples; i++) {
@@ -1381,7 +1544,6 @@
                 c[i] = sum;
             }
 
-            // Primer pico real (saltamos el pico en el retraso 0)
             let d = 0;
             while (d < max_samples - 1 && c[d] > c[d + 1]) d++;
 
@@ -1393,8 +1555,13 @@
             let T0 = maxpos;
             if (T0 === -1 || T0 === 0) return -1;
 
-            // FILTRO DE CONFIANZA: Si no tiene forma de nota musical (ej. ruido o golpe), ignóralo
-            if (maxval < 0.8 * c[0]) return -1;
+            let threshold = 0.85 * c[0]; 
+            let found_first = -1;
+            for (let i = d; i < max_samples; i++) {
+                if (c[i] > threshold) { found_first = i; break; }
+            }
+            if (found_first !== -1) T0 = found_first;
+            else if (c[T0] < threshold) return -1; 
 
             let x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
             if (x1 !== undefined && x3 !== undefined) {
@@ -1404,8 +1571,7 @@
             }
 
             let pitch = audio.context.sampleRate / T0;
-            // Solo aceptamos frecuencias lógicas de guitarra/voz (70Hz - 1200Hz)
-            if (pitch < 70 || pitch > 1200) return -1;
+            if (pitch < 70 || pitch > 1500) return -1; 
 
             return pitch;
         }
@@ -1513,7 +1679,11 @@
 
             ui.achievementsButton.addEventListener('click', renderAchievementsModal);
             ui.closeAchievementsModal.addEventListener('click', () => ui.achievementsModal.classList.add('hidden'));
+            
             ui.dailyChallengeBtn.addEventListener('click', () => { if (state.exerciseStarted) stopExercise(false); startDailyChallenge(); });
+            ui.survivalModeBtn.addEventListener('click', () => { if (state.exerciseStarted) stopExercise(false); startSurvivalMode(); });
+            ui.heatmapButton.addEventListener('click', renderHeatmapModal);
+            ui.closeHeatmapModal.addEventListener('click', () => ui.heatmapModal.classList.add('hidden'));
 
             ui.startStopButton.addEventListener('click', () => state.exerciseStarted ? stopExercise(false) : startExercise());
             ui.pauseResumeButton.addEventListener('click', togglePause);
@@ -1593,10 +1763,9 @@
             ui.enableSoundToggle.addEventListener('change', (e) => state.soundEnabled = e.target.checked);
             ui.enableMetronome.addEventListener('change', (e) => state.metronomeEnabled = e.target.checked);
             
-            // Requisito iOS/Safari: el resume() debe ser directo en la interacción del usuario
             ui.enableMicToggle.addEventListener('change', async (e) => {
-                if (audio.context && audio.context.state === 'suspended') {
-                    await audio.context.resume();
+                if (e.target.checked) {
+                    try { await initAudioEngine(); } catch(err) { console.error(err); }
                 }
                 toggleMicrophone(e.target.checked);
             });
@@ -1687,7 +1856,14 @@
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
                 const key = e.key.toLowerCase();
                 
-                // Cierre rápido de resultados
+                if (!ui.tunerModal.classList.contains('hidden')) {
+                    if (key === 'enter' || key === ' ' || key === 'escape') {
+                        e.preventDefault();
+                        closeTuner();
+                        return; 
+                    }
+                }
+
                 if (!ui.resultsModal.classList.contains('hidden')) {
                     if (key === 'enter' || key === ' ') {
                         e.preventDefault();
@@ -1830,8 +2006,7 @@
             if(isQuad) { ui.timeSigSelect.value = '4/4'; state.timeSignatureBeats = 4; updateChangeBeatOptions(); }
             Array.from(ui.clefSelect.options).forEach(option => { if (option.value === 'F' || option.value === 'C') option.hidden = is3or4VoiceHarmony; });
             if (is3or4VoiceHarmony && ui.clefSelect.value !== 'G') ui.clefSelect.value = 'G';
-            const basicOption = ui.difficultySelect.querySelector('option[value="basico"]');
-            if (basicOption) basicOption.disabled = isQuad;
+            
             if (isQuad && ui.difficultySelect.value === 'basico') { ui.difficultySelect.value = 'medium'; ui.difficultySelect.dispatchEvent(new Event('change')); }
             const isGClef = ui.clefSelect.value === 'G';
             ui.fretboardControlContainer.classList.toggle('hidden', !isGClef);
@@ -1879,7 +2054,7 @@
                 state.exerciseMeasures = generateExercise();
                 if (state.exerciseMeasures.length === 0) { console.error("Failed to generate measures."); stopExercise(false); return; }
                 
-                state.score = { total: state.exerciseMeasures.reduce((acc, measure) => acc + measure.length, 0), hits: new Set(), status: {}, expectedNotes: {}, wrongFrames: 0, consecutiveHits: 0, currentHitKey: null };
+                state.score = { total: 0, hits: new Set(), status: {}, expectedNotes: {} };
                 state.scheduledSynthNotes = [];
 
                 Object.assign(state, { 
@@ -1908,10 +2083,22 @@
         }
 
         function stopExercise(completedSuccessfully) {
+             if (!state.exerciseStarted) return;
+
+             let notesEvaluatedCount = 0;
+             let correctCount = 0;
+             
+             for (const key in state.score.expectedNotes) {
+                 const status = state.score.status[key];
+                 if (status === 'hit' || status === 'imprecise' || status === 'miss') {
+                     notesEvaluatedCount++;
+                     if (status === 'hit' || status === 'imprecise') correctCount++;
+                 }
+             }
+
              if (userData && state.exerciseStartTime) {
-                if (completedSuccessfully) {
+                if (completedSuccessfully || state.isSurvivalMode) {
                     userData.stats.totalExercises++; 
-                    userData.stats.totalCorrect++; 
                     if (state.isDailyChallenge) userData.stats.dailyChallengesCompleted++;
                 }
                 const endTime = new Date(); 
@@ -1932,17 +2119,35 @@
                 } else { exerciseInfo = `Armonía (${state.notesPerChord} voces)`; }
                 
                 let scoreStr = '-';
-                if (completedSuccessfully && state.micEnabled) {
-                    const correct = state.score?.hits?.size || 0;
-                    const total = state.score?.total || 0;
-                    const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+                let xpEarnedThisRound = 0;
+                let missedCount = notesEvaluatedCount - correctCount;
+
+                if (state.micEnabled) {
+                    
+                    if (completedSuccessfully || state.isSurvivalMode) {
+                        userData.stats.totalCorrect += correctCount;
+                        
+                        let multiplier = ui.difficultySelect.value === 'advanced' ? 2 : 1;
+                        if (state.isSurvivalMode) multiplier *= 1.5;
+                        
+                        xpEarnedThisRound = Math.floor(correctCount * 10 * multiplier);
+                        userData.stats.xp += xpEarnedThisRound;
+                        updateXPDisplay();
+                    }
+                    
+                    const percentage = notesEvaluatedCount > 0 ? Math.round((correctCount / notesEvaluatedCount) * 100) : 0;
                     scoreStr = `${percentage}%`;
 
                     if (state.score.expectedNotes) {
                         Object.keys(state.score.expectedNotes).forEach(hitKey => {
-                            const notes = state.score.expectedNotes[hitKey];
+                            const noteObj = state.score.expectedNotes[hitKey];
+                            const status = state.score.status[hitKey];
+                            if (status === 'waiting') return; 
+                            
+                            const notes = noteObj.notes;
                             if (!notes || notes.length === 0) return;
-                            const isHit = state.score.status[hitKey] === 'hit';
+                            
+                            const isHit = status === 'hit' || status === 'imprecise';
 
                             notes.forEach(note => {
                                 let [baseName, octave] = note.split('/');
@@ -1950,6 +2155,13 @@
                                 const accidental = baseName.slice(1);
                                 const latinName = notesData.noteToLatin[letter.toUpperCase()] + accidental + octave;
                                 
+                                const rawNoteName = baseName + '/' + octave;
+                                if (!userData.stats.globalNoteStats[rawNoteName]) {
+                                    userData.stats.globalNoteStats[rawNoteName] = { hits: 0, misses: 0 };
+                                }
+                                if (isHit) userData.stats.globalNoteStats[rawNoteName].hits++;
+                                else userData.stats.globalNoteStats[rawNoteName].misses++;
+
                                 if (!userData.stats.missedNotes) userData.stats.missedNotes = {};
                                 if (!userData.stats.missedNotesByExercise) userData.stats.missedNotesByExercise = {};
                                 if (!userData.stats.missedNotesByExercise[exerciseInfo]) userData.stats.missedNotesByExercise[exerciseInfo] = {};
@@ -1976,9 +2188,9 @@
                     date: endTime.toLocaleDateString('es-ES'), 
                     time: endTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
                     duration: durationString, 
-                    exercise: exerciseInfo + (!completedSuccessfully ? ' (Incompleto)' : '') + (state.isDailyChallenge ? ' ⭐' : ''), 
+                    exercise: exerciseInfo + (!completedSuccessfully && !state.isSurvivalMode ? ' (Incompleto)' : '') + (state.isDailyChallenge ? ' ⭐' : '') + (state.isSurvivalMode ? ' 🔥' : ''), 
                     level: ui.difficultySelect.options[ui.difficultySelect.selectedIndex].text, 
-                    measures: state.measuresPerExercise, 
+                    measures: state.isSurvivalMode ? state.logicalMeasureIndex : state.measuresPerExercise, 
                     bpm: ui.tempoInput.value,
                     score: scoreStr 
                 };
@@ -1996,21 +2208,29 @@
                 }
                 checkAchievements(); 
                 saveUserData();
-            }
 
-            if (completedSuccessfully && state.micEnabled) {
-                const correct = state.score?.hits?.size || 0;
-                const total = state.score?.total || 0;
-                const missed = total - correct;
-                const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+                if ((completedSuccessfully || state.isSurvivalMode) && state.micEnabled) {
+                    const percentage = notesEvaluatedCount > 0 ? Math.round((correctCount / notesEvaluatedCount) * 100) : 0;
 
-                if(ui.resultsTotal) {
-                    ui.resultsTotal.textContent = total;
-                    ui.resultsCorrect.textContent = correct;
-                    ui.resultsMissed.textContent = missed;
-                    ui.resultsPercentage.textContent = `${percentage}%`;
-                    ui.resultsPercentage.className = `text-6xl mb-4 font-bold ${percentage >= 80 ? 'text-emerald-400' : percentage >= 50 ? 'text-amber-400' : 'text-red-400'}`;
-                    ui.resultsModal.classList.remove('hidden');
+                    if(ui.resultsTotal) {
+                        ui.resultsTitle.textContent = state.isSurvivalMode ? "¡Fin del Juego!" : "¡Ejercicio Completado!";
+                        ui.resultsTitle.className = state.isSurvivalMode ? "text-3xl font-extrabold text-orange-500 mb-4" : "text-3xl font-extrabold text-emerald-400 mb-4";
+                        
+                        ui.resultsTotal.textContent = notesEvaluatedCount;
+                        ui.resultsCorrect.textContent = correctCount;
+                        ui.resultsMissed.textContent = missedCount;
+                        ui.resultsPercentage.textContent = `${percentage}%`;
+                        ui.resultsPercentage.className = `text-6xl mb-4 font-bold ${percentage >= 80 ? 'text-emerald-400' : (percentage >= 50 ? 'text-amber-400' : 'text-red-400')}`;
+                        
+                        if (xpEarnedThisRound > 0) {
+                            ui.resultsXpEarned.textContent = `+${xpEarnedThisRound} XP`;
+                            ui.resultsXpEarned.classList.remove('hidden');
+                        } else {
+                            ui.resultsXpEarned.classList.add('hidden');
+                        }
+
+                        ui.resultsModal.classList.remove('hidden');
+                    }
                 }
             }
 
@@ -2024,9 +2244,10 @@
                 logicalMeasureIndex: -1, logicalMetronomeCount: 0,
                 currentMeasureIndex: -1, currentMetronomeCount: 0,
                 lastMelodicNote: null, currentDisplayedContent: null, exerciseStartTime: null,
-                pauseStartTimeReal: null, activeVisualEvent: null, isDailyChallenge: false 
+                pauseStartTimeReal: null, activeVisualEvent: null, isDailyChallenge: false,
+                isSurvivalMode: false, survivalHearts: 3
             });
-            ui.startStopButton.textContent = 'Comenzar'; ui.pauseResumeButton.classList.add('hidden'); ui.displayArea.classList.add('hidden'); ui.toggleInfoBtn.classList.add('hidden');
+            ui.startStopButton.textContent = 'Comenzar'; ui.pauseResumeButton.classList.add('hidden'); ui.displayArea.classList.add('hidden'); ui.toggleInfoBtn.classList.add('hidden'); ui.survivalHeartsContainer.classList.add('hidden');
             if (state.metronomeTimer) { clearTimeout(state.metronomeTimer); state.metronomeTimer = null; }
             handleMeasuresChange(); ui.metronomeCount.textContent = "0"; ui.preRollMessage.classList.add('hidden');
             if(ui.guideLine) ui.guideLine.style.display = 'none';
@@ -2048,6 +2269,9 @@
                     const elapsedPauseTime = audio.context.currentTime - audio.pauseStartTime;
                     audio.nextNoteTime += elapsedPauseTime; 
                     state.visualQueue.forEach(ev => ev.time += elapsedPauseTime);
+                    for (const key in state.score.expectedNotes) {
+                        state.score.expectedNotes[key].time += elapsedPauseTime;
+                    }
                     if (state.scheduledSynthNotes) {
                         state.scheduledSynthNotes.forEach(n => { n.start += elapsedPauseTime; n.end += elapsedPauseTime; });
                     }
@@ -2094,7 +2318,9 @@
                     ui.displayArea.classList.remove('hidden');
                     ui.toggleInfoBtn.classList.remove('hidden');
                     ui.metronomeCount.textContent = currentEvent.metronomeCount;
-                    ui.measuresCount.textContent = `${currentEvent.measureIndex + 1} / ${state.measuresPerExercise}`;
+                    
+                    const mCount = state.isSurvivalMode ? currentEvent.measureIndex + 1 : `${currentEvent.measureIndex + 1} / ${state.measuresPerExercise}`;
+                    ui.measuresCount.textContent = mCount;
 
                     if (state.currentDisplayedContent !== currentEvent.displayedContent) {
                         state.currentDisplayedContent = currentEvent.displayedContent;
@@ -2103,79 +2329,90 @@
                     updateFretboard(currentEvent.playingNotes, currentEvent.rootName);
                 }
             }
-            
-            if (state.activeVisualEvent && state.activeVisualEvent.type !== 'stop') {
-                const currentEvent = state.activeVisualEvent;
-                const hitKey = `${currentEvent.measureIndex}-${currentEvent.metronomeCount}`;
 
-                if (state.micEnabled && !state.visualIsPreRoll && currentEvent.playingNotes && currentEvent.playingNotes.length > 0) {
-                    if (state.score.currentHitKey !== hitKey) {
-                        state.score.currentHitKey = hitKey;
-                        state.score.wrongFrames = 0;
-                        state.score.consecutiveHits = 0;
-                    }
+            if (state.micEnabled && !state.visualIsPreRoll) {
+                let activeKeys = [];
+                let needsDetection = false;
+
+                for (const hitKey in state.score.expectedNotes) {
+                    const noteData = state.score.expectedNotes[hitKey];
+                    const status = state.score.status[hitKey];
                     
-                    if (state.score && state.score.status) {
-                        if (!state.score.status[hitKey]) state.score.status[hitKey] = 'waiting';
-
-                        const expectedMidis = currentEvent.playingNotes.map(n => notesData.chromaticMap[n]);
-                        let isSynthBleed = false;
-                        if (state.soundEnabled && state.scheduledSynthNotes) {
-                            const now = audio.context.currentTime;
-                            state.scheduledSynthNotes = state.scheduledSynthNotes.filter(n => n.end > now);
-                            if (state.scheduledSynthNotes.some(n => now >= n.start && now <= n.end)) isSynthBleed = true;
-                        }
-
-                        if (!isSynthBleed) {
-                            let detectedCorrectPitch = false;
-                            if (state.exerciseType === 'melodia') {
-                                const pitch = detectPitch();
-                                if (pitch > 0) {
-                                    const detectedMidi = noteFromPitch(pitch);
-                                    const noteName = getEnharmonicName(detectedMidi);
-                                    if(ui.micDetectedNote) ui.micDetectedNote.textContent = noteName;
-                                    
-                                    // IGNORA OCTAVA PERO EXIGE CLARIDAD
-                                    detectedCorrectPitch = expectedMidis.some(expectedMidi =>
-                                        (detectedMidi % 12) === (expectedMidi % 12)
-                                    );
-                                } else {
-                                    if(ui.micDetectedNote) ui.micDetectedNote.textContent = '';
-                                }
-                            } else {
-                                if(ui.micDetectedNote) ui.micDetectedNote.textContent = '...';
-                                detectedCorrectPitch = verifyChord(expectedMidis);
-                            }
-
-                            if (detectedCorrectPitch) {
-                                state.score.consecutiveHits = (state.score.consecutiveHits || 0) + 1;
-                                // 2 fotogramas aseguran que sea estable antes de darle el "Hit"
-                                if (state.score.consecutiveHits >= 2) { 
-                                    if (state.score.status[hitKey] !== 'hit' && state.score.status[hitKey] !== 'imprecise') {
-                                        const timeDiff = Math.abs(audio.context.currentTime - currentEvent.time);
-                                        state.score.status[hitKey] = timeDiff <= 0.35 ? 'hit' : 'imprecise';
-                                        state.score.hits.add(hitKey);
-                                    }
-                                }
-                            } else {
-                                state.score.consecutiveHits = 0;
-                                if (state.score.status[hitKey] !== 'hit') {
-                                    state.score.wrongFrames++;
-                                    if (state.score.wrongFrames >= 12) { 
-                                        state.score.status[hitKey] = 'miss';
-                                    }
-                                }
-                            }
-                        } else {
-                            if(ui.micDetectedNote) ui.micDetectedNote.textContent = '';
-                        }
+                    if (status === 'waiting' || status === 'imprecise') {
+                         const timeDiff = currentTime - noteData.time;
+                         
+                         if (timeDiff >= -0.25 && timeDiff <= 0.35) {
+                             needsDetection = true;
+                             activeKeys.push({key: hitKey, ...noteData});
+                         }
+                         else if (timeDiff > 0.35 && status === 'waiting') {
+                             noteData.status = 'miss';
+                             state.score.status[hitKey] = 'miss';
+                             
+                             if (state.isSurvivalMode) {
+                                 state.survivalHearts--;
+                                 updateHeartsUI();
+                                 if (state.survivalHearts <= 0 && state.exerciseStarted) {
+                                     stopExercise(false); 
+                                     return;
+                                 }
+                             }
+                         }
                     }
                 }
-                updateGuidePosition(currentEvent);
-            } else {
-                if(ui.micDetectedNote) ui.micDetectedNote.textContent = '';
-                updateGuidePosition(null);
+
+                let isSynthBleed = false;
+                if (state.soundEnabled && state.scheduledSynthNotes) {
+                    const now = audio.context.currentTime;
+                    state.scheduledSynthNotes = state.scheduledSynthNotes.filter(n => n.end > now);
+                    if (state.scheduledSynthNotes.some(n => now >= n.start && now <= n.end)) isSynthBleed = true;
+                }
+
+                if (!isSynthBleed && needsDetection) {
+                    activeKeys.sort((a,b) => a.time - b.time);
+                    
+                    let detectedPitch = -1;
+                    let detectedChord = false;
+                    
+                    if (state.exerciseType === 'melodia') {
+                        detectedPitch = detectPitch();
+                    } else {
+                        const expectedMidis = activeKeys[0].notes.map(n => notesData.chromaticMap[n]);
+                        detectedChord = verifyChord(expectedMidis);
+                    }
+
+                    if (detectedPitch > 0 || detectedChord) {
+                        for (const target of activeKeys) {
+                            let hit = false;
+                            if (state.exerciseType === 'melodia' && detectedPitch > 0) {
+                                const detectedMidi = noteFromPitch(detectedPitch);
+                                const expectedMidis = target.notes.map(n => notesData.chromaticMap[n]);
+                                hit = expectedMidis.some(em => (detectedMidi % 12) === (em % 12));
+                            } else if (state.exerciseType === 'armonia' && detectedChord) {
+                                hit = true;
+                            }
+
+                            if (hit) {
+                                const timeDiff = Math.abs(currentTime - target.time);
+                                const newStatus = timeDiff <= 0.20 ? 'hit' : 'imprecise';
+                                
+                                if (state.score.status[target.key] !== 'hit') {
+                                    state.score.status[target.key] = newStatus;
+                                    if(ui.micDetectedNote && state.exerciseType === 'melodia') {
+                                        ui.micDetectedNote.textContent = getEnharmonicName(noteFromPitch(detectedPitch));
+                                    }
+                                }
+                            }
+                        }
+                    } else if(ui.micDetectedNote) {
+                        ui.micDetectedNote.textContent = '';
+                    }
+                } else if(ui.micDetectedNote) {
+                     ui.micDetectedNote.textContent = '';
+                }
             }
+            
+            updateGuidePosition(state.activeVisualEvent);
 
             state.drawFrameId = requestAnimationFrame(drawLoop);
         }
@@ -2208,7 +2445,12 @@
                          if (state.logicalMeasureIndex === -1) state.logicalMeasureIndex = 0; 
                          else state.logicalMeasureIndex++; 
                          
-                        if (state.logicalMeasureIndex >= state.measuresPerExercise) { 
+                         if (state.isSurvivalMode && state.logicalMeasureIndex >= state.measuresPerExercise) {
+                             state.exerciseMeasures.push(...generateExercise());
+                             state.measuresPerExercise = state.exerciseMeasures.length;
+                         }
+                         
+                        if (!state.isSurvivalMode && state.logicalMeasureIndex >= state.measuresPerExercise) { 
                             state.visualQueue.push({ time: audio.nextNoteTime, type: 'stop' });
                             state.isPlaying = false; 
                             return;
@@ -2238,8 +2480,18 @@
                          state.scheduledSynthNotes.push({ start: audio.nextNoteTime, end: audio.nextNoteTime + 0.55 });
                     }
 
-                    const hitKey = `${state.logicalMeasureIndex}-${state.logicalMetronomeCount}`;
-                    if (playingNotes && playingNotes.length > 0) state.score.expectedNotes[hitKey] = playingNotes;
+                    if (playingNotes && playingNotes.length > 0) {
+                        const targetBeat = (state.exerciseType === 'armonia' && state.notesPerChord === 4) ? (Math.floor((state.logicalMetronomeCount - 1) / 2) * 2) + 1 : state.logicalMetronomeCount;
+                        const hitKey = `${state.logicalMeasureIndex}-${targetBeat}`;
+                        if (!state.score.expectedNotes[hitKey]) {
+                            state.score.expectedNotes[hitKey] = {
+                                notes: playingNotes,
+                                time: audio.nextNoteTime,
+                                status: 'waiting'
+                            };
+                            state.score.status[hitKey] = 'waiting';
+                        }
+                    }
 
                     if (state.logicalMetronomeCount >= state.measuresChangeBeat) {
                         const nextMeasureIndex = state.logicalMeasureIndex + 1;
@@ -2883,13 +3135,7 @@
                     if (state.exerciseType === 'armonia' && state.notesPerChord === 4) targetBeat = (index * 2) + 1;
                     
                     const hitKey = `${currentEvent.measureIndex}-${targetBeat}`;
-                    let status = state.score?.status?.[hitKey] || 'waiting';
-
-                    // Si pasaste la nota y no la tocaste, márcala como fallida.
-                    if (state.currentVisualBeat > targetBeat + 1 && status === 'waiting') {
-                        status = 'miss';
-                        if (state.score && state.score.status) state.score.status[hitKey] = 'miss';
-                    }
+                    const status = state.score?.status?.[hitKey] || 'waiting';
 
                     let noteColor = status === 'hit' ? '#34d399' : (status === 'imprecise' ? '#facc15' : (status === 'miss' ? '#ef4444' : ''));
                     if (noteColor && noteEl.dataset.currentColor !== noteColor) {
@@ -2920,12 +3166,12 @@
              { id: 'user-info-panel', text: '<h3><strong>2. Panel de Usuario</strong></h3><p>Aquí puedes ver tu nombre de perfil, tu racha de práctica diaria y gestionar tus datos:</p><ul><li class="mt-2"><strong>Historial (Atajo: H):</strong> Abre una ventana para ver un registro de tus sesiones de práctica y tus debilidades actuales.</li><li class="mt-2"><strong>Usuario (Atajo: U):</strong> Guarda tu progreso y te permite cambiar de perfil.</li><li class="mt-2"><strong>Exportar / Importar (Atajos: X / I):</strong> Descarga tu progreso en un archivo (.json) para respaldarlo.</li></ul>' },
              { id: 'exercise-type-control', text: '<h3><strong>3. Tipo de Ejercicio</strong></h3><p>Elige tu modo de práctica:</p><ul><li class="mt-2"><strong>Melodía:</strong> Para notas individuales.</li><li class="mt-2"><strong>Armonía:</strong> Para notas simultáneas.</li></ul><p class="mt-2">Puedes cambiar rápidamente entre modos con la tecla <strong>E</strong>.</p>' },
              { id: 'harmony-options-container', text: '<h3><strong>4. Opciones de Armonía</strong></h3><p>Si eliges <strong>Armonía</strong>, podrás configurar:</p><ul><li class="mt-2"><strong>Notas:</strong> Define si practicarás con 2, 3 o 4 notas.</li><li class="mt-2"><strong>Filtros:</strong> Elige tipos de intervalos, acordes o voicings. ¡Usa <strong>Personalizado</strong> para más control!</li></ul>' },
-             { id: 'difficulty-select', text: '<h3><strong>5. Nivel de Dificultad</strong></h3><p>Ajusta la complejidad y el rango de notas:</p><ul class="text-sm mt-2"><li class="mt-2"><strong>Básico:</strong> Rango limitado.</li><li class="mt-2"><strong>Medio:</strong> Rango intermedio.</li><li class="mt-2"><strong>Avanzado:</strong> Todo el registro del instrumento.</li></ul>' },
+             { id: 'difficulty-select', text: '<h3><strong>5. Nivel de Dificultad</strong></h3><p>Ajusta la complejidad y el rango de notas:</p><ul class="text-sm mt-2"><li class="mt-2"><strong>Básico:</strong> Rango limitado (Mi4 a Fa5).</li><li class="mt-2"><strong>Medio:</strong> Rango intermedio (Mi3 a La5).</li><li class="mt-2"><strong>Avanzado:</strong> Todo el registro del instrumento (Mi3 a Mi6).</li></ul>' },
              { id: 'clef-select', text: `<h3><strong>6. Configuración del Pentagrama</strong></h3><p>Personaliza la escritura musical:</p><ul><li class="mt-2"><strong>Clave:</strong> Elige entre Sol, Fa y Do (Atajo: <strong>C</strong>).</li><li class="mt-2"><strong>Armadura:</strong> Selecciona la tonalidad (solo en modo Melodía).</li><li class="mt-2"><strong>Compás:</strong> Define el compás del ejercicio.</li></ul>` },
              { id: 'tempo', text: '<h3><strong>7. Duración y Velocidad</strong></h3><ul><li class="mt-2"><strong>Tempo (BPM):</strong> Establece la velocidad del metrónomo.</li><li class="mt-2"><strong>Compases:</strong> Elige cuántos compases durará el ejercicio.</li></ul>' },
              { id: 'change-beat-control', text: '<h3><strong>8. Lectura Adelantada</strong></h3><p>Una herramienta clave para mejorar tu fluidez. Elige en qué <strong>pulso</strong> del compás actual quieres que aparezcan las notas del <strong>siguiente compás</strong>. ¡Esto te fuerza a leer siempre por delante!</p>' },
              { id: 'info-aids-container', text: '<h3><strong>9. Ayudas de Lectura</strong></h3><p>Activa estas opciones para facilitar el aprendizaje:</p><ul><li class="mt-2"><strong>Nombres (Atajo: N):</strong> Muestra el nombre de las notas.</li><li class="mt-2"><strong>Guía (Atajo: G):</strong> Muestra una línea vertical que se mueve pulso a pulso.</li></ul>' },
-             { id: 'visual-aids-container', text: '<h3><strong>10. Ayudas Interactivas</strong></h3><p>Usa estas herramientas para una práctica más completa:</p><ul><li class="mt-2"><strong>Mástil (Atajo: M):</strong> Visualiza las notas en un diapasón de guitarra.</li><li class="mt-2"><strong>Sonido (Atajo: S):</strong> Reproduce cada nota o acorde.</li><li class="mt-2"><strong>Enarmónicos (Atajo: A):</strong> Elige si prefieres ver ♯ o ♭ en el mástil.</li><li class="mt-2 text-emerald-400"><strong>Micrófono (Atajo: R):</strong> Actívalo para que la app evalúe si tocas la nota correcta. Las notas se colorearán verde, amarillo o rojo.</li></ul>' },
+             { id: 'visual-aids-container', text: '<h3><strong>10. Ayudas Interactivas</strong></h3><p>Usa estas herramientas para una práctica más completa:</p><ul><li class="mt-2"><strong>Mástil (Atajo: M):</strong> Visualiza las notas en un diapasón de guitarra.</li><li class="mt-2"><strong>Sonido (Atajo: S):</strong> Reproduce cada nota o acorde.</li><li class="mt-2"><strong>Enarmónicos (Atajo: A):</strong> Elige si prefieres ver ♯ o ♭ en el mástil.</li><li class="mt-2 text-emerald-400"><strong>Micrófono (Atajo: R):</strong> Actívalo para que la app evalúe si tocas la nota correcta.</li></ul>' },
              { id: 'audio-controls-container', text: '<h3><strong>11. Controles de Audio</strong></h3><p>Personaliza el sonido a tu gusto:</p><ul><li class="mt-2"><strong>Metrónomo (Atajo: K):</strong> Activa o desactiva el clic. Puedes usar la voz en español que cuenta para guiarte.</li><li class="mt-2"><strong>Volúmenes:</strong> Ajusta el volumen del sonido y del metrónomo.</li></ul>' },
              { id: 'startStopButton', text: '<h3><strong>12. Resumen de Atajos</strong></h3><p>Usa los botones o los atajos del teclado para manejar el ejercicio de forma más fluida.</p><p class="mt-2"><strong>Controles (Barra Espaciadora o Clic en Pentagrama):</strong></p><ul><li class="mt-1">Un toque para Iniciar/Pausar, doble toque para Detener. Oculta el modal de fin.</li></ul><p class="mt-2"><strong>Teclas Rápidas:</strong></p><ul class="grid grid-cols-2 sm:grid-cols-3 gap-x-2 text-sm mt-2"><li><strong>U:</strong> Usuario</li><li><strong>H:</strong> Historial</li><li><strong>X/I:</strong> Export / Import</li><li><strong>E:</strong> Tipo de Ejercicio</li><li><strong>C:</strong> Cambiar Clave</li><li><strong>N:</strong> Ver Nombres</li><li><strong>G:</strong> Guía Visual</li><li><strong>M:</strong> Ver Mástil</li><li><strong>S:</strong> Activar Sonido</li><li><strong>K:</strong> Metrónomo</li><li><strong>A:</strong> ♯ / ♭</li><li><strong>R:</strong> Micrófono</li><li><strong>T:</strong> Afinador</li><li><strong>F:</strong> Pantalla Comp.</li><li><strong>V:</strong> Ocultar Info</li><li><strong>?:</strong> Tutorial</li></ul>' }
         ];
@@ -2945,6 +3191,7 @@
                 highlight.style.left = `${rect.left - 10}px`; highlight.style.top = `${rect.top - 10}px`; highlight.style.width = `${rect.width + 20}px`; highlight.style.height = `${rect.height + 20}px`; highlight.style.boxShadow = '0 0 0 9999px rgba(0, 0, 0, 0.7)'; highlight.classList.remove('hidden');
             } else ui.tutorialHighlight.classList.add('hidden');
         }
+        
     </script>
 </body>
 </html>
