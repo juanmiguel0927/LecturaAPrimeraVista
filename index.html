@@ -69,15 +69,9 @@
         .tooltip .tooltiptext { visibility: hidden; width: max-content; max-width: 200px; background-color: #27272a; color: #fff; text-align: center; border-radius: 6px; padding: 5px 10px; position: absolute; z-index: 100; bottom: 125%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.15s; font-size: 0.75rem; pointer-events: none; }
         .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
 
-        /* ARREGLO DEL BRINCO (Salto visual de la nota) */
-        @keyframes arcadePop {
-            0% { filter: brightness(1); }
-            30% { filter: brightness(1.5) drop-shadow(0 0 8px currentColor); }
-            100% { filter: brightness(1); }
-        }
+        /* Estabilidad total en SVG: Sin animaciones que alteren el bounding-box para evitar saltos */
         .note-hit-anim path, .note-hit-anim rect { 
-            animation: arcadePop 0.4s ease-out forwards; 
-            /* Se ha eliminado transform: scale() para evitar que la nota se mueva del pentagrama */
+            transition: fill 0.1s ease, stroke 0.1s ease;
         }
 
         .stave-scroll-wrapper { 
@@ -195,11 +189,11 @@
                 <div class="grid grid-cols-3 gap-2 w-full">
                     <div class="tooltip w-full">
                          <button id="achievements-button" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-1.5 px-2 rounded-full shadow text-xs transition-colors">🏆 Logros</button>
-                         <span class="tooltiptext">Tus Medallas</span>
+                         <span class="tooltiptext">Tus Medallas (Atajo: L)</span>
                     </div>
                     <div class="tooltip w-full">
                          <button id="theme-toggle-btn" class="w-full bg-amber-500 hover:bg-amber-400 text-white font-bold py-1.5 px-2 rounded-full shadow text-xs transition-colors">☀️ Tema</button>
-                         <span class="tooltiptext">Alternar Claro/Oscuro</span>
+                         <span class="tooltiptext">Claro/Oscuro (Atajo: D)</span>
                     </div>
                     <div class="tooltip w-full">
                         <button id="history-button" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-1.5 px-2 rounded-full shadow text-xs">Historial</button>
@@ -222,8 +216,9 @@
                 </div>
 
                 <!-- Botón de Mapa de Calor debajo -->
-                <div class="mt-3 w-full">
+                <div class="mt-3 w-full tooltip">
                     <button id="heatmap-button" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-1.5 px-4 rounded-full shadow text-xs transition-colors">🔥 Mapa de Calor de Notas</button>
+                    <span class="tooltiptext">Dominio de notas (Atajo: B)</span>
                 </div>
                 <p id="export-import-msg" class="text-xs mt-2 hidden text-center w-full font-semibold"></p>
             </div>
@@ -308,10 +303,25 @@
                     <option value="custom">Personalizado</option>
                 </select>
             </div>
+            <div id="harmony-progression-container" class="control-item hidden">
+                <label for="harmony-progression-select" class="text-zinc-300 whitespace-nowrap">Progresión:</label>
+                <select id="harmony-progression-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="random" selected>Aleatoria</option>
+                    <option value="1-4-5-1">I - IV - V - I (Clásica)</option>
+                    <option value="2-5-1">II - V - I (Jazz)</option>
+                    <option value="1-6-2-5">I - VI - II - V (Círculo)</option>
+                </select>
+            </div>
             
             <div class="control-item">
                 <label for="tempo" class="text-zinc-300 whitespace-nowrap">Tempo (BPM):</label>
-                <input type="number" id="tempo" value="60" min="1" class="w-full p-2 text-center rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"/>
+                <div class="flex items-center gap-2 w-full">
+                    <input type="number" id="tempo" value="60" min="1" class="w-full p-2 text-center rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"/>
+                    <div class="tooltip">
+                        <button type="button" id="tap-tempo-btn" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition-transform active:scale-95 whitespace-nowrap">🥁 Tap</button>
+                        <span class="tooltiptext">Haz clic varias veces para marcar el tempo</span>
+                    </div>
+                </div>
             </div>
             
             <div class="control-item tooltip">
@@ -352,6 +362,35 @@
                     <option value="4/4">4/4</option><option value="3/4">3/4</option><option value="2/4">2/4</option>
                 </select>
             </div>
+            <div id="rhythm-options-container" class="control-item tooltip">
+                <label for="rhythm-select" class="text-zinc-300 whitespace-nowrap">Figuras Rítmicas:</label>
+                <select id="rhythm-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="quarters" selected>Solo Negras (♩)</option>
+                    <option value="halves_quarters">Blancas y Negras (𝅗𝅥 ♩)</option>
+                    <option value="eighths_quarters">Negras y Corcheas (♩ ♫)</option>
+                    <option value="with_rests">Negras y Silencios (♩ 𝄽)</option>
+                    <option value="mixed">Mixto (𝅗𝅥 ♩ ♫ 𝄽)</option>
+                </select>
+                <span class="tooltiptext">Variedad rítmica en modo Melodía</span>
+            </div>
+            <div id="chromatic-options-container" class="control-item tooltip">
+                <label for="chromatic-select" class="text-zinc-300 whitespace-nowrap">Cromatismo:</label>
+                <select id="chromatic-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="none" selected>Diatónico (0%)</option>
+                    <option value="light">Alteraciones Suaves (20%)</option>
+                    <option value="heavy">Cromático Intenso (40%)</option>
+                </select>
+                <span class="tooltiptext">Añade notas alteradas (♯, ♭, ♮) fuera de la armadura</span>
+            </div>
+            <div id="chromatic-accidental-container" class="control-item tooltip">
+                <label for="chromatic-accidental-select" class="text-zinc-300 whitespace-nowrap">Alteración Crom.:</label>
+                <select id="chromatic-accidental-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="sharps">Solo Sostenidos (♯)</option>
+                    <option value="flats">Solo Bemoles (♭)</option>
+                    <option value="both" selected>Ambas (♯ y ♭)</option>
+                </select>
+                <span class="tooltiptext">Evita Fb, B#, E#, Cb y nunca mezcla enarmónicos (ej. C# y Db)</span>
+            </div>
             <div class="control-item tooltip">
                 <label for="difficulty-select" class="text-zinc-300 whitespace-nowrap">Nivel:</label>
                 <select id="difficulty-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -359,6 +398,17 @@
                     <option value="medium" id="opt-medium">Medio</option>
                     <option value="advanced" id="opt-advanced">Avanzado</option>
                 </select>
+            </div>
+            <div id="fret-position-container" class="control-item tooltip">
+                <label for="fret-position-select" class="text-zinc-300 whitespace-nowrap">Posición Mástil:</label>
+                <select id="fret-position-select" class="p-2 w-full rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="all" selected>Todo el Mástil</option>
+                    <option value="0-4">Abierta (Trastes 0 - IV)</option>
+                    <option value="1-4">Posición I (Trastes I - IV)</option>
+                    <option value="5-8">Posición V (Trastes V - VIII)</option>
+                    <option value="9-12">Posición IX (Trastes IX - XII)</option>
+                </select>
+                <span class="tooltiptext">Filtra notas por zona del diapasón</span>
             </div>
             <div class="control-item">
                 <label for="measures-select" class="text-zinc-300 whitespace-nowrap">Compases:</label>
@@ -414,8 +464,13 @@
                     <div class="flex items-center gap-2 tooltip" id="mic-control-container">
                         <label for="enable-mic" class="text-zinc-300 whitespace-nowrap font-bold text-emerald-400">Micrófono:</label>
                         <input type="checkbox" id="enable-mic" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2 cursor-pointer"/>
-                        <span id="mic-detected-note" class="ml-2 text-xs font-bold text-sky-400 w-12 truncate text-center"></span>
+                        <span id="mic-detected-note" class="ml-1 text-xs font-bold text-sky-400 w-10 truncate text-center"></span>
                         <span class="tooltiptext">Evalúa precisión (Atajo: R)</span>
+                    </div>
+                    <div class="flex items-center gap-2 tooltip" id="midi-control-container">
+                        <label for="enable-midi" class="text-zinc-300 whitespace-nowrap font-bold text-purple-400">MIDI:</label>
+                        <input type="checkbox" id="enable-midi" class="w-5 h-5 rounded bg-zinc-700 text-purple-500 border-zinc-600 focus:ring-purple-500 focus:ring-2 cursor-pointer"/>
+                        <span class="tooltiptext">Conectar MIDI (Atajo: J)</span>
                     </div>
                 </div>
                  <div id="enharmonic-control-container" class="w-full flex items-center justify-between tooltip hidden mt-2">
@@ -428,36 +483,50 @@
                     <span class="tooltiptext">Atajo: A</span>
                 </div>
             </div>
-            
-             <div id="audio-controls-container" class="control-item flex-col items-start gap-4 p-4 rounded-xl bg-zinc-700/30 border border-zinc-600/50">
+            <div id="audio-controls-container" class="control-item flex-col items-start gap-2 bg-zinc-700/30 p-3 rounded-lg border border-zinc-600">
                 <div class="flex flex-row items-center justify-between w-full">
                     <div class="flex items-center gap-2 tooltip">
                         <label for="enable-metronome" class="text-zinc-300 whitespace-nowrap font-bold">Metrónomo:</label>
                         <input type="checkbox" id="enable-metronome" class="w-5 h-5 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 focus:ring-2 cursor-pointer" checked/>
                         <span class="tooltiptext">Atajo: K</span>
                     </div>
-                    <!-- VOZ DEL METRÓNOMO -->
-                    <select id="metronome-sound-select" class="p-1 text-sm w-28 rounded bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                        <option value="classic">Clásico</option>
-                        <option value="voice-es" selected>Voz (ES)</option>
+                    <!-- VOZ Y BATERÍA DEL METRÓNOMO -->
+                    <select id="metronome-sound-select" class="p-1 text-sm w-32 rounded bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                        <option value="classic" selected>Clásico</option>
+                        <option value="drums">Batería (Groove)</option>
+                        <option value="voice-es">Voz (ES)</option>
                         <option value="voice-en">Voz (EN)</option>
                     </select>
                 </div>
+                <div class="flex flex-row items-center justify-between w-full gap-2">
+                     <label for="synth-type-select" class="text-zinc-400 whitespace-nowrap text-xs">Timbre Sonido:</label>
+                     <select id="synth-type-select" class="p-1 text-xs w-32 rounded bg-zinc-700 text-white border border-zinc-600 focus:outline-none">
+                         <option value="guitar" selected>🎸 Guitarra</option>
+                         <option value="classic">🎹 Sintetizador</option>
+                     </select>
+                </div>
                 <div class="flex flex-row items-center justify-between w-full gap-4">
                      <label for="note-volume" class="text-zinc-400 whitespace-nowrap text-sm">Vol. Sonido:</label>
-                     <input type="range" id="note-volume" min="0" max="1" step="0.01" value="0.3" class="w-full h-2 bg-zinc-600 rounded-lg appearance-none cursor-pointer">
+                     <input type="range" id="note-volume" min="0" max="1" step="0.05" value="0.3" class="w-full accent-emerald-500 cursor-pointer">
                 </div>
                 <div class="flex flex-row items-center justify-between w-full gap-4">
                      <label for="metronome-volume" class="text-zinc-400 whitespace-nowrap text-sm">Vol. Metrónomo:</label>
-                     <input type="range" id="metronome-volume" min="0" max="1" step="0.01" value="0.6" class="w-full h-2 bg-zinc-600 rounded-lg appearance-none cursor-pointer">
+                     <input type="range" id="metronome-volume" min="0" max="1" step="0.05" value="0.6" class="w-full accent-emerald-500 cursor-pointer">
                 </div>
             </div>
         </div>
         
-        <div id="change-beat-control" class="flex items-center justify-center space-x-2 mb-8">
-            <label for="change-beat-select" class="text-zinc-300 font-medium">Adelantar Compás (Pulso):</label>
-            <select id="change-beat-select" class="p-2 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner">
-            </select>
+        <div id="change-beat-control" class="flex flex-wrap items-center justify-center gap-6 mb-8 bg-zinc-700/20 p-3 rounded-xl border border-zinc-700">
+            <div class="flex items-center space-x-2">
+                <label for="change-beat-select" class="text-zinc-300 font-medium text-sm">Adelantar Compás (Pulso):</label>
+                <select id="change-beat-select" class="p-1.5 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+                </select>
+            </div>
+            <div class="flex items-center gap-2 tooltip">
+                <input type="checkbox" id="speed-trainer-toggle" class="w-4 h-4 rounded bg-zinc-700 text-emerald-500 border-zinc-600 focus:ring-emerald-500 cursor-pointer"/>
+                <label for="speed-trainer-toggle" class="text-zinc-300 text-sm font-medium cursor-pointer">🚀 Acelerador (+5 BPM)</label>
+                <span class="tooltiptext">Sube 5 BPM cada 2 compases perfectos</span>
+            </div>
         </div>
         
         <!-- Botones de Acción -->
@@ -473,16 +542,23 @@
                     <span class="tooltiptext">Misma semilla global</span>
                  </div>
                  <div class="tooltip">
-                    <button id="pauseResumeButton" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Pausar</button>
-                     <span class="tooltiptext">Atajo: Espacio</span>
+                    <button id="pauseResumeButton" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 hidden">Pausar</button>
+                    <span class="tooltiptext">Atajo: Espacio</span>
                  </div>
             </div>
-
-            <!-- Segunda Fila (Modo Supervivencia, Tutorial, Afinador) -->
+            <!-- Segunda Fila (Modo Supervivencia, Debilidades, Carrera, Tutorial, Afinador) -->
             <div class="flex flex-wrap justify-center items-center gap-4">
                 <div class="tooltip">
                     <button id="survival-mode-btn" class="bg-orange-600 hover:bg-orange-500 text-white font-bold py-2 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">🔥 Supervivencia</button>
                     <span class="tooltiptext">Juego infinito. 3 Vidas.</span>
+                </div>
+                <div class="tooltip">
+                    <button id="weaknesses-mode-btn" class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">🎯 Atacar Debilidades</button>
+                    <span class="tooltiptext">70% notas que más fallas en tu historial</span>
+                </div>
+                <div class="tooltip">
+                    <button id="campaign-mode-btn" class="bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">🎓 Modo Carrera</button>
+                    <span class="tooltiptext">Supera las 6 etapas progresivas</span>
                 </div>
                 <div class="tooltip">
                     <button id="show-tutorial" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300">Tutorial</button>
@@ -500,6 +576,7 @@
             <div id="displayArea" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-zinc-800/90 backdrop-blur px-6 py-2 rounded-full shadow-lg z-20 border border-zinc-600 transition-all duration-300 hidden opacity-100 flex flex-col items-center">
                 <div class="flex justify-center items-center space-x-6">
                     <span class="text-zinc-300 font-mono text-sm sm:text-base">Tiempo: <span id="metronomeCount" class="text-xl sm:text-2xl font-bold ml-2 text-zinc-100">0</span></span>
+                    <div id="beat-leds-container" class="flex items-center gap-1.5"></div>
                     <span class="text-zinc-300 font-mono text-sm sm:text-base">Compases: <span id="measuresCount" class="text-lg sm:text-xl font-bold text-sky-400">0 / 10</span></span>
                 </div>
                 <!-- Vidas del Modo Supervivencia -->
@@ -554,6 +631,11 @@
                         <div class="text-emerald-400 flex flex-col">Correctas<span id="results-correct" class="font-bold text-2xl">0</span></div>
                         <div class="text-red-400 flex flex-col">Falladas<span id="results-missed" class="font-bold text-2xl">0</span></div>
                     </div>
+                    <!-- Reproductor de Grabación de la Sesión -->
+                    <div id="session-recording-container" class="hidden mb-6 bg-zinc-900 p-3 rounded-xl border border-zinc-700 flex flex-col items-center">
+                        <span class="text-xs text-emerald-400 font-bold mb-2 uppercase tracking-wider">🎙️ Grabación de tu práctica:</span>
+                        <audio id="session-audio-player" controls class="w-full h-10 rounded"></audio>
+                    </div>
                     <button id="close-results-btn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 w-full">Continuar (Enter/Espacio)</button>
                 </div>
             </div>
@@ -578,6 +660,16 @@
                     <div id="heatmap-grid" class="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[60vh] overflow-y-auto pr-2">
                         <!-- Las notas se llenarán aquí vía JS -->
                     </div>
+                </div>
+            </div>
+
+            <!-- Modal Modo Carrera -->
+            <div id="campaign-modal" class="modal-overlay hidden">
+                <div class="modal-content text-left bg-zinc-800 border-2 border-teal-500" style="width: 620px;">
+                    <span class="modal-close text-teal-400" id="close-campaign-modal">×</span>
+                    <h2 class="text-3xl font-extrabold text-teal-400 mb-2">🎓 Modo Carrera</h2>
+                    <p class="text-zinc-400 mb-6 text-sm">Completa cada etapa en orden para dominar la lectura rítmica, las posiciones en el mástil y la armonía (+250 XP por etapa superada).</p>
+                    <div id="campaign-stages-list" class="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-2"></div>
                 </div>
             </div>
 
@@ -641,6 +733,25 @@
         <div class="modal-content text-left bg-zinc-800 border-2 border-sky-500" style="width: 600px;">
              <span class="modal-close" id="close-history-modal">×</span>
             <h2 class="text-2xl font-bold text-sky-400 mb-4">Historial de Práctica</h2>
+
+            <div id="history-kpi-summary" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-700 text-center">
+                    <span class="text-[11px] text-zinc-400 block uppercase">Sesiones</span>
+                    <span id="kpi-total-sessions" class="text-xl font-extrabold text-white">0</span>
+                </div>
+                <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-700 text-center">
+                    <span class="text-[11px] text-zinc-400 block uppercase">Notas Acertadas</span>
+                    <span id="kpi-total-correct" class="text-xl font-extrabold text-emerald-400">0</span>
+                </div>
+                <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-700 text-center">
+                    <span class="text-[11px] text-zinc-400 block uppercase">Precisión Media</span>
+                    <span id="kpi-avg-accuracy" class="text-xl font-extrabold text-sky-400">-</span>
+                </div>
+                <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-700 text-center">
+                    <span class="text-[11px] text-zinc-400 block uppercase">Modo Carrera</span>
+                    <span id="kpi-career-progress" class="text-xl font-extrabold text-teal-400">0/6</span>
+                </div>
+            </div>
             
             <div id="missed-notes-stats" class="mb-6 bg-zinc-900 p-4 rounded-xl hidden border border-zinc-700 shadow-inner">
                 <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2">
@@ -749,7 +860,20 @@
             { id: 'streak_7', name: 'Imparable', desc: 'Alcanza una racha de 7 días practicando.', condition: (stats) => stats.maxStreak >= 7, icon: '🚀' },
             { id: 'notes_100', name: 'Buen Oído', desc: 'Acierta 100 notas con tu instrumento.', condition: (stats) => stats.totalCorrect >= 100, icon: '🎵' },
             { id: 'notes_500', name: 'Maestro Lector', desc: 'Acierta 500 notas con tu instrumento.', condition: (stats) => stats.totalCorrect >= 500, icon: '🎸' },
-            { id: 'daily_hero', name: 'Héroe Diario', desc: 'Completa un Reto Diario.', condition: (stats) => stats.dailyChallengesCompleted >= 1, icon: '⭐' }
+            { id: 'daily_hero', name: 'Héroe Diario', desc: 'Completa un Reto Diario.', condition: (stats) => stats.dailyChallengesCompleted >= 1, icon: '⭐' },
+            { id: 'night_owl', name: 'Noctámbulo', desc: 'Completa un ejercicio después de las 10:00 PM.', condition: (stats) => stats.nightOwlUnlocked === true, icon: '🦉' },
+            { id: 'mastermind', name: 'Mente Maestra', desc: 'Logra 100% de precisión en nivel Avanzado.', condition: (stats) => stats.mastermindUnlocked === true, icon: '🧠' },
+            { id: 'harmonist', name: 'Armonista', desc: 'Acierta 50 acordes en modo Armonía.', condition: (stats) => (stats.harmonyCorrect || 0) >= 50, icon: '🎹' },
+            { id: 'career_grad', name: 'Graduado', desc: 'Supera una etapa del Modo Carrera.', condition: (stats) => (stats.completedCampaignStages || []).length >= 1, icon: '🎓' }
+        ];
+
+        const CAMPAIGN_STAGES = [
+            { id: 'stage_1', title: 'Etapa 1: Cuerdas y Posición Abierta', desc: 'Melodía • Nivel Básico • Trastes 0-IV • Solo Negras (60 BPM)', type: 'melodia', diff: 'basico', fret: '0-4', rhythm: 'quarters', bpm: 60, measures: '5' },
+            { id: 'stage_2', title: 'Etapa 2: Control de Duración', desc: 'Melodía • Nivel Básico • Blancas y Negras (70 BPM)', type: 'melodia', diff: 'basico', fret: '0-4', rhythm: 'halves_quarters', bpm: 70, measures: '10' },
+            { id: 'stage_3', title: 'Etapa 3: Explorando Posición V y Silencios', desc: 'Melodía • Nivel Medio • Trastes V-VIII • Negras y Silencios (75 BPM)', type: 'melodia', diff: 'medium', fret: '5-8', rhythm: 'with_rests', bpm: 75, measures: '10' },
+            { id: 'stage_4', title: 'Etapa 4: Subdivisión con Corcheas', desc: 'Melodía • Nivel Medio • Negras y Corcheas (80 BPM)', type: 'melodia', diff: 'medium', fret: '1-4', rhythm: 'eighths_quarters', bpm: 80, measures: '10' },
+            { id: 'stage_5', title: 'Etapa 5: Lectura Armónica Dual', desc: 'Armonía (2 voces - Intervalos) • Nivel Medio (70 BPM)', type: 'armonia', notesPerChord: 2, diff: 'medium', fret: 'all', rhythm: 'quarters', bpm: 70, measures: '10' },
+            { id: 'stage_6', title: 'Etapa 6: Maestro de Cadencias (II-V-I)', desc: 'Armonía (4 voces - Jazz II-V-I) • Nivel Avanzado (80 BPM)', type: 'armonia', notesPerChord: 4, progression: '2-5-1', diff: 'advanced', fret: 'all', rhythm: 'quarters', bpm: 80, measures: '10' }
         ];
 
         let ui, state, audio, notesData, currentUser, userData;
@@ -812,7 +936,8 @@
                     totalExercises: 0, totalCorrect: 0, totalIncorrect: 0, currentStreak: 0, maxStreak: 0,
                     lastPracticeDate: null, hintsUsed: 0, answersUsed: 0, missedNotes: {}, missedNotesByExercise: {},
                     dailyChallengesCompleted: 0,
-                    xp: 0, globalNoteStats: {} 
+                    xp: 0, globalNoteStats: {}, harmonyCorrect: 0,
+                    nightOwlUnlocked: false, mastermindUnlocked: false, completedCampaignStages: []
                 },
                 achievements: [],
                 customPractice: {
@@ -838,6 +963,8 @@
                 if (userData.stats.dailyChallengesCompleted === undefined) userData.stats.dailyChallengesCompleted = 0;
                 if (userData.stats.xp === undefined) userData.stats.xp = 0;
                 if (!userData.stats.globalNoteStats) userData.stats.globalNoteStats = {};
+                if (userData.stats.harmonyCorrect === undefined) userData.stats.harmonyCorrect = 0;
+                if (!userData.stats.completedCampaignStages) userData.stats.completedCampaignStages = [];
                 if (!userData.achievements) userData.achievements = [];
                 if (!userData.customPractice) userData.customPractice = getInitialUserData().customPractice;
                 if (!userData.practiceHistory) userData.practiceHistory = [];
@@ -1134,6 +1261,28 @@
             ui.historyTableBody.innerHTML = '';
             const statsContainer = document.getElementById('missed-notes-stats');
             const filterSelect = ui.missedNotesFilter;
+            const history = userData.practiceHistory || [];
+
+            if (ui.kpiTotalSessions) {
+                ui.kpiTotalSessions.textContent = userData?.stats?.totalExercises || history.length || 0;
+                ui.kpiTotalCorrect.textContent = userData?.stats?.totalCorrect || 0;
+                const totalHits = userData?.stats?.totalCorrect || 0;
+                const totalMisses = userData?.stats?.totalIncorrect || 0;
+                if (totalHits + totalMisses > 0) {
+                    const globalAvg = Math.round((totalHits / (totalHits + totalMisses)) * 100);
+                    ui.kpiAvgAccuracy.textContent = `${globalAvg}%`;
+                } else {
+                    const scoredEntries = history.filter(h => h.score && h.score !== '-' && !isNaN(parseInt(h.score)));
+                    if (scoredEntries.length > 0) {
+                        const avg = Math.round(scoredEntries.reduce((acc, cur) => acc + parseInt(cur.score, 10), 0) / scoredEntries.length);
+                        ui.kpiAvgAccuracy.textContent = `${avg}%`;
+                    } else {
+                        ui.kpiAvgAccuracy.textContent = '-';
+                    }
+                }
+                const completedStages = (userData?.stats?.completedCampaignStages || []).length;
+                ui.kpiCareerProgress.textContent = `${completedStages}/${CAMPAIGN_STAGES.length}`;
+            }
             
             if (userData.stats && userData.stats.missedNotes && Object.keys(userData.stats.missedNotes).length > 0) {
                  statsContainer.classList.remove('hidden');
@@ -1153,7 +1302,6 @@
                  statsContainer.classList.add('hidden');
             }
 
-            const history = userData.practiceHistory || [];
             if (history.length === 0) {
                 ui.noHistoryMessage.classList.remove('hidden');
                 ui.historyTableBody.parentElement.classList.add('hidden');
@@ -1334,7 +1482,19 @@
                 missedNotesFilter: get('missed-notes-filter'), themeToggleBtn: get('theme-toggle-btn'), 
                 achievementsButton: get('achievements-button'), achievementsModal: get('achievements-modal'), closeAchievementsModal: get('close-achievements-modal'), achievementsList: get('achievements-list'),
                 dailyChallengeBtn: get('daily-challenge-btn'), currentXp: get('current-xp'), nextLevelXp: get('next-level-xp'), xpProgressBar: get('xp-progress-bar'),
-                survivalModeBtn: get('survival-mode-btn'), survivalHeartsContainer: get('survival-hearts'), heatmapButton: get('heatmap-button'), heatmapModal: get('heatmap-modal'), closeHeatmapModal: get('close-heatmap-modal'), heatmapGrid: get('heatmap-grid')
+                survivalModeBtn: get('survival-mode-btn'), survivalHeartsContainer: get('survival-hearts'), heatmapButton: get('heatmap-button'), heatmapModal: get('heatmap-modal'), closeHeatmapModal: get('close-heatmap-modal'), heatmapGrid: get('heatmap-grid'),
+                fretPositionSelect: get('fret-position-select'), fretPositionContainer: get('fret-position-container'),
+                rhythmOptionsContainer: get('rhythm-options-container'), rhythmSelect: get('rhythm-select'),
+                chromaticOptionsContainer: get('chromatic-options-container'), chromaticSelect: get('chromatic-select'),
+                chromaticAccidentalContainer: get('chromatic-accidental-container'), chromaticAccidentalSelect: get('chromatic-accidental-select'),
+                tapTempoBtn: get('tap-tempo-btn'), beatLedsContainer: get('beat-leds-container'),
+                kpiTotalSessions: get('kpi-total-sessions'), kpiTotalCorrect: get('kpi-total-correct'),
+                kpiAvgAccuracy: get('kpi-avg-accuracy'), kpiCareerProgress: get('kpi-career-progress'),
+                harmonyProgressionContainer: get('harmony-progression-container'), harmonyProgressionSelect: get('harmony-progression-select'),
+                synthTypeSelect: get('synth-type-select'), enableMidiToggle: get('enable-midi'),
+                speedTrainerToggle: get('speed-trainer-toggle'),
+                weaknessesModeBtn: get('weaknesses-mode-btn'), sessionRecordingContainer: get('session-recording-container'), sessionAudioPlayer: get('session-audio-player'),
+                campaignModeBtn: get('campaign-mode-btn'), campaignModal: get('campaign-modal'), closeCampaignModal: get('close-campaign-modal'), campaignStagesList: get('campaign-stages-list')
             };
         }
 
@@ -1346,17 +1506,24 @@
                 timeSignatureBeats: 4, measuresChangeBeat: 4, measuresPerExercise: 10, showNoteNames: false, keySignature: 'C',
                 showGuide: false, notePositionsX: [], lastScale: 1, spacebarPressCount: 0, spacebarTimeout: null,
                 selectedCustomIntervals: new Set(['2', '3', '4', '5', '6', '7']), selectedCustomTriads: new Set(['triad_fundamental', 'triad_inv1', 'triad_inv2', 'shell_voicing']), selectedCustomVoicings: new Set(['drop2', 'drop3']), selectedCustomQuadChordTypes: new Set(['maj7', 'm7', 'dom7']), selectedCustomQuadInversions: new Set(['0', '1', '2', '3']),
-                lastMelodicNote: null, showFretboard: false, soundEnabled: false, metronomeEnabled: true, noteVolume: 0.3, metronomeVolume: 0.6, metronomeSound: 'voice-es', displayedMeasureContent: [], enharmonicPreference: 'auto',
+                lastMelodicNote: null, showFretboard: false, soundEnabled: false, metronomeEnabled: true, noteVolume: 0.3, metronomeVolume: 0.6, metronomeSound: 'classic', displayedMeasureContent: [], enharmonicPreference: 'auto',
                 manualNotesToDisplay: null,
                 logicalMetronomeCount: 0, logicalMeasureIndex: -1, logicalIsPreRoll: false, visualIsPreRoll: false,
                 visualQueue: [], activeVisualEvent: null, currentDisplayedContent: null, drawFrameId: null,
                 currentVisualBeat: 1, totalPausedTime: 0, pauseStartTimeReal: null, showDisplayInfo: true,
                 micEnabled: false, scheduledSynthNotes: [], tunerSoundPlayed: false, tunerLastNote: null,
                 tunerSilenceFrames: 0, tunerStableFrames: 0, tunerSmoothedCents: 0, tunerSmoothedHz: 0,
+                lastHitPitchClass: null, lastHitKey: null, micSilenceSinceLastHit: true,
                 score: { total: 0, hits: new Set(), status: {}, expectedNotes: {} },
-                isDailyChallenge: false, isSurvivalMode: false, survivalHearts: 3
+                isDailyChallenge: false, isSurvivalMode: false, survivalHearts: 3,
+                fretPosition: 'all', rhythmMode: 'quarters', chromaticMode: 'none', chromaticAccidentalType: 'both', tapTimes: [],
+                harmonyProgression: 'random', synthType: 'guitar',
+                midiEnabled: false, activeMidiNotes: new Set(),
+                speedTrainer: false, isWeaknessMode: false,
+                consecutivePerfectMeasures: 0, mediaRecorder: null, recordedChunks: [],
+                activeCampaignStage: null, currentRenderKey: null, pitchHistory: []
             };
-            audio = { context: null, noteGain: null, metronomeGain: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0, micStream: null, micAnalyser: null, micDataArray: null, micFreqArray: null, micSource: null };
+            audio = { context: null, noteGain: null, metronomeGain: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0, micStream: null, micAnalyser: null, micDataArray: null, micFreqArray: null, micSource: null, micFilterHP: null, micFilterMid: null, micFilterLP: null, noiseFloorRms: 0.004 };
             notesData = {
                 all: [], natural: [], noteToLatin: {'C':'Do','D':'Re','E':'Mi','F':'Fa','G':'Sol','A':'La','B':'Si'}, letterToDiatonic: {'C':0,'D':1,'E':2,'F':3,'G':4,'A':5,'B':6},
                 diatonicTriads: { 'C': ['C', 'E', 'G'], 'D': ['D', 'F', 'A'], 'E': ['E', 'G', 'B'], 'F': ['F', 'A', 'C'], 'G': ['G', 'B', 'D'], 'A': ['A', 'C', 'E'], 'B': ['B', 'D', 'F'] },
@@ -1453,24 +1620,68 @@
                 audio.micStream = null;
             }
             if (audio.micSource) {
-                audio.micSource.disconnect();
+                try { audio.micSource.disconnect(); } catch (e) {}
                 audio.micSource = null;
             }
+        }
+
+        async function ensureMicAnalyser() {
+            await initAudioEngine();
+            const hasActiveStream = audio.micStream && audio.micStream.getTracks().some(t => t.readyState === 'live');
+            if (!hasActiveStream) {
+                const stream = await getMicStream();
+                audio.micStream = stream;
+                if (audio.micSource) {
+                    try { audio.micSource.disconnect(); } catch (e) {}
+                }
+                audio.micSource = null;
+            }
+            if (!audio.micAnalyser) {
+                audio.micAnalyser = audio.context.createAnalyser();
+            }
+            audio.micAnalyser.fftSize = 8192;
+            audio.micAnalyser.smoothingTimeConstant = 0.12;
+
+            // Cadena de filtros DSP tipo GuitarTuna calibrada desde Mi2 (82.4 Hz)
+            if (!audio.micFilterHP) {
+                audio.micFilterHP = audio.context.createBiquadFilter();
+                audio.micFilterHP.type = 'highpass';
+                audio.micFilterHP.frequency.value = 62; // Preserva el fundamental de la 6ª cuerda (82.4 Hz) y corta ruido sub-grave
+                audio.micFilterHP.Q.value = 0.707;
+
+                audio.micFilterMid = audio.context.createBiquadFilter();
+                audio.micFilterMid.type = 'peaking';
+                audio.micFilterMid.frequency.value = 240; // Realza las fundamentales del cuerpo de la guitarra
+                audio.micFilterMid.Q.value = 0.8;
+                audio.micFilterMid.gain.value = 3.5;
+
+                audio.micFilterLP = audio.context.createBiquadFilter();
+                audio.micFilterLP.type = 'lowpass';
+                audio.micFilterLP.frequency.value = 1400; // Corta siseo agudo y ruido de roce de púa
+                audio.micFilterLP.Q.value = 0.707;
+
+                audio.micFilterHP.connect(audio.micFilterMid);
+                audio.micFilterMid.connect(audio.micFilterLP);
+                audio.micFilterLP.connect(audio.micAnalyser);
+            }
+
+            if (!audio.micDataArray || audio.micDataArray.length !== audio.micAnalyser.fftSize) {
+                audio.micDataArray = new Float32Array(audio.micAnalyser.fftSize);
+            }
+            if (!audio.micFreqArray || audio.micFreqArray.length !== audio.micAnalyser.frequencyBinCount) {
+                audio.micFreqArray = new Float32Array(audio.micAnalyser.frequencyBinCount);
+            }
+            if (!audio.micSource && audio.micStream) {
+                audio.micSource = audio.context.createMediaStreamSource(audio.micStream);
+                audio.micSource.connect(audio.micFilterHP);
+            }
+            audio.prevRms = 0;
         }
         
         async function toggleMicrophone(enable) {
             if (enable) {
                 try {
-                    await initAudioEngine();
-                    const stream = await getMicStream();
-                    audio.micStream = stream;
-                    audio.micAnalyser = audio.context.createAnalyser();
-                    audio.micAnalyser.fftSize = 8192; 
-                    audio.micDataArray = new Float32Array(audio.micAnalyser.fftSize);
-                    audio.micFreqArray = new Float32Array(audio.micAnalyser.frequencyBinCount);
-                    audio.micSource = audio.context.createMediaStreamSource(stream);
-                    audio.micSource.connect(audio.micAnalyser);
-
+                    await ensureMicAnalyser();
                     state.micEnabled = true;
                     showTemporaryMessage("Micrófono activado. ¡Toca algo!", false);
                 } catch (err) {
@@ -1488,90 +1699,414 @@
             }
         }
 
+        async function toggleMidi(enable) {
+            if (enable) {
+                if (!navigator.requestMIDIAccess) {
+                    ui.enableMidiToggle.checked = false;
+                    state.midiEnabled = false;
+                    showTemporaryMessage("Tu navegador no soporta Web MIDI API.", true);
+                    return;
+                }
+                try {
+                    await initAudioEngine();
+                    const midiAccess = await navigator.requestMIDIAccess();
+                    state.midiEnabled = true;
+                    state.activeMidiNotes.clear();
+                    const onMidiMessage = (event) => {
+                        const [command, note, velocity] = event.data;
+                        const cmd = command & 0xf0;
+                        if (cmd === 0x90 && velocity > 0) {
+                            state.activeMidiNotes.add(note);
+                            if (ui.micDetectedNote) ui.micDetectedNote.textContent = getEnharmonicName(note);
+                        } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
+                            state.activeMidiNotes.delete(note);
+                        }
+                    };
+                    for (let input of midiAccess.inputs.values()) {
+                        input.onmidimessage = onMidiMessage;
+                    }
+                    midiAccess.onstatechange = (e) => {
+                        if (e.port.type === 'input' && e.port.state === 'connected') {
+                            e.port.onmidimessage = onMidiMessage;
+                        }
+                    };
+                    showTemporaryMessage("MIDI conectado. ¡Listo para tocar!", false);
+                } catch (err) {
+                    ui.enableMidiToggle.checked = false;
+                    state.midiEnabled = false;
+                    showTemporaryMessage("No se pudo acceder a dispositivos MIDI.", true);
+                }
+            } else {
+                state.midiEnabled = false;
+                state.activeMidiNotes.clear();
+                if (ui.micDetectedNote) ui.micDetectedNote.textContent = '';
+            }
+        }
+
+        function startSessionRecording() {
+            state.recordedChunks = [];
+            if (state.micEnabled && audio.micStream && typeof MediaRecorder !== 'undefined') {
+                try {
+                    state.mediaRecorder = new MediaRecorder(audio.micStream);
+                    state.mediaRecorder.ondataavailable = (e) => {
+                        if (e.data && e.data.size > 0) state.recordedChunks.push(e.data);
+                    };
+                    state.mediaRecorder.onstop = () => {
+                        if (state.recordedChunks.length > 0 && ui.sessionAudioPlayer) {
+                            const blob = new Blob(state.recordedChunks, { type: 'audio/webm' });
+                            const url = URL.createObjectURL(blob);
+                            ui.sessionAudioPlayer.src = url;
+                            ui.sessionRecordingContainer.classList.remove('hidden');
+                        }
+                    };
+                    state.mediaRecorder.start();
+                } catch (e) {
+                    console.warn("MediaRecorder no disponible:", e);
+                }
+            } else if (ui.sessionRecordingContainer) {
+                ui.sessionRecordingContainer.classList.add('hidden');
+            }
+        }
+
+        function stopSessionRecording() {
+            if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+                try { state.mediaRecorder.stop(); } catch (e) {}
+            }
+        }
+
+        function startWeaknessesMode() {
+            const missed = userData?.stats?.missedNotes || {};
+            const globalStats = userData?.stats?.globalNoteStats || {};
+            const weakExist = Object.keys(missed).length > 0 || Object.values(globalStats).some(s => s.misses > 0);
+            if (!weakExist) {
+                showTemporaryMessage("Aún no tienes fallos registrados. ¡Practica con el micrófono o MIDI primero!", true);
+                return;
+            }
+            seededRNG = null;
+            state.isDailyChallenge = false;
+            state.isSurvivalMode = false;
+            state.isWeaknessMode = true;
+            state.activeCampaignStage = null;
+            ui.exerciseTypeRadios[0].checked = true;
+            ui.exerciseTypeRadios[0].dispatchEvent(new Event('change'));
+            showTemporaryMessage("🎯 Modo Debilidades: 70% enfocado en tus notas difíciles.", false);
+            startExercise();
+        }
+
+        function renderCampaignModal() {
+            if (!ui.campaignStagesList) return;
+            ui.campaignStagesList.innerHTML = '';
+            const completed = userData?.stats?.completedCampaignStages || [];
+
+            CAMPAIGN_STAGES.forEach((stage, idx) => {
+                const isDone = completed.includes(stage.id);
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-zinc-700/80 ${isDone ? 'border-emerald-500' : 'border-zinc-600'}`;
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-bold ${isDone ? 'text-emerald-400' : 'text-white'}">${stage.title}</span>
+                            ${isDone ? '<span class="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-0.5 rounded-full font-bold">✓ Superada</span>' : ''}
+                        </div>
+                        <p class="text-xs text-zinc-300 mt-1">${stage.desc}</p>
+                    </div>
+                    <button data-stage-idx="${idx}" class="start-stage-btn bg-teal-500 hover:bg-teal-400 text-white font-bold py-2 px-5 rounded-full shadow text-xs whitespace-nowrap transition-transform transform hover:scale-105">
+                        ${isDone ? 'Repetir Etapa' : 'Iniciar Etapa'}
+                    </button>
+                `;
+                ui.campaignStagesList.appendChild(card);
+            });
+
+            ui.campaignStagesList.querySelectorAll('.start-stage-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.currentTarget.dataset.stageIdx, 10);
+                    startCampaignStage(CAMPAIGN_STAGES[idx]);
+                });
+            });
+
+            ui.campaignModal.classList.remove('hidden');
+        }
+
+        function startCampaignStage(stage) {
+            if (!stage) return;
+            ui.campaignModal.classList.add('hidden');
+            if (state.exerciseStarted) stopExercise(false);
+
+            seededRNG = null;
+            state.isDailyChallenge = false;
+            state.isSurvivalMode = false;
+            state.isWeaknessMode = false;
+            state.activeCampaignStage = stage.id;
+
+            const radio = document.getElementById(`type-${stage.type}`);
+            if (radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change'));
+            }
+            if (stage.type === 'armonia' && stage.notesPerChord) {
+                ui.notesPerChordSelect.value = String(stage.notesPerChord);
+                ui.notesPerChordSelect.dispatchEvent(new Event('change'));
+            }
+            if (stage.progression && ui.harmonyProgressionSelect) {
+                ui.harmonyProgressionSelect.value = stage.progression;
+                state.harmonyProgression = stage.progression;
+            }
+            ui.difficultySelect.value = stage.diff;
+            ui.difficultySelect.dispatchEvent(new Event('change'));
+
+            if (ui.fretPositionSelect && stage.fret) {
+                ui.fretPositionSelect.value = stage.fret;
+                state.fretPosition = stage.fret;
+            }
+            if (ui.rhythmSelect && stage.rhythm) {
+                ui.rhythmSelect.value = stage.rhythm;
+                state.rhythmMode = stage.rhythm;
+            }
+            ui.tempoInput.value = stage.bpm;
+            ui.measuresSelect.value = stage.measures;
+            ui.measuresSelect.dispatchEvent(new Event('change'));
+
+            showTemporaryMessage(`🎓 Iniciando ${stage.title}`, false);
+            startExercise();
+        }
+
         function verifyChord(expectedMidis) {
-            if (!audio.micAnalyser || !audio.context || !audio.micFreqArray) return false;
+            if (!audio.micAnalyser || !audio.context || !audio.micFreqArray) {
+                return { hit: false, wrong: false, dominantMidi: -1 };
+            }
             audio.micAnalyser.getFloatFrequencyData(audio.micFreqArray);
             const sampleRate = audio.context.sampleRate;
             const binCount = audio.micAnalyser.frequencyBinCount;
             const nyquist = sampleRate / 2;
 
             let maxDb = -Infinity;
-            for (let i = 0; i < binCount; i++) {
-                if (audio.micFreqArray[i] > maxDb) maxDb = audio.micFreqArray[i];
+            let sumDb = 0;
+            let validBins = 0;
+            const minBin = Math.max(2, Math.floor((72 / nyquist) * binCount));
+            const maxBin = Math.min(binCount - 2, Math.ceil((1350 / nyquist) * binCount));
+
+            for (let i = minBin; i <= maxBin; i++) {
+                const val = audio.micFreqArray[i];
+                if (val > maxDb) maxDb = val;
+                if (isFinite(val)) { sumDb += val; validBins++; }
             }
-            if (maxDb < -60) return false;
-            const threshold = maxDb - 20;
+            const avgDb = validBins > 0 ? (sumDb / validBins) : -100;
+            if (maxDb < -56 || (maxDb - avgDb) < 11) {
+                return { hit: false, wrong: false, dominantMidi: -1 };
+            }
 
-            let foundCount = 0;
-            for (let midi of expectedMidis) {
-                let foundThisNote = false;
-                for (let octaveOffset = -1; octaveOffset <= 1; octaveOffset++) {
-                    let testMidi = midi + (octaveOffset * 12);
-                    if (testMidi < 40 || testMidi > 90) continue;
+            const threshold = Math.max(avgDb + 9, maxDb - 18);
+            const chroma = new Float32Array(12);
+            let dominantMidi = -1;
+            let dominantDb = -Infinity;
 
-                    const freq = 440 * Math.pow(2, (testMidi - 69) / 12);
-                    const bin = Math.round((freq / nyquist) * binCount);
-                    let localMax = -Infinity;
-                    
-                    const windowSize = Math.max(5, Math.round(bin * 0.08)); 
-                    
-                    for(let i = Math.max(0, bin - windowSize); i <= Math.min(binCount - 1, bin + windowSize); i++) {
-                        if (audio.micFreqArray[i] > localMax) localMax = audio.micFreqArray[i];
+            for (let i = minBin; i <= maxBin; i++) {
+                const v = audio.micFreqArray[i];
+                if (v >= threshold && v >= audio.micFreqArray[i - 1] && v >= audio.micFreqArray[i + 1]) {
+                    const y1 = audio.micFreqArray[i - 1];
+                    const y2 = v;
+                    const y3 = audio.micFreqArray[i + 1];
+                    const denom = y1 + y3 - 2 * y2;
+                    let refinedBin = i;
+                    if (denom !== 0) {
+                        const delta = (y1 - y3) / (2 * denom);
+                        if (Math.abs(delta) < 1) refinedBin += delta;
                     }
-                    if (localMax >= threshold) { foundThisNote = true; break; }
+                    const freq = (refinedBin / binCount) * nyquist;
+                    const midiFloat = 12 * Math.log2(freq / 440) + 69;
+                    const nearestMidi = Math.round(midiFloat);
+                    const centsDiff = Math.abs(midiFloat - nearestMidi) * 100;
+
+                    if (centsDiff <= 42 && nearestMidi >= 38 && nearestMidi <= 88) {
+                        const linearMag = Math.pow(10, (v - maxDb) / 20);
+                        const pc = ((nearestMidi % 12) + 12) % 12;
+                        chroma[pc] = Math.max(chroma[pc], linearMag);
+                        if (v > dominantDb) {
+                            dominantDb = v;
+                            dominantMidi = nearestMidi;
+                        }
+                    }
                 }
-                if (foundThisNote) foundCount++;
             }
-            return foundCount === expectedMidis.length;
+
+            const expectedClasses = Array.from(new Set(expectedMidis.map(m => ((m % 12) + 12) % 12)));
+            let matchedClasses = 0;
+            let chordEnergy = 0;
+            let nonChordEnergy = 0;
+
+            for (let pc = 0; pc < 12; pc++) {
+                if (expectedClasses.includes(pc)) {
+                    chordEnergy += chroma[pc];
+                    if (chroma[pc] >= 0.20) matchedClasses++;
+                } else {
+                    nonChordEnergy += chroma[pc];
+                }
+            }
+
+            const requiredCount = expectedClasses.length <= 2 ? expectedClasses.length : (expectedClasses.length - 1);
+            const isHit = matchedClasses >= requiredCount && chordEnergy >= nonChordEnergy * 0.85;
+            const isWrong = !isHit && dominantMidi > 0 && nonChordEnergy > chordEnergy * 1.15;
+
+            return { hit: isHit, wrong: isWrong, dominantMidi };
         }
 
         function detectPitch() {
             if (!audio.micAnalyser || !audio.micDataArray || !audio.context) return -1;
             audio.micAnalyser.getFloatTimeDomainData(audio.micDataArray);
-            let buf = audio.micDataArray;
-            let SIZE = buf.length;
+            const buf = audio.micDataArray;
+            const SIZE = buf.length;
+            const sampleRate = audio.context.sampleRate;
+
+            const analysisLen = Math.min(SIZE, 2048);
+            const offset = SIZE - analysisLen;
+
+            let mean = 0;
+            for (let i = offset; i < SIZE; i++) mean += buf[i];
+            mean /= analysisLen;
+
             let rms = 0;
-            for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
-            rms = Math.sqrt(rms / SIZE);
+            for (let i = offset; i < SIZE; i++) {
+                const v = buf[i] - mean;
+                rms += v * v;
+            }
+            rms = Math.sqrt(rms / analysisLen);
 
-            if (rms < 0.02) return -1; 
+            // Seguimiento adaptativo del piso de ruido ambiental
+            if (rms < audio.noiseFloorRms * 1.35) {
+                audio.noiseFloorRms = (0.95 * audio.noiseFloorRms) + (0.05 * rms);
+            } else {
+                audio.noiseFloorRms = (0.995 * audio.noiseFloorRms) + (0.005 * rms);
+            }
+            audio.noiseFloorRms = Math.max(0.0018, Math.min(0.022, audio.noiseFloorRms));
 
-            let max_samples = Math.floor(SIZE / 2);
-            let c = new Float32Array(max_samples);
-            for (let i = 0; i < max_samples; i++) {
-                let sum = 0;
-                for (let j = 0; j < max_samples; j++) sum += buf[j] * buf[j + i];
-                c[i] = sum;
+            const dynamicRmsThreshold = Math.max(0.0032, audio.noiseFloorRms * 1.42);
+            const prevRms = audio.prevRms || 0;
+            audio.prevRms = rms;
+            audio.lastRms = rms;
+
+            if (rms > dynamicRmsThreshold * 1.35 && rms > prevRms * 1.28) {
+                state.lastOnsetTime = audio.context.currentTime;
+                state.micSilenceSinceLastHit = true;
             }
 
-            let d = 0;
-            while (d < max_samples - 1 && c[d] > c[d + 1]) d++;
-
-            let maxval = -1, maxpos = -1;
-            for (let i = d; i < max_samples; i++) {
-                if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
+            if (rms < dynamicRmsThreshold) {
+                state.pitchHistory = [];
+                return -1;
             }
 
-            let T0 = maxpos;
-            if (T0 === -1 || T0 === 0) return -1;
+            const minLag = Math.max(8, Math.floor(sampleRate / 1350));
+            const maxLag = Math.min(Math.floor(analysisLen * 0.62), Math.ceil(sampleRate / 72));
+            const windowSize = analysisLen - maxLag - 2;
 
-            let threshold = 0.85 * c[0]; 
-            let found_first = -1;
-            for (let i = d; i < max_samples; i++) {
-                if (c[i] > threshold) { found_first = i; break; }
+            const nsdf = new Float32Array(maxLag + 2);
+            for (let lag = 0; lag <= maxLag + 1; lag++) {
+                let acf = 0;
+                let norm = 0;
+                for (let j = 0; j < windowSize; j++) {
+                    const s1 = buf[offset + j] - mean;
+                    const s2 = buf[offset + j + lag] - mean;
+                    acf += s1 * s2;
+                    norm += s1 * s1 + s2 * s2;
+                }
+                nsdf[lag] = norm > 0 ? (2 * acf) / norm : 0;
             }
-            if (found_first !== -1) T0 = found_first;
-            else if (c[T0] < threshold) return -1; 
 
-            let x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
-            if (x1 !== undefined && x3 !== undefined) {
-                let a = (x1 + x3 - 2 * x2) / 2;
-                let b = (x3 - x1) / 2;
-                if (a) T0 = T0 - b / (2 * a);
+            let startLag = 1;
+            while (startLag < maxLag && nsdf[startLag] > 0) {
+                startLag++;
+            }
+            startLag = Math.max(startLag, minLag);
+
+            const peaks = [];
+            let inPositiveRegion = false;
+            let curMaxVal = -1;
+            let curMaxLag = -1;
+
+            for (let lag = startLag; lag <= maxLag; lag++) {
+                const val = nsdf[lag];
+                if (val > 0) {
+                    if (!inPositiveRegion) {
+                        inPositiveRegion = true;
+                        curMaxVal = val;
+                        curMaxLag = lag;
+                    } else if (val > curMaxVal) {
+                        curMaxVal = val;
+                        curMaxLag = lag;
+                    }
+                } else if (inPositiveRegion) {
+                    if (curMaxLag >= minLag && curMaxVal > 0) {
+                        peaks.push({ lag: curMaxLag, val: curMaxVal });
+                    }
+                    inPositiveRegion = false;
+                }
+            }
+            if (inPositiveRegion && curMaxLag >= minLag && curMaxVal > 0) {
+                peaks.push({ lag: curMaxLag, val: curMaxVal });
             }
 
-            let pitch = audio.context.sampleRate / T0;
-            if (pitch < 70 || pitch > 1500) return -1; 
+            if (peaks.length === 0) {
+                state.pitchHistory = [];
+                return -1;
+            }
+
+            let highestPeak = 0;
+            for (let i = 0; i < peaks.length; i++) {
+                if (peaks[i].val > highestPeak) highestPeak = peaks[i].val;
+            }
+
+            // Puerta de claridad armónica
+            if (highestPeak < 0.50) {
+                state.pitchHistory = [];
+                return -1;
+            }
+
+            const clarityThreshold = Math.max(0.50, 0.90 * highestPeak);
+            let chosenPeak = peaks[0];
+            for (let i = 0; i < peaks.length; i++) {
+                if (peaks[i].val >= clarityThreshold) {
+                    chosenPeak = peaks[i];
+                    break;
+                }
+            }
+
+            // Prevención de salto al 2º o 3er armónico: si en 2x o 3x el periodo hay un pico más fuerte, ese es el fundamental real
+            for (let i = 0; i < peaks.length; i++) {
+                const candidate = peaks[i];
+                if (candidate.lag <= chosenPeak.lag) continue;
+                const ratio = candidate.lag / chosenPeak.lag;
+                const isMultiple = Math.abs(ratio - 2.0) < 0.12 || Math.abs(ratio - 3.0) < 0.12;
+                if (isMultiple && candidate.val >= chosenPeak.val * 0.96) {
+                    chosenPeak = candidate;
+                    break;
+                }
+            }
+
+            let chosenLag = chosenPeak.lag;
+            const y1 = nsdf[chosenLag - 1];
+            const y2 = nsdf[chosenLag];
+            const y3 = nsdf[chosenLag + 1];
+            let refinedLag = chosenLag;
+            const denom = y1 + y3 - 2 * y2;
+            if (denom !== 0) {
+                const delta = (y1 - y3) / (2 * denom);
+                if (Math.abs(delta) < 1) refinedLag += delta;
+            }
+
+            let pitch = sampleRate / refinedLag;
+            if (pitch < 72 || pitch > 1350) return -1;
+
+            // Filtro de mediana de 3 cuadros para estabilizar transitorios de ataque
+            if (!state.pitchHistory) state.pitchHistory = [];
+            state.pitchHistory.push(pitch);
+            if (state.pitchHistory.length > 3) state.pitchHistory.shift();
+
+            if (state.pitchHistory.length === 3) {
+                const sorted = [...state.pitchHistory].sort((a, b) => a - b);
+                const median = sorted[1];
+                if (Math.abs(12 * Math.log2(pitch / median)) <= 0.8) {
+                    return median;
+                }
+            }
 
             return pitch;
         }
@@ -1585,16 +2120,7 @@
         async function openTuner() {
             ui.tunerModal.classList.remove('hidden');
             try {
-                if (!audio.context) audio.context = new (window.AudioContext || window.webkitAudioContext)();
-                if (audio.context.state === 'suspended') await audio.context.resume();
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, autoGainControl: false, noiseSuppression: false } });
-                audio.micStream = stream;
-                audio.micAnalyser = audio.context.createAnalyser();
-                audio.micAnalyser.fftSize = 2048; 
-                audio.micDataArray = new Float32Array(audio.micAnalyser.fftSize);
-                audio.micSource = audio.context.createMediaStreamSource(stream);
-                audio.micSource.connect(audio.micAnalyser);
-
+                await ensureMicAnalyser();
                 state.tunerSoundPlayed = false; state.tunerLastNote = null; state.tunerSilenceFrames = 0; state.tunerStableFrames = 0; state.tunerSmoothedCents = 0; state.tunerSmoothedHz = 0;
                 tunerLoop();
             } catch (err) {
@@ -1679,13 +2205,55 @@
 
             ui.achievementsButton.addEventListener('click', renderAchievementsModal);
             ui.closeAchievementsModal.addEventListener('click', () => ui.achievementsModal.classList.add('hidden'));
-            
-            ui.dailyChallengeBtn.addEventListener('click', () => { if (state.exerciseStarted) stopExercise(false); startDailyChallenge(); });
-            ui.survivalModeBtn.addEventListener('click', () => { if (state.exerciseStarted) stopExercise(false); startSurvivalMode(); });
+            ui.dailyChallengeBtn.addEventListener('click', () => { if (state.exerciseStarted) stopExercise(false); state.isWeaknessMode = false; state.activeCampaignStage = null; startDailyChallenge(); });
+            ui.survivalModeBtn.addEventListener('click', () => { if (state.exerciseStarted) stopExercise(false); state.isWeaknessMode = false; state.activeCampaignStage = null; startSurvivalMode(); });
+            ui.weaknessesModeBtn.addEventListener('click', () => { if (state.exerciseStarted) stopExercise(false); startWeaknessesMode(); });
+            ui.campaignModeBtn.addEventListener('click', renderCampaignModal);
+            ui.closeCampaignModal.addEventListener('click', () => ui.campaignModal.classList.add('hidden'));
             ui.heatmapButton.addEventListener('click', renderHeatmapModal);
             ui.closeHeatmapModal.addEventListener('click', () => ui.heatmapModal.classList.add('hidden'));
 
-            ui.startStopButton.addEventListener('click', () => state.exerciseStarted ? stopExercise(false) : startExercise());
+            ui.fretPositionSelect.addEventListener('change', (e) => {
+                state.fretPosition = e.target.value;
+                if (state.showFretboard) drawFretboardWithCurrentSettings();
+                if (state.exerciseStarted) stopExercise(false);
+            });
+            ui.rhythmSelect.addEventListener('change', (e) => {
+                state.rhythmMode = e.target.value;
+                if (state.exerciseStarted) stopExercise(false);
+                renderStave(state.manualNotesToDisplay);
+            });
+            ui.chromaticSelect.addEventListener('change', (e) => {
+                state.chromaticMode = e.target.value;
+                if (state.exerciseStarted) stopExercise(false);
+            });
+            ui.chromaticAccidentalSelect.addEventListener('change', (e) => {
+                state.chromaticAccidentalType = e.target.value;
+                if (state.exerciseStarted) stopExercise(false);
+            });
+            ui.tapTempoBtn.addEventListener('click', () => {
+                const now = performance.now();
+                state.tapTimes = state.tapTimes.filter(t => now - t < 3000);
+                state.tapTimes.push(now);
+                if (state.tapTimes.length >= 2) {
+                    let sumIntervals = 0;
+                    for (let i = 1; i < state.tapTimes.length; i++) {
+                        sumIntervals += (state.tapTimes[i] - state.tapTimes[i - 1]);
+                    }
+                    const avgMs = sumIntervals / (state.tapTimes.length - 1);
+                    const bpm = Math.max(30, Math.min(240, Math.round(60000 / avgMs)));
+                    ui.tempoInput.value = bpm;
+                }
+            });
+            ui.harmonyProgressionSelect.addEventListener('change', (e) => {
+                state.harmonyProgression = e.target.value;
+                if (state.exerciseStarted) stopExercise(false);
+            });
+            ui.synthTypeSelect.addEventListener('change', (e) => state.synthType = e.target.value);
+            ui.enableMidiToggle.addEventListener('change', (e) => toggleMidi(e.target.checked));
+            ui.speedTrainerToggle.addEventListener('change', (e) => state.speedTrainer = e.target.checked);
+
+            ui.startStopButton.addEventListener('click', () => { state.isWeaknessMode = false; state.activeCampaignStage = null; state.exerciseStarted ? stopExercise(false) : startExercise(); });
             ui.pauseResumeButton.addEventListener('click', togglePause);
             ui.changeUserButton.addEventListener('click', () => { saveUserData(); location.reload(); });
             ui.historyButton.addEventListener('click', showHistoryModal);
@@ -1895,6 +2463,10 @@
                 } else if (key === 'e') { e.preventDefault(); const currentType = state.exerciseType; const nextType = currentType === 'melodia' ? 'armonia' : 'melodia'; const radioToSelect = document.getElementById(`type-${nextType}`); if (radioToSelect) { radioToSelect.checked = true; radioToSelect.dispatchEvent(new Event('change')); } }
                 else if (key === 'u') { e.preventDefault(); ui.changeUserButton.click(); }
                 else if (key === 'h') { e.preventDefault(); if(ui.historyModal.classList.contains('hidden')) showHistoryModal(); else ui.historyModal.classList.add('hidden'); }
+                else if (key === 'l') { e.preventDefault(); if(ui.achievementsModal.classList.contains('hidden')) renderAchievementsModal(); else ui.achievementsModal.classList.add('hidden'); }
+                else if (key === 'b') { e.preventDefault(); if(ui.heatmapModal.classList.contains('hidden')) renderHeatmapModal(); else ui.heatmapModal.classList.add('hidden'); }
+                else if (key === 'd') { e.preventDefault(); ui.themeToggleBtn.click(); }
+                else if (key === 'j') { e.preventDefault(); ui.enableMidiToggle.checked = !ui.enableMidiToggle.checked; ui.enableMidiToggle.dispatchEvent(new Event('change')); }
                 else if (key === 't') { e.preventDefault(); if(ui.tunerModal.classList.contains('hidden')) openTuner(); else closeTuner(); }
                 else if (key === 'r') { e.preventDefault(); ui.enableMicToggle.checked = !ui.enableMicToggle.checked; ui.enableMicToggle.dispatchEvent(new Event('change')); }
                 else if (key === 'x') { e.preventDefault(); ui.exportBtn.click(); }
@@ -1972,11 +2544,9 @@
             const isHarmony = state.exerciseType === 'armonia'; const notes = parseInt(ui.notesPerChordSelect.value, 10);
             const showNames = ui.showNoteNamesToggle.checked; const difficulty = ui.difficultySelect.value;
             ui.keySigContainer.classList.toggle('hidden', isHarmony);
-            ui.micControlContainer.classList.toggle('hidden', isHarmony);
-            if (isHarmony && state.micEnabled) {
-                ui.enableMicToggle.checked = false;
-                ui.enableMicToggle.dispatchEvent(new Event('change'));
-            }
+            if (ui.rhythmOptionsContainer) ui.rhythmOptionsContainer.classList.toggle('hidden', isHarmony);
+            if (ui.chromaticOptionsContainer) ui.chromaticOptionsContainer.classList.toggle('hidden', isHarmony);
+            if (ui.chromaticAccidentalContainer) ui.chromaticAccidentalContainer.classList.toggle('hidden', isHarmony);
 
             if (isHarmony) { state.keySignature = 'C'; ui.keySigSelect.value = 'C'; } else { state.keySignature = ui.keySigSelect.value; }
             ui.harmonyOptionsContainer.classList.toggle('hidden', !isHarmony);
@@ -1987,6 +2557,7 @@
             ui.quadOptionsContainer.classList.toggle('hidden', !isHarmony || notes !== 4);
             ui.quadInversionContainer.classList.toggle('hidden', !isHarmony || notes !== 4);
             ui.quadChordTypeContainer.classList.toggle('hidden', !isHarmony || notes !== 4);
+            ui.harmonyProgressionContainer.classList.toggle('hidden', !isHarmony || notes < 3);
             const showMelodyNameOptions = !isHarmony && showNames;
             ui.melodyNoteNameOptionsContainer.classList.toggle('hidden', !showMelodyNameOptions);
             const showCipherControl = isHarmony && showNames && notes > 2;
@@ -2037,18 +2608,36 @@
         }
 
         function updateChangeBeatOptions() {
+            const prevSelected = parseInt(ui.changeBeatSelect.value, 10);
             const timeSigParts = ui.timeSigSelect.value.split('/'); state.timeSignatureBeats = parseInt(timeSigParts[0], 10);
             ui.changeBeatSelect.innerHTML = '';
             for (let i = 1; i <= state.timeSignatureBeats; i++) {
                 const option = document.createElement('option'); option.value = i; option.textContent = i; ui.changeBeatSelect.appendChild(option);
             }
-            ui.changeBeatSelect.value = state.timeSignatureBeats; state.measuresChangeBeat = state.timeSignatureBeats;
+            const newBeatVal = (!isNaN(prevSelected) && prevSelected >= 1 && prevSelected <= state.timeSignatureBeats)
+                ? prevSelected
+                : state.timeSignatureBeats;
+            ui.changeBeatSelect.value = newBeatVal; state.measuresChangeBeat = newBeatVal;
+            renderBeatLeds(0);
+        }
+
+        function renderBeatLeds(activeBeat = 0) {
+            if (!ui.beatLedsContainer) return;
+            ui.beatLedsContainer.innerHTML = '';
+            for (let i = 1; i <= state.timeSignatureBeats; i++) {
+                const dot = document.createElement('span');
+                const isActive = i === activeBeat;
+                const activeColor = i === 1 ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] scale-125' : 'bg-sky-400 shadow-[0_0_8px_#38bdf8] scale-110';
+                dot.className = `w-2.5 h-2.5 rounded-full transition-all duration-100 ${isActive ? activeColor : 'bg-zinc-600'}`;
+                ui.beatLedsContainer.appendChild(dot);
+            }
         }
 
         async function startExercise() {
             try {
                 await initAudioEngine();
                 state.keySignature = ui.keySigSelect.value;
+                state.measuresChangeBeat = parseInt(ui.changeBeatSelect.value, 10) || state.timeSignatureBeats;
                 state.exerciseStartTime = new Date();
                 handleMeasuresChange(); 
                 state.exerciseMeasures = generateExercise();
@@ -2056,6 +2645,14 @@
                 
                 state.score = { total: 0, hits: new Set(), status: {}, expectedNotes: {} };
                 state.scheduledSynthNotes = [];
+                state.consecutivePerfectMeasures = 0;
+                state.measureRepeatCount = 0;
+                state.currentRenderKey = null;
+                state.pitchHistory = [];
+                state.lastHitPitchClass = null;
+                state.lastHitKey = null;
+                state.micSilenceSinceLastHit = true;
+                startSessionRecording();
 
                 Object.assign(state, { 
                     exerciseStarted: true, isPlaying: true, isPaused: false, 
@@ -2084,6 +2681,17 @@
 
         function stopExercise(completedSuccessfully) {
              if (!state.exerciseStarted) return;
+             stopSessionRecording();
+
+             const nowAudio = audio.context ? audio.context.currentTime : Infinity;
+             for (const key in state.score.expectedNotes) {
+                 if (state.score.status[key] === 'waiting') {
+                     if (completedSuccessfully || state.score.expectedNotes[key].time <= nowAudio) {
+                         state.score.status[key] = 'miss';
+                         state.score.expectedNotes[key].status = 'miss';
+                     }
+                 }
+             }
 
              let notesEvaluatedCount = 0;
              let correctCount = 0;
@@ -2096,10 +2704,13 @@
                  }
              }
 
+             const inputEvaluationActive = state.micEnabled || state.midiEnabled;
+
              if (userData && state.exerciseStartTime) {
-                if (completedSuccessfully || state.isSurvivalMode) {
+                if (completedSuccessfully || state.isSurvivalMode || (inputEvaluationActive && notesEvaluatedCount > 0)) {
                     userData.stats.totalExercises++; 
-                    if (state.isDailyChallenge) userData.stats.dailyChallengesCompleted++;
+                    if (state.isDailyChallenge && completedSuccessfully) userData.stats.dailyChallengesCompleted++;
+                    if (completedSuccessfully && new Date().getHours() >= 22) userData.stats.nightOwlUnlocked = true;
                 }
                 const endTime = new Date(); 
                 let durationMs = endTime - state.exerciseStartTime;
@@ -2122,21 +2733,37 @@
                 let xpEarnedThisRound = 0;
                 let missedCount = notesEvaluatedCount - correctCount;
 
-                if (state.micEnabled) {
-                    
+                if (inputEvaluationActive && notesEvaluatedCount > 0) {
+                    const percentage = Math.round((correctCount / notesEvaluatedCount) * 100);
+                    scoreStr = `${percentage}%`;
+
+                    userData.stats.totalCorrect = (userData.stats.totalCorrect || 0) + correctCount;
+                    userData.stats.totalIncorrect = (userData.stats.totalIncorrect || 0) + missedCount;
+
                     if (completedSuccessfully || state.isSurvivalMode) {
-                        userData.stats.totalCorrect += correctCount;
+                        if (state.exerciseType === 'armonia') {
+                            userData.stats.harmonyCorrect = (userData.stats.harmonyCorrect || 0) + correctCount;
+                        }
+                        if (completedSuccessfully && ui.difficultySelect.value === 'advanced' && notesEvaluatedCount > 0 && percentage === 100) {
+                            userData.stats.mastermindUnlocked = true;
+                        }
                         
                         let multiplier = ui.difficultySelect.value === 'advanced' ? 2 : 1;
                         if (state.isSurvivalMode) multiplier *= 1.5;
                         
                         xpEarnedThisRound = Math.floor(correctCount * 10 * multiplier);
+
+                        if (completedSuccessfully && state.activeCampaignStage && percentage >= 75) {
+                            if (!userData.stats.completedCampaignStages) userData.stats.completedCampaignStages = [];
+                            if (!userData.stats.completedCampaignStages.includes(state.activeCampaignStage)) {
+                                userData.stats.completedCampaignStages.push(state.activeCampaignStage);
+                            }
+                            xpEarnedThisRound += 250;
+                        }
+
                         userData.stats.xp += xpEarnedThisRound;
                         updateXPDisplay();
                     }
-                    
-                    const percentage = notesEvaluatedCount > 0 ? Math.round((correctCount / notesEvaluatedCount) * 100) : 0;
-                    scoreStr = `${percentage}%`;
 
                     if (state.score.expectedNotes) {
                         Object.keys(state.score.expectedNotes).forEach(hitKey => {
@@ -2169,15 +2796,6 @@
                                 if (!isHit) {
                                     userData.stats.missedNotes[latinName] = (userData.stats.missedNotes[latinName] || 0) + 1;
                                     userData.stats.missedNotesByExercise[exerciseInfo][latinName] = (userData.stats.missedNotesByExercise[exerciseInfo][latinName] || 0) + 1;
-                                } else {
-                                    if (userData.stats.missedNotes[latinName] > 0) {
-                                        userData.stats.missedNotes[latinName]--;
-                                        if (userData.stats.missedNotes[latinName] === 0) delete userData.stats.missedNotes[latinName];
-                                    }
-                                    if (userData.stats.missedNotesByExercise[exerciseInfo][latinName] > 0) {
-                                        userData.stats.missedNotesByExercise[exerciseInfo][latinName]--;
-                                        if (userData.stats.missedNotesByExercise[exerciseInfo][latinName] === 0) delete userData.stats.missedNotesByExercise[exerciseInfo][latinName];
-                                    }
                                 }
                             });
                         });
@@ -2188,14 +2806,22 @@
                     date: endTime.toLocaleDateString('es-ES'), 
                     time: endTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
                     duration: durationString, 
-                    exercise: exerciseInfo + (!completedSuccessfully && !state.isSurvivalMode ? ' (Incompleto)' : '') + (state.isDailyChallenge ? ' ⭐' : '') + (state.isSurvivalMode ? ' 🔥' : ''), 
-                    level: ui.difficultySelect.options[ui.difficultySelect.selectedIndex].text, 
-                    measures: state.isSurvivalMode ? state.logicalMeasureIndex : state.measuresPerExercise, 
+                    exercise: exerciseInfo,
+                    level: ui.difficultySelect.options[ui.difficultySelect.selectedIndex].text,
+                    measures: state.isSurvivalMode ? `${state.logicalMeasureIndex + 1} (Sup.)` : state.measuresPerExercise, 
                     bpm: ui.tempoInput.value,
-                    score: scoreStr 
+                    score: scoreStr
                 };
-                if (!userData.practiceHistory) userData.practiceHistory = []; 
                 userData.practiceHistory.push(historyEntry);
+
+                if (completedSuccessfully && state.activeCampaignStage && !inputEvaluationActive) {
+                    if (!userData.stats.completedCampaignStages) userData.stats.completedCampaignStages = [];
+                    if (!userData.stats.completedCampaignStages.includes(state.activeCampaignStage)) {
+                        userData.stats.completedCampaignStages.push(state.activeCampaignStage);
+                        userData.stats.xp = (userData.stats.xp || 0) + 250;
+                        updateXPDisplay();
+                    }
+                }
 
                 const todayStr = getLocalISODate();
                 if (userData.stats.lastPracticeDate !== todayStr) { 
@@ -2209,7 +2835,7 @@
                 checkAchievements(); 
                 saveUserData();
 
-                if ((completedSuccessfully || state.isSurvivalMode) && state.micEnabled) {
+                if ((completedSuccessfully || state.isSurvivalMode) && inputEvaluationActive) {
                     const percentage = notesEvaluatedCount > 0 ? Math.round((correctCount / notesEvaluatedCount) * 100) : 0;
 
                     if(ui.resultsTotal) {
@@ -2245,7 +2871,7 @@
                 currentMeasureIndex: -1, currentMetronomeCount: 0,
                 lastMelodicNote: null, currentDisplayedContent: null, exerciseStartTime: null,
                 pauseStartTimeReal: null, activeVisualEvent: null, isDailyChallenge: false,
-                isSurvivalMode: false, survivalHearts: 3
+                isSurvivalMode: false, survivalHearts: 3, isWeaknessMode: false, activeCampaignStage: null
             });
             ui.startStopButton.textContent = 'Comenzar'; ui.pauseResumeButton.classList.add('hidden'); ui.displayArea.classList.add('hidden'); ui.toggleInfoBtn.classList.add('hidden'); ui.survivalHeartsContainer.classList.add('hidden');
             if (state.metronomeTimer) { clearTimeout(state.metronomeTimer); state.metronomeTimer = null; }
@@ -2309,8 +2935,9 @@
                     ui.displayArea.classList.add('hidden');
                     ui.toggleInfoBtn.classList.add('hidden');
                     ui.preRollCount.textContent = currentEvent.metronomeCount;
-                    if (state.currentDisplayedContent !== currentEvent.displayedContent) {
+                    if (state.currentDisplayedContent !== currentEvent.displayedContent || state.currentRenderKey !== currentEvent.renderKey) {
                         state.currentDisplayedContent = currentEvent.displayedContent;
+                        state.currentRenderKey = currentEvent.renderKey;
                         renderStave(currentEvent.displayedContent);
                     }
                 } else {
@@ -2318,97 +2945,203 @@
                     ui.displayArea.classList.remove('hidden');
                     ui.toggleInfoBtn.classList.remove('hidden');
                     ui.metronomeCount.textContent = currentEvent.metronomeCount;
+                    renderBeatLeds(currentEvent.metronomeCount);
                     
                     const mCount = state.isSurvivalMode ? currentEvent.measureIndex + 1 : `${currentEvent.measureIndex + 1} / ${state.measuresPerExercise}`;
                     ui.measuresCount.textContent = mCount;
 
-                    if (state.currentDisplayedContent !== currentEvent.displayedContent) {
+                    if (state.currentDisplayedContent !== currentEvent.displayedContent || state.currentRenderKey !== currentEvent.renderKey) {
                         state.currentDisplayedContent = currentEvent.displayedContent;
+                        state.currentRenderKey = currentEvent.renderKey;
                         renderStave(currentEvent.displayedContent);
                     }
                     updateFretboard(currentEvent.playingNotes, currentEvent.rootName);
                 }
             }
 
-            if (state.micEnabled && !state.visualIsPreRoll) {
+            if ((state.micEnabled || state.midiEnabled) && !state.visualIsPreRoll) {
                 let activeKeys = [];
-                let needsDetection = false;
+                const tempo = parseInt(ui.tempoInput.value, 10) || 60;
+                const beatDur = 60.0 / tempo;
 
                 for (const hitKey in state.score.expectedNotes) {
                     const noteData = state.score.expectedNotes[hitKey];
                     const status = state.score.status[hitKey];
-                    
-                    if (status === 'waiting' || status === 'imprecise') {
-                         const timeDiff = currentTime - noteData.time;
-                         
-                         if (timeDiff >= -0.25 && timeDiff <= 0.35) {
-                             needsDetection = true;
-                             activeKeys.push({key: hitKey, ...noteData});
-                         }
-                         else if (timeDiff > 0.35 && status === 'waiting') {
-                             noteData.status = 'miss';
-                             state.score.status[hitKey] = 'miss';
-                             
-                             if (state.isSurvivalMode) {
-                                 state.survivalHearts--;
-                                 updateHeartsUI();
-                                 if (state.survivalHearts <= 0 && state.exerciseStarted) {
-                                     stopExercise(false); 
-                                     return;
-                                 }
-                             }
-                         }
+                    const noteDur = noteData.durationSec || beatDur;
+                    const lateWindow = Math.min(noteDur * 0.94, Math.max(0.35, beatDur * 0.86));
+                    const earlyWindow = Math.min(0.13, noteDur * 0.25);
+
+                    if (status === 'waiting') {
+                        const timeDiff = currentTime - noteData.time;
+                        if (timeDiff >= -earlyWindow && timeDiff <= lateWindow) {
+                            activeKeys.push({ key: hitKey, noteData, lateWindow, earlyWindow });
+                        } else if (timeDiff > lateWindow) {
+                            noteData.status = 'miss';
+                            state.score.status[hitKey] = 'miss';
+
+                            if (state.isSurvivalMode) {
+                                state.survivalHearts--;
+                                updateHeartsUI();
+                                if (state.survivalHearts <= 0 && state.exerciseStarted) {
+                                    stopExercise(false);
+                                    return;
+                                }
+                            }
+                        }
                     }
                 }
 
                 let isSynthBleed = false;
-                if (state.soundEnabled && state.scheduledSynthNotes) {
+                if (state.soundEnabled && state.scheduledSynthNotes && !state.midiEnabled) {
                     const now = audio.context.currentTime;
                     state.scheduledSynthNotes = state.scheduledSynthNotes.filter(n => n.end > now);
                     if (state.scheduledSynthNotes.some(n => now >= n.start && now <= n.end)) isSynthBleed = true;
                 }
 
-                if (!isSynthBleed && needsDetection) {
-                    activeKeys.sort((a,b) => a.time - b.time);
-                    
+                if (!isSynthBleed) {
                     let detectedPitch = -1;
-                    let detectedChord = false;
-                    
-                    if (state.exerciseType === 'melodia') {
+                    let detectedMidi = -1;
+                    let centsOff = 0;
+
+                    if (state.micEnabled) {
                         detectedPitch = detectPitch();
-                    } else {
-                        const expectedMidis = activeKeys[0].notes.map(n => notesData.chromaticMap[n]);
-                        detectedChord = verifyChord(expectedMidis);
+                        if (detectedPitch > 0) {
+                            const exactNoteFloat = 12 * (Math.log(detectedPitch / 440) / Math.log(2)) + 69;
+                            detectedMidi = Math.round(exactNoteFloat);
+                            centsOff = Math.abs((exactNoteFloat - detectedMidi) * 100);
+                        } else {
+                            state.micSilenceSinceLastHit = true;
+                        }
                     }
 
-                    if (detectedPitch > 0 || detectedChord) {
-                        for (const target of activeKeys) {
-                            let hit = false;
-                            if (state.exerciseType === 'melodia' && detectedPitch > 0) {
-                                const detectedMidi = noteFromPitch(detectedPitch);
-                                const expectedMidis = target.notes.map(n => notesData.chromaticMap[n]);
-                                hit = expectedMidis.some(em => (detectedMidi % 12) === (em % 12));
-                            } else if (state.exerciseType === 'armonia' && detectedChord) {
-                                hit = true;
-                            }
+                    if (activeKeys.length > 0) {
+                        activeKeys.sort((a, b) => a.noteData.time - b.noteData.time);
+                        const targetObj = activeKeys[0];
+                        const target = targetObj.noteData;
+                        const targetKey = targetObj.key;
+                        const expectedMidis = target.notes.map(n => notesData.chromaticMap[n]);
 
-                            if (hit) {
-                                const timeDiff = Math.abs(currentTime - target.time);
-                                const newStatus = timeDiff <= 0.20 ? 'hit' : 'imprecise';
-                                
-                                if (state.score.status[target.key] !== 'hit') {
-                                    state.score.status[target.key] = newStatus;
-                                    if(ui.micDetectedNote && state.exerciseType === 'melodia') {
-                                        ui.micDetectedNote.textContent = getEnharmonicName(noteFromPitch(detectedPitch));
+                        let hit = false;
+                        let wrongNotePlayed = false;
+
+                        if (state.midiEnabled && state.activeMidiNotes.size > 0) {
+                            if (state.exerciseType === 'melodia') {
+                                hit = expectedMidis.some(em => Array.from(state.activeMidiNotes).some(am => (am % 12) === (em % 12)));
+                            } else {
+                                hit = expectedMidis.every(em => Array.from(state.activeMidiNotes).some(am => (am % 12) === (em % 12)));
+                            }
+                            wrongNotePlayed = !hit;
+                        } else if (state.micEnabled) {
+                            if (state.exerciseType === 'melodia') {
+                                if (detectedPitch > 0 && centsOff <= 46) {
+                                    const detectedClass = ((detectedMidi % 12) + 12) % 12;
+                                    const hasFreshOnset = (state.lastOnsetTime || 0) >= (target.time - 0.12);
+                                    const isSameAsPrevHit = !state.micSilenceSinceLastHit &&
+                                        state.lastHitKey !== targetKey &&
+                                        state.lastHitPitchClass === detectedClass;
+
+                                    // Si es una nota repetida idéntica a la anterior, exigir nuevo ataque, pausa de silencio o sostén intencional avanzado en el pulso
+                                    const isRepeatedCarryover = isSameAsPrevHit &&
+                                        !hasFreshOnset &&
+                                        (currentTime - target.time) < Math.min(0.24, beatDur * 0.40);
+
+                                    if (!isRepeatedCarryover) {
+                                        const matchesPitch = expectedMidis.some(em => {
+                                            const emClass = ((em % 12) + 12) % 12;
+                                            const validOctave = detectedMidi >= 36 && detectedMidi <= 92;
+                                            return detectedClass === emClass && validOctave;
+                                        });
+
+                                        if (matchesPitch) {
+                                            target.hitFrames = (target.hitFrames || 0) + 1;
+                                            target.wrongFrames = 0;
+                                            if (target.hitFrames >= 2 || hasFreshOnset) {
+                                                hit = true;
+                                            }
+                                        } else {
+                                            target.hitFrames = 0;
+                                            const isPrevNoteTail = isSameAsPrevHit &&
+                                                !hasFreshOnset &&
+                                                (currentTime - target.time) < Math.min(0.32, beatDur * 0.48);
+
+                                            if (!isPrevNoteTail && currentTime >= target.time + 0.06 && centsOff <= 40) {
+                                                if (target.lastWrongClass === detectedClass) {
+                                                    target.wrongFrames = (target.wrongFrames || 0) + 1;
+                                                } else {
+                                                    target.lastWrongClass = detectedClass;
+                                                    target.wrongFrames = 1;
+                                                }
+                                                wrongNotePlayed = true;
+                                            }
+                                        }
                                     }
+                                } else {
+                                    target.hitFrames = 0;
+                                }
+                            } else {
+                                const chordEval = verifyChord(expectedMidis);
+                                if (chordEval.hit) {
+                                    target.hitFrames = (target.hitFrames || 0) + 1;
+                                    target.wrongFrames = 0;
+                                    if (target.hitFrames >= 2) hit = true;
+                                } else if (chordEval.wrong && currentTime >= target.time + 0.08) {
+                                    target.wrongFrames = (target.wrongFrames || 0) + 1;
+                                    if (chordEval.dominantMidi > 0) detectedMidi = chordEval.dominantMidi;
+                                    wrongNotePlayed = true;
                                 }
                             }
                         }
-                    } else if(ui.micDetectedNote) {
+
+                        if (hit) {
+                            const timeDiff = Math.abs(currentTime - target.time);
+                            const newStatus = timeDiff <= Math.max(0.30, beatDur * 0.52) ? 'hit' : 'imprecise';
+                            state.score.status[targetKey] = newStatus;
+                            target.status = newStatus;
+                            if (detectedMidi > 0) {
+                                state.lastHitPitchClass = ((detectedMidi % 12) + 12) % 12;
+                            }
+                            state.lastHitKey = targetKey;
+                            state.micSilenceSinceLastHit = false;
+                            if (ui.micDetectedNote && detectedMidi > 0) {
+                                ui.micDetectedNote.textContent = getEnharmonicName(detectedMidi);
+                                ui.micDetectedNote.className = 'ml-1 text-xs font-bold text-emerald-400 w-10 truncate text-center';
+                            }
+                        } else if (wrongNotePlayed) {
+                            if (ui.micDetectedNote && detectedMidi > 0) {
+                                ui.micDetectedNote.textContent = getEnharmonicName(detectedMidi);
+                                ui.micDetectedNote.className = 'ml-1 text-xs font-bold text-red-400 w-10 truncate text-center';
+                            }
+                            // Si se mantiene una nota claramente equivocada durante >= 5 cuadros (~85 ms), se marca inmediatamente como error (rojo)
+                            if ((target.wrongFrames || 0) >= 5 || state.midiEnabled) {
+                                state.score.status[targetKey] = 'miss';
+                                target.status = 'miss';
+                                state.lastHitPitchClass = detectedMidi > 0 ? ((detectedMidi % 12) + 12) % 12 : null;
+                                state.lastHitKey = targetKey;
+                                state.micSilenceSinceLastHit = false;
+
+                                if (state.isSurvivalMode) {
+                                    state.survivalHearts--;
+                                    updateHeartsUI();
+                                    if (state.survivalHearts <= 0 && state.exerciseStarted) {
+                                        stopExercise(false);
+                                        return;
+                                    }
+                                }
+                            }
+                        } else if (detectedMidi > 0 && ui.micDetectedNote) {
+                            ui.micDetectedNote.textContent = getEnharmonicName(detectedMidi);
+                            ui.micDetectedNote.className = 'ml-1 text-xs font-bold text-sky-400 w-10 truncate text-center';
+                        } else if (ui.micDetectedNote && !state.midiEnabled) {
+                            ui.micDetectedNote.textContent = '';
+                        }
+                    } else if (detectedMidi > 0 && ui.micDetectedNote) {
+                        ui.micDetectedNote.textContent = getEnharmonicName(detectedMidi);
+                        ui.micDetectedNote.className = 'ml-1 text-xs font-bold text-sky-400 w-10 truncate text-center';
+                    } else if (ui.micDetectedNote && !state.midiEnabled) {
                         ui.micDetectedNote.textContent = '';
                     }
-                } else if(ui.micDetectedNote) {
-                     ui.micDetectedNote.textContent = '';
+                } else if (ui.micDetectedNote && !state.midiEnabled) {
+                    ui.micDetectedNote.textContent = '';
                 }
             }
             
@@ -2437,21 +3170,54 @@
                     state.visualQueue.push({
                         time: audio.nextNoteTime, type: 'tick', isPreRoll: true,
                         metronomeCount: state.logicalMetronomeCount, measureIndex: -1,
+                        displayedMeasureIndex: 0, isEarlyPreview: false, renderKey: '0',
                         displayedContent: displayedContent, playingNotes: [], rootName: null
                     });
                     if (state.logicalMetronomeCount === state.timeSignatureBeats) state.logicalIsPreRoll = false; 
                 } else {
                     if (state.logicalMetronomeCount === 1) {
-                         if (state.logicalMeasureIndex === -1) state.logicalMeasureIndex = 0; 
-                         else state.logicalMeasureIndex++; 
+                         if (state.logicalMeasureIndex >= 0 && (state.micEnabled || state.midiEnabled)) {
+                             const prevIdx = state.logicalMeasureIndex;
+                             let totalInMeasure = 0;
+                             let hitsInMeasure = 0;
+                             const measureKeys = Object.keys(state.score.expectedNotes).filter(k => k.startsWith(`${prevIdx}-`));
+                             measureKeys.forEach(k => {
+                                 totalInMeasure++;
+                                 const st = state.score.status[k];
+                                 const noteObj = state.score.expectedNotes[k];
+                                 if (st === 'hit' || st === 'imprecise') {
+                                     hitsInMeasure++;
+                                 } else if (st === 'waiting' && noteObj) {
+                                     const noteEndWindow = noteObj.time + Math.max(0.28, (noteObj.durationSec || beatDuration) * 0.75);
+                                     if (audio.nextNoteTime > noteEndWindow) {
+                                         state.score.status[k] = 'miss';
+                                         noteObj.status = 'miss';
+                                     }
+                                 }
+                             });
+
+                             if (totalInMeasure > 0 && hitsInMeasure === totalInMeasure) {
+                                 state.consecutivePerfectMeasures++;
+                                 if (state.speedTrainer && state.consecutivePerfectMeasures % 2 === 0) {
+                                     const curBpm = parseInt(ui.tempoInput.value, 10) || 60;
+                                     ui.tempoInput.value = Math.min(240, curBpm + 5);
+                                 }
+                             } else {
+                                 state.consecutivePerfectMeasures = 0;
+                             }
+                             state.logicalMeasureIndex++;
+                         } else {
+                             if (state.logicalMeasureIndex === -1) state.logicalMeasureIndex = 0; 
+                             else state.logicalMeasureIndex++; 
+                         }
                          
-                         if (state.isSurvivalMode && state.logicalMeasureIndex >= state.measuresPerExercise) {
+                         if (state.isSurvivalMode && state.logicalMeasureIndex + 1 >= state.measuresPerExercise) {
                              state.exerciseMeasures.push(...generateExercise());
                              state.measuresPerExercise = state.exerciseMeasures.length;
                          }
                          
                         if (!state.isSurvivalMode && state.logicalMeasureIndex >= state.measuresPerExercise) { 
-                            state.visualQueue.push({ time: audio.nextNoteTime, type: 'stop' });
+                            state.visualQueue.push({ time: audio.nextNoteTime + 0.18, type: 'stop' });
                             state.isPlaying = false; 
                             return;
                         }
@@ -2459,60 +3225,206 @@
 
                     const contentForPlayback = state.exerciseMeasures[state.logicalMeasureIndex];
                     const beatIndex = state.logicalMetronomeCount - 1;
+                    let activeNoteIndexForVisual = beatIndex;
+                    let secondaryEighthEvent = null;
                     
                     if (state.exerciseType === 'melodia') {
-                         if (beatIndex >= 0 && contentForPlayback && beatIndex < contentForPlayback.length) {
+                         if (contentForPlayback && contentForPlayback.length > 0 && typeof contentForPlayback[0] === 'object' && !Array.isArray(contentForPlayback[0])) {
+                             const currentBeat = state.logicalMetronomeCount;
+                             const onBeatItem = contentForPlayback.find(it => it.beat === currentBeat && it.subBeat === 0);
+                             const offBeatItem = contentForPlayback.find(it => it.beat === currentBeat && it.subBeat === 0.5);
+
+                             if (onBeatItem) {
+                                 activeNoteIndexForVisual = onBeatItem.noteIndex;
+                                 if (!onBeatItem.isRest && onBeatItem.note) {
+                                     playingNotes.push(onBeatItem.note);
+                                     const hitKey = `${state.logicalMeasureIndex}-${onBeatItem.noteIndex + 1}`;
+                                     if (!state.score.expectedNotes[hitKey]) {
+                                         state.score.expectedNotes[hitKey] = {
+                                             notes: [onBeatItem.note],
+                                             time: audio.nextNoteTime,
+                                             durationSec: beatDuration * (onBeatItem.beats || 1),
+                                             wrongFrames: 0,
+                                             status: 'waiting'
+                                         };
+                                         state.score.status[hitKey] = 'waiting';
+                                     }
+                                 }
+                             } else {
+                                 // Sustaining a half note started on the previous beat
+                                 const sustainingItem = contentForPlayback.find(it => it.beat < currentBeat && (it.beat + it.beats) > currentBeat);
+                                 if (sustainingItem) {
+                                     activeNoteIndexForVisual = sustainingItem.noteIndex;
+                                     if (!sustainingItem.isRest && sustainingItem.note) {
+                                         playingNotes.push(sustainingItem.note);
+                                     }
+                                 }
+                             }
+
+                             if (offBeatItem && !offBeatItem.isRest && offBeatItem.note) {
+                                 const offBeatTime = audio.nextNoteTime + (beatDuration * 0.5);
+                                 const offHitKey = `${state.logicalMeasureIndex}-${offBeatItem.noteIndex + 1}`;
+                                 if (!state.score.expectedNotes[offHitKey]) {
+                                     state.score.expectedNotes[offHitKey] = {
+                                         notes: [offBeatItem.note],
+                                         time: offBeatTime,
+                                         durationSec: beatDuration * 0.5,
+                                         wrongFrames: 0,
+                                         status: 'waiting'
+                                     };
+                                     state.score.status[offHitKey] = 'waiting';
+                                 }
+                                 if (state.soundEnabled) {
+                                     playNoteSound(offBeatItem.note, offBeatTime, beatDuration * 0.45);
+                                     if (!state.scheduledSynthNotes) state.scheduledSynthNotes = [];
+                                     state.scheduledSynthNotes.push({ start: offBeatTime, end: offBeatTime + (beatDuration * 0.45) });
+                                 }
+                                 secondaryEighthEvent = {
+                                     time: offBeatTime,
+                                     playingNotes: [offBeatItem.note],
+                                     activeNoteIndex: offBeatItem.noteIndex
+                                 };
+                             }
+
+                             if (state.soundEnabled && onBeatItem && !onBeatItem.isRest && onBeatItem.note) {
+                                 const noteDurSec = Math.max(0.25, beatDuration * onBeatItem.beats * 0.9);
+                                 playNoteSound(onBeatItem.note, audio.nextNoteTime, noteDurSec);
+                                 if (!state.scheduledSynthNotes) state.scheduledSynthNotes = [];
+                                 state.scheduledSynthNotes.push({ start: audio.nextNoteTime, end: audio.nextNoteTime + Math.min(0.55, noteDurSec) });
+                             }
+                         } else if (beatIndex >= 0 && contentForPlayback && beatIndex < contentForPlayback.length) {
                             const note = contentForPlayback[beatIndex]; 
                             playingNotes.push(note);
+                            if (state.soundEnabled) {
+                                playNoteSound(note, audio.nextNoteTime);
+                                if (!state.scheduledSynthNotes) state.scheduledSynthNotes = [];
+                                state.scheduledSynthNotes.push({ start: audio.nextNoteTime, end: audio.nextNoteTime + 0.55 });
+                            }
+                            const hitKey = `${state.logicalMeasureIndex}-${state.logicalMetronomeCount}`;
+                            if (!state.score.expectedNotes[hitKey]) {
+                                state.score.expectedNotes[hitKey] = {
+                                    notes: playingNotes,
+                                    time: audio.nextNoteTime,
+                                    durationSec: beatDuration,
+                                    wrongFrames: 0,
+                                    status: 'waiting'
+                                };
+                                state.score.status[hitKey] = 'waiting';
+                            }
                          }
                     } else {
                          let itemIndex = beatIndex; 
                          if (state.notesPerChord === 4) itemIndex = Math.floor(beatIndex / 2);
+                         activeNoteIndexForVisual = itemIndex;
                          if (itemIndex >= 0 && contentForPlayback && itemIndex < contentForPlayback.length) {
                              playingNotes = contentForPlayback[itemIndex];
                              if (playingNotes && playingNotes.length > 1) rootNoteNameForFretboard = getChordName(playingNotes).root; 
                          }
+                         if (state.soundEnabled && playingNotes && playingNotes.length > 0) {
+                             playingNotes.forEach(note => playNoteSound(note, audio.nextNoteTime));
+                             if (!state.scheduledSynthNotes) state.scheduledSynthNotes = [];
+                             state.scheduledSynthNotes.push({ start: audio.nextNoteTime, end: audio.nextNoteTime + 0.55 });
+                         }
+                         if (playingNotes && playingNotes.length > 0) {
+                             const targetBeat = (state.notesPerChord === 4) ? (Math.floor((state.logicalMetronomeCount - 1) / 2) * 2) + 1 : state.logicalMetronomeCount;
+                             const hitKey = `${state.logicalMeasureIndex}-${targetBeat}`;
+                             if (!state.score.expectedNotes[hitKey]) {
+                                 state.score.expectedNotes[hitKey] = {
+                                     notes: playingNotes,
+                                     time: audio.nextNoteTime,
+                                     durationSec: state.notesPerChord === 4 ? beatDuration * 2 : beatDuration,
+                                     wrongFrames: 0,
+                                     status: 'waiting'
+                                 };
+                                 state.score.status[hitKey] = 'waiting';
+                             }
+                         }
                     }
 
-                    if (state.soundEnabled && playingNotes && playingNotes.length > 0) {
-                         playingNotes.forEach(note => playNoteSound(note, audio.nextNoteTime));
-                         if (!state.scheduledSynthNotes) state.scheduledSynthNotes = [];
-                         state.scheduledSynthNotes.push({ start: audio.nextNoteTime, end: audio.nextNoteTime + 0.55 });
-                    }
+                    const nextMeasureIndex = state.logicalMeasureIndex + 1;
+                    const hasNextMeasure = nextMeasureIndex < state.measuresPerExercise && state.exerciseMeasures[nextMeasureIndex];
 
-                    if (playingNotes && playingNotes.length > 0) {
-                        const targetBeat = (state.exerciseType === 'armonia' && state.notesPerChord === 4) ? (Math.floor((state.logicalMetronomeCount - 1) / 2) * 2) + 1 : state.logicalMetronomeCount;
-                        const hitKey = `${state.logicalMeasureIndex}-${targetBeat}`;
-                        if (!state.score.expectedNotes[hitKey]) {
-                            state.score.expectedNotes[hitKey] = {
-                                notes: playingNotes,
-                                time: audio.nextNoteTime,
-                                status: 'waiting'
-                            };
-                            state.score.status[hitKey] = 'waiting';
-                        }
-                    }
+                    // Adelanta la vista al compás siguiente en el pulso configurado (4, 3, 2 o 1) manteniendo el conteo y evaluación del compás actual
+                    const shouldAdvanceEarly = hasNextMeasure && state.logicalMetronomeCount >= state.measuresChangeBeat;
 
-                    if (state.logicalMetronomeCount >= state.measuresChangeBeat) {
-                        const nextMeasureIndex = state.logicalMeasureIndex + 1;
-                        displayedContent = nextMeasureIndex < state.measuresPerExercise ? state.exerciseMeasures[nextMeasureIndex] : [];
-                    } else { 
-                        displayedContent = contentForPlayback;
+                    const displayedMeasureIndex = shouldAdvanceEarly ? nextMeasureIndex : state.logicalMeasureIndex;
+                    displayedContent = shouldAdvanceEarly ? state.exerciseMeasures[nextMeasureIndex] : contentForPlayback;
+                    const renderKey = shouldAdvanceEarly
+                        ? `${nextMeasureIndex}`
+                        : `${state.logicalMeasureIndex}`;
+
+                    let visualNoteIndex = activeNoteIndexForVisual;
+                    if (shouldAdvanceEarly && state.exerciseType === 'melodia' && Array.isArray(displayedContent) && displayedContent.length > 0 && typeof displayedContent[0] === 'object' && !Array.isArray(displayedContent[0])) {
+                        const currentBeat = state.logicalMetronomeCount;
+                        const itemOnDisplayed = displayedContent.find(it => it.beat === currentBeat && it.subBeat === 0) ||
+                            displayedContent.find(it => it.beat < currentBeat && (it.beat + it.beats) > currentBeat);
+                        if (itemOnDisplayed) visualNoteIndex = itemOnDisplayed.noteIndex;
                     }
                     
                     state.visualQueue.push({
                         time: audio.nextNoteTime, type: 'tick', isPreRoll: false,
                         metronomeCount: state.logicalMetronomeCount, measureIndex: state.logicalMeasureIndex,
-                        displayedContent: displayedContent, playingNotes: playingNotes, rootName: rootNoteNameForFretboard
+                        displayedMeasureIndex: displayedMeasureIndex, isEarlyPreview: shouldAdvanceEarly, renderKey: renderKey,
+                        displayedContent: displayedContent, playingNotes: playingNotes, rootName: rootNoteNameForFretboard,
+                        activeNoteIndex: visualNoteIndex
                     });
+
+                    if (secondaryEighthEvent) {
+                        state.visualQueue.push({
+                            time: secondaryEighthEvent.time, type: 'tick', isPreRoll: false,
+                            metronomeCount: state.logicalMetronomeCount, measureIndex: state.logicalMeasureIndex,
+                            displayedMeasureIndex: displayedMeasureIndex, isEarlyPreview: shouldAdvanceEarly, renderKey: renderKey,
+                            displayedContent: displayedContent, playingNotes: secondaryEighthEvent.playingNotes, rootName: null,
+                            activeNoteIndex: shouldAdvanceEarly ? visualNoteIndex : secondaryEighthEvent.activeNoteIndex
+                        });
+                    }
                 }
                 audio.nextNoteTime += beatDuration;
             }
             state.metronomeTimer = setTimeout(scheduler, audio.lookahead);
         }
 
-        function playNoteSound(note, time) {
-            if (!audio.context || !note) return; const freq = notesData.noteToFrequency[note]; if (!freq) return;
+        function playNoteSound(note, time, customDuration = 0.85) {
+            if (!audio.context || !note) return;
+            const freq = notesData.noteToFrequency[note];
+            if (!freq) return;
+            const dur = Math.max(0.2, customDuration);
+
+            if (state.synthType === 'guitar') {
+                // Síntesis de cuerda pulsada (Timbre cálido de guitarra con filtro pasa-bajos dinámico)
+                const osc1 = audio.context.createOscillator();
+                const osc2 = audio.context.createOscillator();
+                const filter = audio.context.createBiquadFilter();
+                const env = audio.context.createGain();
+
+                osc1.type = 'sawtooth';
+                osc2.type = 'triangle';
+                osc1.frequency.setValueAtTime(freq, time);
+                osc2.frequency.setValueAtTime(freq, time);
+                osc2.detune.setValueAtTime(3, time);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(freq * 6, time);
+                filter.frequency.exponentialRampToValueAtTime(freq * 1.2, time + Math.min(0.35, dur * 0.6));
+                filter.Q.setValueAtTime(2, time);
+
+                env.gain.setValueAtTime(0.001, time);
+                env.gain.linearRampToValueAtTime(state.noteVolume * 0.9, time + 0.008);
+                env.gain.exponentialRampToValueAtTime(0.001, time + dur);
+
+                osc1.connect(filter);
+                osc2.connect(filter);
+                filter.connect(env);
+                env.connect(audio.noteGain);
+                audio.noteGain.gain.setValueAtTime(1, time);
+
+                osc1.start(time);
+                osc2.start(time);
+                osc1.stop(time + dur + 0.02);
+                osc2.stop(time + dur + 0.02);
+                return;
+            }
+
             const osc = audio.context.createOscillator(); osc.connect(audio.noteGain); osc.frequency.value = freq;
             const currentClef = ui.clefSelect.value;
              if (currentClef === 'F' || currentClef === 'C') {
@@ -2528,223 +3440,559 @@
         function playMetronomeSound(time, isAccent, beatNumber = 1) {
             if (!audio.context || !state.metronomeEnabled) return;
 
-            if (state.metronomeSound !== 'classic') {
-                const delay = Math.max(0, (time - audio.context.currentTime) * 1000);
+            if (state.metronomeSound === 'drums') {
+                if (isAccent || beatNumber === 3) {
+                    const kickOsc = audio.context.createOscillator();
+                    const kickGain = audio.context.createGain();
+                    kickOsc.type = 'sine';
+                    kickOsc.frequency.setValueAtTime(130, time);
+                    kickOsc.frequency.exponentialRampToValueAtTime(40, time + 0.12);
+                    kickGain.gain.setValueAtTime(state.metronomeVolume, time);
+                    kickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+                    kickOsc.connect(kickGain);
+                    kickGain.connect(audio.metronomeGain);
+                    audio.metronomeGain.gain.setValueAtTime(1, time);
+                    kickOsc.start(time);
+                    kickOsc.stop(time + 0.16);
+                } else {
+                    const snareOsc = audio.context.createOscillator();
+                    const snareGain = audio.context.createGain();
+                    snareOsc.type = 'triangle';
+                    snareOsc.frequency.setValueAtTime(220, time);
+                    snareOsc.frequency.exponentialRampToValueAtTime(110, time + 0.08);
+                    snareGain.gain.setValueAtTime(state.metronomeVolume * 0.8, time);
+                    snareGain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+                    snareOsc.connect(snareGain);
+                    snareGain.connect(audio.metronomeGain);
+                    audio.metronomeGain.gain.setValueAtTime(1, time);
+                    snareOsc.start(time);
+                    snareOsc.stop(time + 0.11);
+                }
+                return;
+            }
+
+            if ((state.metronomeSound === 'voice-es' || state.metronomeSound === 'voice-en') && 'speechSynthesis' in window) {
+                const delayMs = Math.max(0, (time - audio.context.currentTime) * 1000);
                 setTimeout(() => {
-                    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
-                    const msg = new SpeechSynthesisUtterance();
-                    if (state.metronomeSound === 'voice-es') {
-                        const wordsEs = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez'];
-                        msg.text = wordsEs[beatNumber - 1] || beatNumber.toString();
-                        msg.lang = 'es-MX';
-                    } else {
-                        msg.text = beatNumber.toString();
-                        msg.lang = 'en-US';
-                    }
-                    msg.rate = 1.6; msg.volume = state.metronomeVolume;
-                    window.speechSynthesis.speak(msg);
-                }, delay);
+                    if (!state.exerciseStarted || state.isPaused || !state.metronomeEnabled) return;
+                    window.speechSynthesis.cancel();
+                    const wordsEs = ['Uno', 'Dos', 'Tres', 'Cuatro'];
+                    const wordsEn = ['One', 'Two', 'Three', 'Four'];
+                    const wordList = state.metronomeSound === 'voice-es' ? wordsEs : wordsEn;
+                    const utter = new SpeechSynthesisUtterance(wordList[(beatNumber - 1) % 4] || String(beatNumber));
+                    utter.lang = state.metronomeSound === 'voice-es' ? 'es-ES' : 'en-US';
+                    utter.rate = 1.6;
+                    utter.volume = Math.min(1, Math.max(0, state.metronomeVolume));
+                    window.speechSynthesis.speak(utter);
+                }, delayMs);
                 return;
             }
 
             const osc = audio.context.createOscillator();
-            const gainNode = audio.context.createGain();
-            osc.connect(gainNode); gainNode.connect(audio.metronomeGain);
-            osc.frequency.setValueAtTime(isAccent ? 1000 : 500, time);
-            osc.frequency.exponentialRampToValueAtTime(10, time + 0.05);
-            gainNode.gain.setValueAtTime(state.metronomeVolume, time);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
-            osc.start(time); osc.stop(time + 0.1);
+            const clickGain = audio.context.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(isAccent ? 1000 : 800, time);
+            clickGain.gain.setValueAtTime(0.001, time);
+            clickGain.gain.linearRampToValueAtTime(state.metronomeVolume, time + 0.005);
+            clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+            osc.connect(clickGain);
+            clickGain.connect(audio.metronomeGain);
+            audio.metronomeGain.gain.setValueAtTime(1, time);
+            osc.start(time);
+            osc.stop(time + 0.06);
         }
 
         function getNoteRangeForDifficulty() {
-            switch (ui.difficultySelect.value) {
-                case 'basico': 
-                    if (ui.clefSelect.value === 'G') return notesData.all.slice(notesData.all.indexOf('E/4'), notesData.all.indexOf('F/5') + 1);
-                    if (ui.clefSelect.value === 'F') return notesData.all.slice(notesData.all.indexOf('G/2'), notesData.all.indexOf('A/3') + 1);
-                    return notesData.all.slice(notesData.all.indexOf('F/3'), notesData.all.indexOf('G/4') + 1);
-                case 'medium':
-                    if (ui.clefSelect.value === 'G') return notesData.all.slice(notesData.all.indexOf('E/3'), notesData.all.indexOf('A/5') + 1);
-                    if (ui.clefSelect.value === 'F') return notesData.all.slice(notesData.all.indexOf('E/2'), notesData.all.indexOf('C/4') + 1);
-                    return notesData.all.slice(notesData.all.indexOf('D/3'), notesData.all.indexOf('B/4') + 1);
-                default: 
-                    if (ui.clefSelect.value === 'G') return notesData.all.slice(notesData.all.indexOf('E/3'), notesData.all.indexOf('E/6') + 1);
-                    if (ui.clefSelect.value === 'F') return notesData.all.slice(notesData.all.indexOf('C/2'), notesData.all.indexOf('F/4') + 1);
-                    return notesData.all.slice(notesData.all.indexOf('A/2'), notesData.all.indexOf('D/5') + 1);
+            const clef = ui.clefSelect.value;
+            const difficulty = ui.difficultySelect.value;
+            let minNote = 'E/4', maxNote = 'F/5';
+
+            if (clef === 'G') {
+                if (difficulty === 'basico') { minNote = 'E/4'; maxNote = 'F/5'; }
+                else if (difficulty === 'medium') { minNote = 'E/3'; maxNote = 'A/5'; }
+                else { minNote = 'E/3'; maxNote = 'E/6'; }
+            } else if (clef === 'F') {
+                if (difficulty === 'basico') { minNote = 'G/2'; maxNote = 'A/3'; }
+                else if (difficulty === 'medium') { minNote = 'E/2'; maxNote = 'C/4'; }
+                else { minNote = 'C/2'; maxNote = 'E/4'; }
+            } else if (clef === 'C') {
+                if (difficulty === 'basico') { minNote = 'F/3'; maxNote = 'G/4'; }
+                else if (difficulty === 'medium') { minNote = 'C/3'; maxNote = 'C/5'; }
+                else { minNote = 'G/2'; maxNote = 'E/5'; }
             }
+
+            const minMidi = notesData.chromaticMap[minNote];
+            const maxMidi = notesData.chromaticMap[maxNote];
+            let pool = notesData.all.filter(n => {
+                const midi = notesData.chromaticMap[n];
+                return midi >= minMidi && midi <= maxMidi;
+            });
+
+            if (clef === 'G' && state.fretPosition && state.fretPosition !== 'all') {
+                const [minFret, maxFret] = state.fretPosition.split('-').map(Number);
+                const positionFiltered = pool.filter(n => {
+                    const positions = notesData.guitarFretboard[n];
+                    return positions && positions.some(pos => pos.fret >= minFret && pos.fret <= maxFret);
+                });
+                if (positionFiltered.length > 0) pool = positionFiltered;
+            }
+
+            return pool;
+        }
+
+        function alterNote(note, semitones) {
+            if (!note || typeof note !== 'string' || !note.includes('/')) return null;
+            const [name, octStr] = note.split('/');
+            const octave = parseInt(octStr, 10);
+            if (isNaN(octave)) return null;
+            if (semitones % 12 === 0) {
+                const newOctave = octave + (semitones / 12);
+                const candidate = `${name}/${newOctave}`;
+                return notesData.all.includes(candidate) ? candidate : null;
+            }
+            const currentMidi = notesData.chromaticMap[note];
+            if (currentMidi === undefined) return null;
+            const targetMidi = currentMidi + semitones;
+            return notesData.all.find(n => notesData.chromaticMap[n] === targetMidi) || null;
+        }
+
+        function generateMelodicNote(notePool, lastNote, previousNote) {
+            if (!notePool || notePool.length === 0) return 'C/4';
+            const lastIndex = lastNote ? notePool.indexOf(lastNote) : -1;
+            if (lastIndex === -1) {
+                return notePool[Math.floor(randomFloat() * notePool.length)];
+            }
+
+            const maxLeap = ui.difficultySelect.value === 'basico' ? 2 : (ui.difficultySelect.value === 'medium' ? 4 : 6);
+            const candidates = [];
+            for (let i = 0; i < notePool.length; i++) {
+                const dist = Math.abs(i - lastIndex);
+                if (dist <= maxLeap) {
+                    const note = notePool[i];
+                    if (note === lastNote && lastNote === previousNote && notePool.length > 1) continue;
+                    const weight = dist === 1 ? 4 : (dist === 2 ? 3 : 1);
+                    for (let w = 0; w < weight; w++) candidates.push(note);
+                }
+            }
+
+            if (candidates.length === 0) {
+                return notePool[Math.floor(randomFloat() * notePool.length)];
+            }
+            return candidates[Math.floor(randomFloat() * candidates.length)];
+        }
+
+        const FORBIDDEN_ENHARMONICS = new Set(['Fb', 'B#', 'E#', 'Cb']);
+
+        function findPlayableChordVoicingOnFretboard(notes) {
+            if (!Array.isArray(notes) || notes.length === 0) return null;
+            const NUM_FRETS = 15;
+            let minF = 0, maxF = NUM_FRETS;
+            if (state.fretPosition && state.fretPosition !== 'all') {
+                const [f1, f2] = state.fretPosition.split('-').map(Number);
+                minF = f1; maxF = f2;
+            }
+
+            const sortedNotes = [...notes].sort((a, b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
+            const candidatesPerNote = sortedNotes.map(note => {
+                const positions = notesData.guitarFretboard[note] || [];
+                return positions.filter(p => p.fret >= minF && p.fret <= maxF).map(p => ({ note, string: p.string, fret: p.fret }));
+            });
+
+            if (candidatesPerNote.some(list => list.length === 0)) return null;
+
+            let bestSolution = null;
+            let bestScore = Infinity;
+
+            function backtrack(idx, chosen, usedStrings) {
+                if (idx === sortedNotes.length) {
+                    const fretted = chosen.filter(c => c.fret > 0).map(c => c.fret);
+                    let span = 0;
+                    let avgFret = 0;
+                    if (fretted.length > 0) {
+                        const minFretUsed = Math.min(...fretted);
+                        const maxFretUsed = Math.max(...fretted);
+                        span = maxFretUsed - minFretUsed;
+                        if (span > 4) return;
+                        avgFret = fretted.reduce((a, b) => a + b, 0) / fretted.length;
+                    }
+                    // Preferir formas compactas y en trastes bajos/medios sin cuerdas cruzadas
+                    const score = (span * 10) + avgFret;
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestSolution = [...chosen];
+                    }
+                    return;
+                }
+
+                for (const cand of candidatesPerNote[idx]) {
+                    if (usedStrings.has(cand.string)) continue;
+                    usedStrings.add(cand.string);
+                    chosen.push(cand);
+                    backtrack(idx + 1, chosen, usedStrings);
+                    chosen.pop();
+                    usedStrings.delete(cand.string);
+                }
+            }
+
+            backtrack(0, [], new Set());
+            return bestSolution;
         }
 
         function generateExercise() {
             const allMeasures = []; 
             let notesPerMeasure = state.timeSignatureBeats;
             if (state.exerciseType === 'armonia' && state.notesPerChord === 4) notesPerMeasure = 2;
+
+            let weakNotePool = [];
+            if (state.isWeaknessMode && userData?.stats?.globalNoteStats) {
+                const entries = Object.entries(userData.stats.globalNoteStats)
+                    .filter(([_, data]) => data.misses > 0)
+                    .sort((a, b) => b[1].misses - a[1].misses)
+                    .slice(0, 6)
+                    .map(([noteName]) => noteName);
+                weakNotePool = entries;
+            }
+
+            const progressionMap = {
+                '1-4-5-1': [
+                    { root: 'C', quadType: 'maj7' },
+                    { root: 'F', quadType: 'maj7' },
+                    { root: 'G', quadType: 'dom7' },
+                    { root: 'C', quadType: 'maj7' }
+                ],
+                '2-5-1': [
+                    { root: 'D', quadType: 'm7' },
+                    { root: 'G', quadType: 'dom7' },
+                    { root: 'C', quadType: 'maj7' },
+                    { root: 'C', quadType: 'maj7' }
+                ],
+                '1-6-2-5': [
+                    { root: 'C', quadType: 'maj7' },
+                    { root: 'A', quadType: 'm7' },
+                    { root: 'D', quadType: 'm7' },
+                    { root: 'G', quadType: 'dom7' }
+                ]
+            };
+            let progStep = 0;
+
+            // Mapa para bloquear la ortografía enarmónica por clase de altura (0-11) en toda la línea melódica
+            const melodicEnharmonicLock = {};
+            const scaleNotesForLock = notesData.keySignatures[state.keySignature].notes;
+            scaleNotesForLock.forEach(nName => {
+                if (!FORBIDDEN_ENHARMONICS.has(nName)) {
+                    const testNote = `${nName}/4`;
+                    const midi = notesData.chromaticMap[testNote];
+                    if (midi !== undefined) melodicEnharmonicLock[midi % 12] = nName;
+                }
+            });
+
+            const pickMelodicPitch = (diatonicNotePool, prevPitches) => {
+                const fullRange = getNoteRangeForDifficulty().filter(n => {
+                    const base = n.split('/')[0];
+                    return !FORBIDDEN_ENHARMONICS.has(base) && !base.includes('##') && !base.includes('bb');
+                });
+                const cleanDiatonicPool = diatonicNotePool.filter(n => !FORBIDDEN_ENHARMONICS.has(n.split('/')[0]));
+                const activePool = cleanDiatonicPool.length > 0 ? cleanDiatonicPool : fullRange;
+
+                if (state.isWeaknessMode && weakNotePool.length > 0 && randomFloat() < 0.7) {
+                    const validWeak = weakNotePool.filter(wn => activePool.includes(wn));
+                    if (validWeak.length > 0) return validWeak[Math.floor(randomFloat() * validWeak.length)];
+                }
+                const lastNote = prevPitches.length > 0 ? prevPitches[prevPitches.length - 1] : null;
+                const previousNote = prevPitches.length > 1 ? prevPitches[prevPitches.length - 2] : null;
+                const baseNote = generateMelodicNote(activePool, lastNote, previousNote);
+
+                const chromChance = state.chromaticMode === 'heavy' ? 0.4 : (state.chromaticMode === 'light' ? 0.2 : 0);
+                if (chromChance > 0 && randomFloat() < chromChance) {
+                    const semitoneShift = randomFloat() < 0.5 ? 1 : -1;
+                    const targetMidi = notesData.chromaticMap[baseNote] + semitoneShift;
+                    const pitchClass = ((targetMidi % 12) + 12) % 12;
+
+                    // Candidatos válidos en el rango que no sean Fb, B#, E#, Cb ni dobles alteraciones
+                    let candidates = fullRange.filter(n => notesData.chromaticMap[n] === targetMidi);
+
+                    // Filtrar según preferencia de sostenidos, bemoles o ambas
+                    if (state.chromaticAccidentalType === 'sharps') {
+                        candidates = candidates.filter(n => !n.split('/')[0].includes('b'));
+                    } else if (state.chromaticAccidentalType === 'flats') {
+                        candidates = candidates.filter(n => !n.split('/')[0].includes('#'));
+                    }
+
+                    // Si esta clase de altura ya apareció en la línea melódica, obligar al mismo nombre enarmónico (evita C# y Db juntos)
+                    if (melodicEnharmonicLock[pitchClass]) {
+                        const lockedBase = melodicEnharmonicLock[pitchClass];
+                        const lockedMatch = candidates.find(n => n.split('/')[0] === lockedBase);
+                        if (lockedMatch) return lockedMatch;
+                        return baseNote;
+                    }
+
+                    if (candidates.length > 0) {
+                        const chosen = candidates[Math.floor(randomFloat() * candidates.length)];
+                        melodicEnharmonicLock[pitchClass] = chosen.split('/')[0];
+                        return chosen;
+                    }
+                }
+
+                const baseMidi = notesData.chromaticMap[baseNote];
+                if (baseMidi !== undefined) {
+                    melodicEnharmonicLock[baseMidi % 12] = baseNote.split('/')[0];
+                }
+                return baseNote;
+            };
+
+            const recentPitches = [];
             
             for (let i = 0; i < state.measuresPerExercise; i++) {
-                const measureContent = []; let measureTries = 0;
-                while(measureContent.length < notesPerMeasure && measureTries < 200) {
-                    let item;
-                    if (state.exerciseType === 'melodia') {
-                        const noteRange = getNoteRangeForDifficulty(); 
-                        const scaleNotes = notesData.keySignatures[state.keySignature].notes;
-                        const diatonicNotePool = noteRange.filter(note => scaleNotes.includes(note.split('/')[0]));
-                        if (diatonicNotePool.length === 0) item = noteRange[0]; 
-                        else {
-                            let lastNote = measureContent.length > 0 ? measureContent[measureContent.length - 1] : (i > 0 ? allMeasures[i-1].slice(-1)[0] : null);
-                            let previousNote = measureContent.length > 1 ? measureContent[measureContent.length - 2] : (i > 0 && measureContent.length === 0 ? allMeasures[i-1].slice(-2)[0] : null);
-                            item = generateMelodicNote(diatonicNotePool, lastNote, previousNote);
+                if (state.exerciseType === 'melodia') {
+                    const noteRange = getNoteRangeForDifficulty(); 
+                    const scaleNotes = notesData.keySignatures[state.keySignature].notes;
+                    const diatonicNotePool = noteRange.filter(note => scaleNotes.includes(note.split('/')[0]));
+                    const measureContent = [];
+                    let currentBeat = 1;
+                    let noteIndex = 0;
+                    let hasAtLeastOnePlayableNote = false;
+
+                    while (currentBeat <= state.timeSignatureBeats) {
+                        const beatsLeft = state.timeSignatureBeats - currentBeat + 1;
+                        let fig = 'q';
+                        const r = randomFloat();
+
+                        if (state.rhythmMode === 'quarters') {
+                            fig = 'q';
+                        } else if (state.rhythmMode === 'halves_quarters') {
+                            fig = (beatsLeft >= 2 && r < 0.45) ? 'h' : 'q';
+                        } else if (state.rhythmMode === 'eighths_quarters') {
+                            fig = (r < 0.4) ? '8_pair' : 'q';
+                        } else if (state.rhythmMode === 'with_rests') {
+                            const canRest = hasAtLeastOnePlayableNote || beatsLeft > 1;
+                            fig = (canRest && r < 0.25) ? 'qr' : 'q';
+                        } else if (state.rhythmMode === 'mixed') {
+                            if (beatsLeft >= 2 && r < 0.25) fig = 'h';
+                            else if (r < 0.5) fig = '8_pair';
+                            else if ((hasAtLeastOnePlayableNote || beatsLeft > 1) && r < 0.65) fig = 'qr';
+                            else fig = 'q';
                         }
-                    } else { 
-                        const noteRange = getNoteRangeForDifficulty(); 
-                        item = generateHarmonicItem(noteRange); 
+
+                        if (fig === 'h') {
+                            const pitch = pickMelodicPitch(diatonicNotePool, recentPitches);
+                            recentPitches.push(pitch);
+                            hasAtLeastOnePlayableNote = true;
+                            measureContent.push({
+                                note: pitch, duration: 'h', beat: currentBeat, subBeat: 0,
+                                beats: 2, isRest: false, noteIndex: noteIndex++
+                            });
+                            currentBeat += 2;
+                        } else if (fig === '8_pair') {
+                            const pitch1 = pickMelodicPitch(diatonicNotePool, recentPitches);
+                            recentPitches.push(pitch1);
+                            const pitch2 = pickMelodicPitch(diatonicNotePool, recentPitches);
+                            recentPitches.push(pitch2);
+                            hasAtLeastOnePlayableNote = true;
+                            const beamId = `${i}-${currentBeat}`;
+                            measureContent.push({
+                                note: pitch1, duration: '8', beat: currentBeat, subBeat: 0,
+                                beats: 0.5, isRest: false, beamGroup: beamId, noteIndex: noteIndex++
+                            });
+                            measureContent.push({
+                                note: pitch2, duration: '8', beat: currentBeat, subBeat: 0.5,
+                                beats: 0.5, isRest: false, beamGroup: beamId, noteIndex: noteIndex++
+                            });
+                            currentBeat += 1;
+                        } else if (fig === 'qr') {
+                            measureContent.push({
+                                note: null, duration: 'qr', beat: currentBeat, subBeat: 0,
+                                beats: 1, isRest: true, noteIndex: noteIndex++
+                            });
+                            currentBeat += 1;
+                        } else {
+                            const pitch = pickMelodicPitch(diatonicNotePool, recentPitches);
+                            recentPitches.push(pitch);
+                            hasAtLeastOnePlayableNote = true;
+                            measureContent.push({
+                                note: pitch, duration: 'q', beat: currentBeat, subBeat: 0,
+                                beats: 1, isRest: false, noteIndex: noteIndex++
+                            });
+                            currentBeat += 1;
+                        }
                     }
-                    if (item) measureContent.push(item);
-                    measureTries++;
+                    allMeasures.push(measureContent);
+                } else {
+                    const measureContent = []; let measureTries = 0;
+                    const activeProg = (state.harmonyProgression !== 'random' && progressionMap[state.harmonyProgression])
+                        ? progressionMap[state.harmonyProgression]
+                        : null;
+                    const progCycle = (activeProg && notesPerMeasure === 3 && state.harmonyProgression === '2-5-1')
+                        ? activeProg.slice(0, 3)
+                        : activeProg;
+
+                    while(measureContent.length < notesPerMeasure && measureTries < 200) {
+                        const noteRange = getNoteRangeForDifficulty(); 
+                        let forcedDegree = null;
+                        if (progCycle) {
+                            forcedDegree = progCycle[progStep % progCycle.length];
+                        }
+                        const item = generateHarmonicItem(noteRange, forcedDegree); 
+                        if (item) {
+                            progStep++;
+                            measureContent.push(item);
+                        }
+                        measureTries++;
+                    }
+                    if (measureContent.length === notesPerMeasure) allMeasures.push(measureContent);
+                    else { i--; }
                 }
-                if (measureContent.length === notesPerMeasure) allMeasures.push(measureContent);
-                else { i--; }
             }
             return allMeasures;
         }
-
-        function generateMelodicNote(notePool, lastNote, previousNote) {
-             let nextNote = null; let attempts = 0; const difficulty = ui.difficultySelect.value;
-            const maxInterval = difficulty === 'advanced' ? 7 : 5; 
-            if (!lastNote) return notePool[Math.floor(randomFloat() * notePool.length)];
-            const lastNoteIndex = notePool.indexOf(lastNote);
-            if (lastNoteIndex === -1) return notePool[Math.floor(randomFloat() * notePool.length)];
-            if (previousNote) {
-                const prevNoteIndex = notePool.indexOf(previousNote);
-                if(prevNoteIndex !== -1) {
-                    const leapInterval = Math.abs(lastNoteIndex - prevNoteIndex);
-                    if (leapInterval >= 3) { 
-                        const direction = lastNoteIndex > prevNoteIndex ? -1 : 1; 
-                        const targetIndex = lastNoteIndex + direction; 
-                        if (targetIndex >= 0 && targetIndex < notePool.length) return notePool[targetIndex];
-                    }
-                }
-            }
-            while (nextNote === null && attempts < 100) {
-                const randomChoice = randomFloat(); let chosenInterval;
-                if (randomChoice < 0.6) chosenInterval = 1; else if (randomChoice < 0.85) chosenInterval = 2; else chosenInterval = Math.floor(randomFloat() * (maxInterval - 2)) + 3; 
-                const direction = randomFloat() < 0.5 ? 1 : -1; const nextIndex = lastNoteIndex + (chosenInterval * direction);
-                if (nextIndex >= 0 && nextIndex < notePool.length) nextNote = notePool[nextIndex];
-                attempts++;
-            }
-            return nextNote || notePool[Math.floor(randomFloat() * notePool.length)];
-        }
-        
-        function alterNote(note, semitones) {
-            const chromaticValue = notesData.chromaticMap[note]; if (chromaticValue === undefined) return null;
-            const newChromaticValue = chromaticValue + semitones; const candidates = notesData.all.filter(n => notesData.chromaticMap[n] === newChromaticValue);
-            if (candidates.length === 0) return null; if (candidates.length === 1) return candidates[0];
-            const noteLetter = note.split('/')[0].slice(0,1); const preferred = candidates.find(c => c.startsWith(noteLetter));
-            return preferred || candidates[0];
-        }
-
-        function generateHarmonicItem(noteRange) {
+        function generateHarmonicItem(noteRange, forcedDegree = null) {
             const numNotes = state.notesPerChord;
-            const validPool = [];
+            const forcedRoot = forcedDegree ? (typeof forcedDegree === 'object' ? forcedDegree.root : forcedDegree) : null;
+            const forcedQuadType = (forcedDegree && typeof forcedDegree === 'object') ? forcedDegree.quadType : null;
 
-            if (numNotes === 2) {
-                const diatonicScale = notesData.keySignatures['C'].notes; 
-                const diatonicNotePool = noteRange.filter(note => diatonicScale.includes(note.split('/')[0]));
-                let intervalStepsList = state.selectedInterval === 'custom' ? Array.from(state.selectedCustomIntervals).map(i => parseInt(i, 10)) : (state.selectedInterval == 0 ? [1,2,3,4,5,6,7] : [parseInt(state.selectedInterval, 10)]);
+            const buildPoolForRange = (activeRange, relaxFilters = false) => {
+                const pool = [];
+                if (numNotes === 2) {
+                    const diatonicScale = notesData.keySignatures['C'].notes; 
+                    const diatonicNotePool = activeRange.filter(note => diatonicScale.includes(note.split('/')[0]));
+                    let intervalStepsList = state.selectedInterval === 'custom' ? Array.from(state.selectedCustomIntervals).map(i => parseInt(i, 10)) : (state.selectedInterval == 0 ? [1,2,3,4,5,6,7] : [parseInt(state.selectedInterval, 10)]);
 
-                for (let rootIndex = 0; rootIndex < diatonicNotePool.length; rootIndex++) {
-                    const rootNote = diatonicNotePool[rootIndex];
-                    for (let steps of intervalStepsList) {
-                        const topNoteIndex = rootIndex + steps;
-                        if (topNoteIndex < diatonicNotePool.length) validPool.push([rootNote, diatonicNotePool[topNoteIndex]]);
-                    }
-                }
-            } else if (numNotes === 3) {
-                const diatonicScale = notesData.keySignatures['C'].notes;
-                const diatonicNotePool = noteRange.filter(note => diatonicScale.includes(note.split('/')[0]));
-                let triadTypes = state.selectedTriad === 'all' ? Array.from(ui.triadSelect.options).filter(o => !['all', 'custom'].includes(o.value)).map(o => o.value) : (state.selectedTriad === 'custom' ? Array.from(state.selectedCustomTriads) : [state.selectedTriad]);
-
-                for (let rootNote of diatonicNotePool) {
-                    const rootName = rootNote.split('/')[0];
-                    for (let triadType of triadTypes) {
-                        const [chordFamily] = triadType.split('_');
-                        let fundamentalNoteNames;
-                        if (chordFamily === 'shell') fundamentalNoteNames = notesData.diatonicShellVoicings[rootName];
-                        else if (chordFamily === 'sus2') {
-                            const rootIdx = diatonicScale.indexOf(rootName);
-                            fundamentalNoteNames = [diatonicScale[rootIdx], diatonicScale[(rootIdx+1)%7], diatonicScale[(rootIdx+4)%7]];
-                        } else if (chordFamily === 'sus4') {
-                            const rootIdx = diatonicScale.indexOf(rootName);
-                            fundamentalNoteNames = [diatonicScale[rootIdx], diatonicScale[(rootIdx+3)%7], diatonicScale[(rootIdx+4)%7]];
-                        } else fundamentalNoteNames = notesData.diatonicTriads[rootName];
-
-                        const closeChord = findClosestNotes(rootNote, fundamentalNoteNames, noteRange);
-                        if (!closeChord || closeChord.length !== 3) continue;
-
-                        let chordVariants = [closeChord];
-                        if (chordFamily === 'shell') {
-                            const thirdUp = alterNote(closeChord[1], 12);
-                            if (thirdUp && noteRange.includes(thirdUp)) chordVariants.push([closeChord[0], closeChord[2], thirdUp]);
-                        } else if (triadType === 'triad_inv1') {
-                            const newRoot = alterNote(closeChord[0], 12);
-                            if (newRoot && noteRange.includes(newRoot)) chordVariants = [[closeChord[1], closeChord[2], newRoot]];
-                            else chordVariants = [];
-                        } else if (triadType === 'triad_inv2') {
-                            const newFifth = alterNote(closeChord[2], -12);
-                            if (newFifth && noteRange.includes(newFifth)) chordVariants = [[newFifth, closeChord[0], closeChord[1]]];
-                            else {
-                                const newRoot = alterNote(closeChord[0], 12); const newThird = alterNote(closeChord[1], 12);
-                                if (newRoot && newThird && noteRange.includes(newRoot) && noteRange.includes(newThird)) chordVariants = [[closeChord[2], newRoot, newThird]];
-                                else chordVariants = [];
-                            }
+                    for (let rootIndex = 0; rootIndex < diatonicNotePool.length; rootIndex++) {
+                        const rootNote = diatonicNotePool[rootIndex];
+                        for (let steps of intervalStepsList) {
+                            const topNoteIndex = rootIndex + steps;
+                            if (topNoteIndex < diatonicNotePool.length) pool.push([rootNote, diatonicNotePool[topNoteIndex]]);
                         }
+                    }
+                } else if (numNotes === 3) {
+                    const diatonicScale = notesData.keySignatures['C'].notes;
+                    const candidateRoots = notesData.all.filter(note => {
+                        const [rName, octStr] = note.split('/');
+                        const oct = parseInt(octStr, 10);
+                        if (oct < 3 || oct > 5) return false;
+                        if (forcedRoot && rName !== forcedRoot) return false;
+                        return diatonicScale.includes(rName);
+                    });
 
-                        for (let variant of chordVariants) {
-                            variant.sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
-                            let targetPositions = chordFamily.startsWith('sus') || chordFamily === 'shell' ? ['cerrada'] : (state.triadPosition === 'all' ? ['cerrada', 'abierta'] : [state.triadPosition]);
-                            for (let pos of targetPositions) {
-                                if (pos === 'cerrada' && notesData.chromaticMap[variant[0]] >= notesData.chromaticMap['A/3']) validPool.push(variant);
-                                else if (pos === 'abierta') {
-                                    const midUp = alterNote(variant[1], 12);
-                                    if (midUp && noteRange.includes(midUp)) validPool.push([variant[0], variant[2], midUp].sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]));
+                    let triadTypes = relaxFilters
+                        ? ['triad_fundamental', 'triad_inv1', 'triad_inv2']
+                        : (state.selectedTriad === 'all' ? Array.from(ui.triadSelect.options).filter(o => !['all', 'custom'].includes(o.value)).map(o => o.value) : (state.selectedTriad === 'custom' ? Array.from(state.selectedCustomTriads) : [state.selectedTriad]));
+
+                    for (let rootNote of candidateRoots) {
+                        const rootName = rootNote.split('/')[0];
+                        for (let triadType of triadTypes) {
+                            const [chordFamily] = triadType.split('_');
+                            let fundamentalNoteNames;
+                            if (chordFamily === 'shell') fundamentalNoteNames = notesData.diatonicShellVoicings[rootName];
+                            else if (chordFamily === 'sus2') {
+                                const rootIdx = diatonicScale.indexOf(rootName);
+                                fundamentalNoteNames = [diatonicScale[rootIdx], diatonicScale[(rootIdx+1)%7], diatonicScale[(rootIdx+4)%7]];
+                            } else if (chordFamily === 'sus4') {
+                                const rootIdx = diatonicScale.indexOf(rootName);
+                                fundamentalNoteNames = [diatonicScale[rootIdx], diatonicScale[(rootIdx+3)%7], diatonicScale[(rootIdx+4)%7]];
+                            } else fundamentalNoteNames = notesData.diatonicTriads[rootName];
+
+                            const closeChord = findClosestNotes(rootNote, fundamentalNoteNames, notesData.all);
+                            if (!closeChord || closeChord.length !== 3) continue;
+
+                            let chordVariants = [];
+                            if (chordFamily === 'shell') {
+                                chordVariants.push([...closeChord]);
+                                const thirdUp = alterNote(closeChord[1], 12);
+                                if (thirdUp) chordVariants.push([closeChord[0], closeChord[2], thirdUp]);
+                            } else if (triadType === 'triad_inv1') {
+                                const newRoot = alterNote(closeChord[0], 12);
+                                if (newRoot) chordVariants.push([closeChord[1], closeChord[2], newRoot]);
+                            } else if (triadType === 'triad_inv2') {
+                                const newFifth = alterNote(closeChord[2], -12);
+                                if (newFifth) chordVariants.push([newFifth, closeChord[0], closeChord[1]]);
+                                const newRoot = alterNote(closeChord[0], 12);
+                                const newThird = alterNote(closeChord[1], 12);
+                                if (newRoot && newThird) chordVariants.push([closeChord[2], newRoot, newThird]);
+                            } else {
+                                chordVariants.push([...closeChord]);
+                            }
+
+                            for (let variant of chordVariants) {
+                                variant.sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
+                                let targetPositions = (chordFamily.startsWith('sus') || chordFamily === 'shell') ? ['cerrada'] : (relaxFilters || state.triadPosition === 'all' ? ['cerrada', 'abierta'] : [state.triadPosition]);
+                                for (let pos of targetPositions) {
+                                    if (pos === 'cerrada') {
+                                        if (variant.every(n => activeRange.includes(n)) && notesData.chromaticMap[variant[0]] >= notesData.chromaticMap['A/3']) {
+                                            pool.push(variant);
+                                        }
+                                    } else if (pos === 'abierta') {
+                                        const midUp = alterNote(variant[1], 12);
+                                        if (midUp) {
+                                            const openVariant = [variant[0], variant[2], midUp].sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]);
+                                            if (openVariant.every(n => activeRange.includes(n))) pool.push(openVariant);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            } else if (numNotes === 4) {
-                let chordTypes = state.selectedQuadChordType === 'custom' ? Array.from(state.selectedCustomQuadChordTypes) : (state.selectedQuadChordType === 'all' ? ['maj7','m7','dom7','m7b5','dim7'] : [state.selectedQuadChordType]);
-                let inversions = state.selectedQuadInversion === 'custom' ? Array.from(state.selectedCustomQuadInversions) : (state.selectedQuadInversion === 'all' ? ['0','1','2','3'] : [state.selectedQuadInversion]);
-                let voicings = state.selectedQuadVoicing === 'custom' ? Array.from(state.selectedCustomVoicings) : (state.selectedQuadVoicing === 'all' ? Object.keys(notesData.voicingInversionMap) : [state.selectedQuadVoicing]);
+                } else if (numNotes === 4) {
+                    let chordTypes;
+                    if (forcedQuadType && (relaxFilters || state.selectedQuadChordType === 'all')) {
+                        chordTypes = [forcedQuadType];
+                    } else {
+                        chordTypes = state.selectedQuadChordType === 'custom' ? Array.from(state.selectedCustomQuadChordTypes) : (state.selectedQuadChordType === 'all' ? ['maj7','m7','dom7','m7b5','dim7'] : [state.selectedQuadChordType]);
+                    }
+                    let inversions = relaxFilters ? ['0','1','2','3'] : (state.selectedQuadInversion === 'custom' ? Array.from(state.selectedCustomQuadInversions) : (state.selectedQuadInversion === 'all' ? ['0','1','2','3'] : [state.selectedQuadInversion]));
+                    let voicings = relaxFilters ? Object.keys(notesData.voicingInversionMap) : (state.selectedQuadVoicing === 'custom' ? Array.from(state.selectedCustomVoicings) : (state.selectedQuadVoicing === 'all' ? Object.keys(notesData.voicingInversionMap) : [state.selectedQuadVoicing]));
 
-                for (let rootName of Object.keys(notesData.allowedFourNoteChords)) {
-                    const chords = notesData.allowedFourNoteChords[rootName];
-                    for (let chordType of chordTypes) {
-                        let suffix = chordType === 'dom7' ? '7' : (chordType === 'dim7' ? '°7' : chordType);
-                        const chordDef = chords.find(c => {
-                             if (suffix === 'm7') return c.name.endsWith('m7') && !c.name.endsWith('m7b5');
-                             if (suffix === '7') return c.name.endsWith('7') && !c.name.endsWith('maj7') && !c.name.endsWith('m7') && !c.name.endsWith('°7');
-                             return c.name.endsWith(suffix);
-                        });
-                        if (!chordDef) continue;
+                    const rootKeys = forcedRoot && notesData.allowedFourNoteChords[forcedRoot] ? [forcedRoot] : Object.keys(notesData.allowedFourNoteChords);
+                    for (let rootName of rootKeys) {
+                        const chords = notesData.allowedFourNoteChords[rootName];
+                        for (let chordType of chordTypes) {
+                            let suffix = chordType === 'dom7' ? '7' : (chordType === 'dim7' ? '°7' : chordType);
+                            const chordDef = chords.find(c => {
+                                 if (suffix === 'm7') return c.name.endsWith('m7') && !c.name.endsWith('m7b5');
+                                 if (suffix === '7') return c.name.endsWith('7') && !c.name.endsWith('maj7') && !c.name.endsWith('m7') && !c.name.endsWith('°7');
+                                 return c.name.endsWith(suffix);
+                            });
+                            if (!chordDef) continue;
 
-                        for (let inv of inversions) {
-                            if (chordDef.name.includes('°7') && inv !== '0') continue;
-                            for (let voicing of voicings) {
-                                const sourceInversion = notesData.voicingInversionMap[voicing] ? notesData.voicingInversionMap[voicing][inv] : inv;
-                                const possibleCloseChords = getAllClosePositionInversions(chordDef.notes, parseInt(sourceInversion, 10), noteRange);
-                                for (let closeChord of possibleCloseChords) {
-                                    const voicedChord = applyVoicing(closeChord, voicing, noteRange);
-                                    if (voicedChord && voicedChord.every(n => n && noteRange.includes(n))) {
-                                        voicedChord.voicingApplied = voicing;
-                                        validPool.push(voicedChord);
+                            for (let inv of inversions) {
+                                if (chordDef.name.includes('°7') && inv !== '0') continue;
+                                for (let voicing of voicings) {
+                                    const sourceInversion = notesData.voicingInversionMap[voicing] ? notesData.voicingInversionMap[voicing][inv] : inv;
+                                    const possibleCloseChords = getAllClosePositionInversions(chordDef.notes, parseInt(sourceInversion, 10), activeRange);
+                                    for (let closeChord of possibleCloseChords) {
+                                        const voicedChord = applyVoicing(closeChord, voicing, activeRange);
+                                        if (voicedChord && voicedChord.every(n => n && activeRange.includes(n))) {
+                                            voicedChord.voicingApplied = voicing;
+                                            pool.push(voicedChord);
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
+                return pool;
+            };
+
+            let validPool = buildPoolForRange(noteRange, false);
+
+            // Si hay una progresión armónica activa y el rango o filtro estricto (ej. Nivel Básico) no tiene esa raíz en estado fundamental, flexibilizamos inversiones o ampliamos ligeramente el registro para garantizar la progresión
+            if (validPool.length === 0 && forcedRoot) {
+                validPool = buildPoolForRange(noteRange, true);
+                if (validPool.length === 0) {
+                    const expandedMin = notesData.chromaticMap['A/3'];
+                    const expandedMax = notesData.chromaticMap['A/5'];
+                    const expandedRange = notesData.all.filter(n => {
+                        const m = notesData.chromaticMap[n];
+                        return m >= expandedMin && m <= expandedMax;
+                    });
+                    validPool = buildPoolForRange(expandedRange, true);
+                }
             }
+
             if (validPool.length === 0) return null;
-            return validPool[Math.floor(randomFloat() * validPool.length)];
+            const playableChordPool = validPool.filter(chord => findPlayableChordVoicingOnFretboard(chord) !== null);
+            const finalPool = playableChordPool.length > 0 ? playableChordPool : validPool;
+            return finalPool[Math.floor(randomFloat() * finalPool.length)];
         }
 
         function getAllClosePositionInversions(noteNames, inversion, noteRange) {
@@ -2923,10 +4171,15 @@
             });
             
             const notePositions = []; const processedNotes = new Set();
+            let minF = 1, maxF = NUM_FRETS;
+            if (state.fretPosition && state.fretPosition !== 'all') {
+                const [f1, f2] = state.fretPosition.split('-').map(Number);
+                minF = Math.max(1, f1); maxF = f2;
+            }
             staticNotes.forEach(note => {
                 if (notesData.guitarFretboard[note]) {
                      notesData.guitarFretboard[note].forEach(pos => {
-                        if (pos.fret > 0 && pos.fret <= NUM_FRETS && !processedNotes.has(`${pos.string}-${pos.fret}`)) { notePositions.push({note, ...pos}); processedNotes.add(`${pos.string}-${pos.fret}`); }
+                        if (pos.fret >= minF && pos.fret <= maxF && !processedNotes.has(`${pos.string}-${pos.fret}`)) { notePositions.push({note, ...pos}); processedNotes.add(`${pos.string}-${pos.fret}`); }
                     });
                 }
             });
@@ -2957,12 +4210,24 @@
             if (!Array.isArray(playingNotes) || playingNotes.length === 0) return;
             const NUM_FRETS = 15, fretWidth = 50, stringHeight = 20, startX = 35, startY = 20;
             const notePositions = new Set();
+            let minF = 0, maxF = NUM_FRETS;
+            if (state.fretPosition && state.fretPosition !== 'all') {
+                const [f1, f2] = state.fretPosition.split('-').map(Number);
+                minF = f1; maxF = f2;
+            }
             
-            playingNotes.forEach(note => {
-                if (notesData.guitarFretboard[note]) {
-                    notesData.guitarFretboard[note].forEach(pos => { if (pos.fret <= NUM_FRETS) notePositions.add(JSON.stringify({note, ...pos})); });
+            if (state.exerciseType === 'armonia' && playingNotes.length > 1) {
+                const playableVoicing = findPlayableChordVoicingOnFretboard(playingNotes);
+                if (playableVoicing) {
+                    playableVoicing.forEach(pos => notePositions.add(JSON.stringify(pos)));
                 }
-            });
+            } else {
+                playingNotes.forEach(note => {
+                    if (notesData.guitarFretboard[note]) {
+                        notesData.guitarFretboard[note].forEach(pos => { if (pos.fret >= minF && pos.fret <= maxF) notePositions.add(JSON.stringify({note, ...pos})); });
+                    }
+                });
+            }
 
             notePositions.forEach((posString) => {
                 const {note, string, fret} = JSON.parse(posString);
@@ -3006,14 +4271,14 @@
             renderer.resize(containerWidth, containerHeight);
             const context = renderer.getContext();
 
-            const logicalWidth = 340, logicalHeight = 225;
+            const logicalWidth = 480, logicalHeight = 225;
             const svgElement = ui.staveContainer.querySelector("svg");
             if (svgElement) {
                 svgElement.setAttribute("viewBox", `0 0 ${logicalWidth} ${logicalHeight}`);
                 svgElement.setAttribute("preserveAspectRatio", "xMidYMid meet");
             }
 
-            const stave = new VF.Stave(10, 40, logicalWidth - 20); 
+            const stave = new VF.Stave(12, 40, logicalWidth - 24); 
             const vfClef = ui.clefSelect.value === 'G' ? 'treble' : (ui.clefSelect.value === 'F' ? 'bass' : 'alto');
             stave.addClef(vfClef).addTimeSignature(ui.timeSigSelect.value);
 
@@ -3040,14 +4305,41 @@
             }
 
             const vfNotes = []; const activeAccidentals = {};
-            contentToDraw.forEach((item) => {
-                if (!item || item.length === 0) return;
-                const isChord = Array.isArray(item);
-                const rawNotes = isChord ? [...item].sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b]) : [item];
-                const keys = rawNotes.map(n => n.toLowerCase().replace('##', '##').replace('bb', 'bb'));
+            const beamGroupsMap = {};
+            const restPositionKey = vfClef === 'treble' ? 'b/4' : (vfClef === 'bass' ? 'd/3' : 'c/4');
+            let totalVoiceBeats = 0;
 
-                const staveNote = new VF.StaveNote({ clef: vfClef, keys: keys, duration: "q" });
-                staveNote.hasStem = () => false;
+            contentToDraw.forEach((item) => {
+                if (!item) return;
+                const isRhythmObj = typeof item === 'object' && !Array.isArray(item);
+                const isChord = Array.isArray(item);
+
+                if (isRhythmObj && item.isRest) {
+                    const restNote = new VF.StaveNote({ clef: vfClef, keys: [restPositionKey], duration: "qr" });
+                    restNote.customTexts = [];
+                    vfNotes.push(restNote);
+                    totalVoiceBeats += item.beats || 1;
+                    return;
+                }
+
+                const rawNotes = isChord
+                    ? [...item].sort((a,b) => notesData.chromaticMap[a] - notesData.chromaticMap[b])
+                    : [isRhythmObj ? item.note : item];
+                if (!rawNotes[0]) return;
+
+                const keys = rawNotes.map(n => n.toLowerCase().replace('##', '##').replace('bb', 'bb'));
+                const noteDuration = isRhythmObj ? (item.duration || "q") : "q";
+                const showStems = state.exerciseType === 'melodia' && state.rhythmMode !== 'quarters';
+
+                const staveNote = new VF.StaveNote({
+                    clef: vfClef,
+                    keys: keys,
+                    duration: noteDuration,
+                    auto_stem: showStems
+                });
+                if (!showStems) {
+                    staveNote.hasStem = () => false;
+                }
 
                 keys.forEach((key, keyIndex) => {
                     const noteLetter = key.charAt(0);
@@ -3090,53 +4382,77 @@
                 }
                 staveNote.customTexts = customTexts;
                 vfNotes.push(staveNote);
+                totalVoiceBeats += isRhythmObj ? (item.beats || 1) : 1;
+
+                if (isRhythmObj && item.beamGroup) {
+                    if (!beamGroupsMap[item.beamGroup]) beamGroupsMap[item.beamGroup] = [];
+                    beamGroupsMap[item.beamGroup].push(staveNote);
+                }
             });
 
-            const voice = new VF.Voice({ num_beats: contentToDraw.length, beat_value: 4 });
+            // Importante: Crear los VF.Beam con auto_stem=true ANTES de formatear y dibujar la voz
+            const beamsToDraw = [];
+            Object.values(beamGroupsMap).forEach(group => {
+                if (group.length > 1) {
+                    beamsToDraw.push(new VF.Beam(group, true));
+                }
+            });
+
+            const voice = new VF.Voice({ num_beats: Math.max(1, Math.round(totalVoiceBeats)), beat_value: 4 });
             voice.setStrict(false); voice.addTickables(vfNotes);
-            new VF.Formatter().joinVoices([voice]).format([voice], logicalWidth - 80);
+            const usableStaveWidth = Math.max(200, (stave.getNoteEndX() - stave.getNoteStartX()) - 28);
+            new VF.Formatter().joinVoices([voice]).format([voice], usableStaveWidth);
             voice.draw(context, stave);
+            beamsToDraw.forEach(b => b.setContext(context).draw());
+
+            state.notePositionsX = vfNotes.map(n => n.getAbsoluteX());
 
             if (svgElement) {
-                const annGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                vfNotes.forEach(note => {
-                    if (note.customTexts && note.customTexts.length > 0) {
-                        const x = note.getAbsoluteX();
-                        note.customTexts.forEach(ann => {
+                vfNotes.forEach((vfNote, idx) => {
+                    if (vfNote.customTexts && vfNote.customTexts.length > 0) {
+                        const x = state.notePositionsX[idx] + 6;
+                        vfNote.customTexts.forEach(ct => {
                             const textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                            textEl.textContent = ann.text; textEl.setAttribute("x", x); textEl.setAttribute("y", ann.position === 'top' ? 25 : 180 + (ann.offset || 0));
-                            textEl.style.fontFamily = "Inter, sans-serif"; textEl.style.fontSize = `${ann.size}px`; textEl.style.fontWeight = "900"; 
-                            textEl.setAttribute("fill", "#000000"); textEl.setAttribute("text-anchor", "middle");
-                            annGroup.appendChild(textEl);
+                            textEl.setAttribute("x", x);
+                            const y = ct.position === 'top' ? 32 : (175 + (ct.offset || 0));
+                            textEl.setAttribute("y", y);
+                            textEl.setAttribute("text-anchor", "middle");
+                            textEl.setAttribute("font-family", "Inter, sans-serif");
+                            textEl.setAttribute("font-weight", "bold");
+                            textEl.setAttribute("font-size", `${ct.size || 14}px`);
+                            textEl.setAttribute("fill", "#10b981");
+                            textEl.textContent = ct.text;
+                            svgElement.appendChild(textEl);
                         });
                     }
                 });
 
-                let guideLine = document.getElementById('guide-line');
-                if (!guideLine) {
-                    guideLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                    guideLine.setAttribute('id', 'guide-line');
-                    guideLine.setAttribute('y1', '5'); guideLine.setAttribute('y2', '210');
-                    guideLine.setAttribute('stroke', 'rgba(56, 189, 248, 0.8)'); guideLine.setAttribute('stroke-width', '2');
-                    guideLine.style.display = 'none'; guideLine.style.transition = 'transform 0.05s linear';
-                    annGroup.appendChild(guideLine);
-                    ui.guideLine = guideLine;
-                }
-                svgElement.appendChild(annGroup);
+                let guideLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                guideLine.setAttribute('id', 'guide-line');
+                guideLine.setAttribute('y1', '5'); guideLine.setAttribute('y2', '165');
+                guideLine.setAttribute('stroke', 'rgba(56, 189, 248, 0.8)'); guideLine.setAttribute('stroke-width', '2');
+                guideLine.style.display = 'none'; guideLine.style.transition = 'transform 0.05s linear';
+                svgElement.appendChild(guideLine);
+                ui.guideLine = guideLine;
             }
-            state.notePositionsX = vfNotes.map(n => n.getAbsoluteX());
         }
 
-        function updateGuidePosition(currentEvent = null) {
-            if (state.exerciseStarted && !state.visualIsPreRoll && currentEvent && state.micEnabled) {
-                const staveNotes = document.querySelectorAll('#stave-container .vf-stavenote');
-                staveNotes.forEach((noteEl, index) => {
-                    let targetBeat = index + 1;
-                    if (state.exerciseType === 'armonia' && state.notesPerChord === 4) targetBeat = (index * 2) + 1;
-                    
-                    const hitKey = `${currentEvent.measureIndex}-${targetBeat}`;
-                    const status = state.score?.status?.[hitKey] || 'waiting';
-
+        function updateGuidePosition(currentEvent) {
+            const svgElement = ui.staveContainer.querySelector("svg");
+            if (svgElement && currentEvent && !currentEvent.isPreRoll && (state.micEnabled || state.midiEnabled)) {
+                const targetMeasureIdx = currentEvent.displayedMeasureIndex !== undefined
+                    ? currentEvent.displayedMeasureIndex
+                    : currentEvent.measureIndex;
+                const noteGroups = svgElement.querySelectorAll('.vf-stavenote');
+                noteGroups.forEach((noteEl, idx) => {
+                    let hitKey;
+                    if (state.exerciseType === 'melodia') {
+                        hitKey = `${targetMeasureIdx}-${idx + 1}`;
+                    } else {
+                        const targetBeat = (state.notesPerChord === 4) ? (idx * 2) + 1 : (idx + 1);
+                        hitKey = `${targetMeasureIdx}-${targetBeat}`;
+                    }
+                    const status = state.score.status[hitKey];
                     let noteColor = status === 'hit' ? '#34d399' : (status === 'imprecise' ? '#facc15' : (status === 'miss' ? '#ef4444' : ''));
                     if (noteColor && noteEl.dataset.currentColor !== noteColor) {
                         noteEl.querySelectorAll('path, rect').forEach(el => {
@@ -3153,8 +4469,12 @@
                 if (ui.guideLine) ui.guideLine.style.display = 'none'; 
             } else if (ui.guideLine && state.notePositionsX && state.notePositionsX.length > 0) {
                 ui.guideLine.style.display = 'block';
-                let beatIndex = state.currentVisualBeat - 1;
-                if (state.exerciseType === 'armonia' && state.notesPerChord === 4) beatIndex = Math.floor(beatIndex / 2);
+                ui.guideLine.setAttribute('stroke', 'rgba(56, 189, 248, 0.8)');
+                let beatIndex = (currentEvent && currentEvent.activeNoteIndex !== undefined)
+                    ? currentEvent.activeNoteIndex
+                    : (state.currentVisualBeat - 1);
+                if (state.exerciseType === 'armonia' && state.notesPerChord === 4) beatIndex = Math.floor((state.currentVisualBeat - 1) / 2);
+                beatIndex = Math.min(beatIndex, state.notePositionsX.length - 1);
                 if (beatIndex >= 0 && beatIndex < state.notePositionsX.length) {
                     ui.guideLine.setAttribute('transform', `translate(${state.notePositionsX[beatIndex] + 12}, 0)`);
                 }
@@ -3163,17 +4483,15 @@
 
         const tutorialSteps = [
              { id: 'main-content', text: '<h2 class="text-2xl font-bold text-emerald-400">¡Bienvenido a Lectura a Primera Vista!</h2><p>Esta aplicación está pensada principalmente para guitarristas, pero es una herramienta versátil para cualquier músico.</p><p class="mt-2">La sección de <strong>Melodía</strong> y la <strong>Armonía a 2 voces (intervalos)</strong> están disponibles en clave de Sol, Fa y Do.</p><p class="mt-2">La <strong>Armonía a 3 y 4 voces</strong> ha sido diseñada específicamente con la guitarra en mente, por lo que estos ejercicios solo están disponibles en <strong>clave de Sol</strong>.</p><p class="mt-4">¡Vamos a explorar cómo funciona!</p>' },
-             { id: 'user-info-panel', text: '<h3><strong>2. Panel de Usuario</strong></h3><p>Aquí puedes ver tu nombre de perfil, tu racha de práctica diaria y gestionar tus datos:</p><ul><li class="mt-2"><strong>Historial (Atajo: H):</strong> Abre una ventana para ver un registro de tus sesiones de práctica y tus debilidades actuales.</li><li class="mt-2"><strong>Usuario (Atajo: U):</strong> Guarda tu progreso y te permite cambiar de perfil.</li><li class="mt-2"><strong>Exportar / Importar (Atajos: X / I):</strong> Descarga tu progreso en un archivo (.json) para respaldarlo.</li></ul>' },
-             { id: 'exercise-type-control', text: '<h3><strong>3. Tipo de Ejercicio</strong></h3><p>Elige tu modo de práctica:</p><ul><li class="mt-2"><strong>Melodía:</strong> Para notas individuales.</li><li class="mt-2"><strong>Armonía:</strong> Para notas simultáneas.</li></ul><p class="mt-2">Puedes cambiar rápidamente entre modos con la tecla <strong>E</strong>.</p>' },
-             { id: 'harmony-options-container', text: '<h3><strong>4. Opciones de Armonía</strong></h3><p>Si eliges <strong>Armonía</strong>, podrás configurar:</p><ul><li class="mt-2"><strong>Notas:</strong> Define si practicarás con 2, 3 o 4 notas.</li><li class="mt-2"><strong>Filtros:</strong> Elige tipos de intervalos, acordes o voicings. ¡Usa <strong>Personalizado</strong> para más control!</li></ul>' },
-             { id: 'difficulty-select', text: '<h3><strong>5. Nivel de Dificultad</strong></h3><p>Ajusta la complejidad y el rango de notas:</p><ul class="text-sm mt-2"><li class="mt-2"><strong>Básico:</strong> Rango limitado (Mi4 a Fa5).</li><li class="mt-2"><strong>Medio:</strong> Rango intermedio (Mi3 a La5).</li><li class="mt-2"><strong>Avanzado:</strong> Todo el registro del instrumento (Mi3 a Mi6).</li></ul>' },
-             { id: 'clef-select', text: `<h3><strong>6. Configuración del Pentagrama</strong></h3><p>Personaliza la escritura musical:</p><ul><li class="mt-2"><strong>Clave:</strong> Elige entre Sol, Fa y Do (Atajo: <strong>C</strong>).</li><li class="mt-2"><strong>Armadura:</strong> Selecciona la tonalidad (solo en modo Melodía).</li><li class="mt-2"><strong>Compás:</strong> Define el compás del ejercicio.</li></ul>` },
-             { id: 'tempo', text: '<h3><strong>7. Duración y Velocidad</strong></h3><ul><li class="mt-2"><strong>Tempo (BPM):</strong> Establece la velocidad del metrónomo.</li><li class="mt-2"><strong>Compases:</strong> Elige cuántos compases durará el ejercicio.</li></ul>' },
-             { id: 'change-beat-control', text: '<h3><strong>8. Lectura Adelantada</strong></h3><p>Una herramienta clave para mejorar tu fluidez. Elige en qué <strong>pulso</strong> del compás actual quieres que aparezcan las notas del <strong>siguiente compás</strong>. ¡Esto te fuerza a leer siempre por delante!</p>' },
-             { id: 'info-aids-container', text: '<h3><strong>9. Ayudas de Lectura</strong></h3><p>Activa estas opciones para facilitar el aprendizaje:</p><ul><li class="mt-2"><strong>Nombres (Atajo: N):</strong> Muestra el nombre de las notas.</li><li class="mt-2"><strong>Guía (Atajo: G):</strong> Muestra una línea vertical que se mueve pulso a pulso.</li></ul>' },
-             { id: 'visual-aids-container', text: '<h3><strong>10. Ayudas Interactivas</strong></h3><p>Usa estas herramientas para una práctica más completa:</p><ul><li class="mt-2"><strong>Mástil (Atajo: M):</strong> Visualiza las notas en un diapasón de guitarra.</li><li class="mt-2"><strong>Sonido (Atajo: S):</strong> Reproduce cada nota o acorde.</li><li class="mt-2"><strong>Enarmónicos (Atajo: A):</strong> Elige si prefieres ver ♯ o ♭ en el mástil.</li><li class="mt-2 text-emerald-400"><strong>Micrófono (Atajo: R):</strong> Actívalo para que la app evalúe si tocas la nota correcta.</li></ul>' },
-             { id: 'audio-controls-container', text: '<h3><strong>11. Controles de Audio</strong></h3><p>Personaliza el sonido a tu gusto:</p><ul><li class="mt-2"><strong>Metrónomo (Atajo: K):</strong> Activa o desactiva el clic. Puedes usar la voz en español que cuenta para guiarte.</li><li class="mt-2"><strong>Volúmenes:</strong> Ajusta el volumen del sonido y del metrónomo.</li></ul>' },
-             { id: 'startStopButton', text: '<h3><strong>12. Resumen de Atajos</strong></h3><p>Usa los botones o los atajos del teclado para manejar el ejercicio de forma más fluida.</p><p class="mt-2"><strong>Controles (Barra Espaciadora o Clic en Pentagrama):</strong></p><ul><li class="mt-1">Un toque para Iniciar/Pausar, doble toque para Detener. Oculta el modal de fin.</li></ul><p class="mt-2"><strong>Teclas Rápidas:</strong></p><ul class="grid grid-cols-2 sm:grid-cols-3 gap-x-2 text-sm mt-2"><li><strong>U:</strong> Usuario</li><li><strong>H:</strong> Historial</li><li><strong>X/I:</strong> Export / Import</li><li><strong>E:</strong> Tipo de Ejercicio</li><li><strong>C:</strong> Cambiar Clave</li><li><strong>N:</strong> Ver Nombres</li><li><strong>G:</strong> Guía Visual</li><li><strong>M:</strong> Ver Mástil</li><li><strong>S:</strong> Activar Sonido</li><li><strong>K:</strong> Metrónomo</li><li><strong>A:</strong> ♯ / ♭</li><li><strong>R:</strong> Micrófono</li><li><strong>T:</strong> Afinador</li><li><strong>F:</strong> Pantalla Comp.</li><li><strong>V:</strong> Ocultar Info</li><li><strong>?:</strong> Tutorial</li></ul>' }
+             { id: 'user-info-panel', text: '<h3><strong>2. Panel de Usuario y Progreso</strong></h3><p>Aquí puedes ver tu perfil, tu barra de <strong>XP</strong>, tu racha diaria y gestionar tus estadísticas:</p><ul><li class="mt-2"><strong>🏆 Logros (Atajo: L):</strong> Consulta las medallas desbloqueadas.</li><li class="mt-2"><strong>☀️ Tema (Atajo: D):</strong> Alterna entre modo oscuro y claro.</li><li class="mt-2"><strong>Historial (Atajo: H):</strong> Revisa tus sesiones, estadísticas globales y puntos débiles.</li><li class="mt-2"><strong>Usuario (Atajo: U) y Exportar/Importar (X / I):</strong> Cambia de perfil o respalda tus datos en un archivo <code>.json</code>.</li><li class="mt-2"><strong>🔥 Mapa de Calor (Atajo: B):</strong> Visualiza tu porcentaje de acierto en cada nota.</li></ul>' },
+             { id: 'exercise-type-control', text: '<h3><strong>3. Tipo de Ejercicio</strong></h3><p>Elige tu modo de práctica:</p><ul><li class="mt-2"><strong>Melodía:</strong> Lectura de líneas melódicas individuales con variedad rítmica y cromática.</li><li class="mt-2"><strong>Armonía:</strong> Lectura de intervalos (2 notas), tríadas (3 notas) y cuatríadas con Drops (4 notas).</li></ul><p class="mt-2">Puedes cambiar rápidamente entre ambos modos con la tecla <strong>E</strong>.</p>' },
+             { id: 'harmony-options-container', text: '<h3><strong>4. Opciones de Armonía y Progresiones</strong></h3><p>Si eliges <strong>Armonía</strong>, podrás configurar:</p><ul><li class="mt-2"><strong>Notas y Filtros:</strong> Define si practicarás con 2, 3 o 4 voces y filtra por intervalos, inversiones o voicings (Drops).</li><li class="mt-2"><strong>Progresión:</strong> En 3 y 4 voces puedes elegir acordes aleatorios o practicar cadencias reales como <strong>I - IV - V - I</strong>, <strong>II - V - I</strong> o <strong>I - VI - II - V</strong>.</li></ul>' },
+             { id: 'difficulty-select', text: '<h3><strong>5. Nivel de Dificultad y Posición</strong></h3><p>Ajusta la complejidad y el rango de notas:</p><ul class="text-sm mt-2"><li class="mt-2"><strong>Básico:</strong> Rango limitado (Mi4 a Fa5).</li><li class="mt-2"><strong>Medio:</strong> Rango intermedio (Mi3 a La5).</li><li class="mt-2"><strong>Avanzado:</strong> Todo el registro del instrumento (Mi3 a Mi6).</li></ul><p class="mt-2 text-sm">Además, con <strong>Posición Mástil</strong> puedes limitar las notas a una zona específica del diapasón (Abierta 0-IV, Posición I, V o IX).</p>' },
+             { id: 'clef-select', text: '<h3><strong>6. Pentagrama, Ritmo y Cromatismo</strong></h3><p>Personaliza la escritura musical:</p><ul><li class="mt-2"><strong>Clave (Atajo: C), Armadura y Compás:</strong> Elige entre Sol, Fa y Do, la tonalidad y la métrica.</li><li class="mt-2"><strong>Figuras Rítmicas:</strong> Practica con negras, blancas, corcheas y silencios.</li><li class="mt-2"><strong>Cromatismo:</strong> Añade alteraciones accidentales (♯, ♭ o ambas) fuera de la armadura.</li><li class="mt-2"><strong>🥁 Tap Tempo:</strong> Haz clic varias veces sobre el botón Tap para fijar los BPM a tu propio pulso.</li></ul>' },
+             { id: 'change-beat-control', text: '<h3><strong>7. Lectura Adelantada y Acelerador</strong></h3><ul><li class="mt-2"><strong>Adelantar Compás (Pulso):</strong> Entrena tu vista mostrando el compás siguiente en el pulso que elijas (4, 3, 2 o 1) mientras terminas de contar y tocar el compás actual.</li><li class="mt-2"><strong>🚀 Acelerador (+5 BPM):</strong> Incrementa automáticamente la velocidad en 5 BPM cada 2 compases perfectos.</li></ul>' },
+             { id: 'visual-aids-container', text: '<h3><strong>8. Ayudas Interactivas</strong></h3><p>Usa estas herramientas para una práctica más completa:</p><ul><li class="mt-2"><strong>Nombres (Atajo: N) y Guía (Atajo: G):</strong> Muestra el nombre o cifrado de las notas y la línea guía de pulso.</li><li class="mt-2"><strong>Mástil (Atajo: M) y Enarmónicos (Atajo: A):</strong> Visualiza las notas o acordes en el diapasón con ♯ o ♭.</li><li class="mt-2"><strong>Sonido (Atajo: S):</strong> Escucha cada nota o acorde en tiempo real.</li><li class="mt-2 text-emerald-400"><strong>Micrófono (Atajo: R):</strong> Actívalo para que la app evalúe si tocas la nota correcta.</li><li class="mt-2 text-purple-400"><strong>MIDI (Atajo: J):</strong> Conecta un instrumento o interfaz USB/MIDI.</li></ul>' },
+             { id: 'audio-controls-container', text: '<h3><strong>9. Controles de Audio</strong></h3><p>Personaliza el sonido a tu gusto:</p><ul><li class="mt-2"><strong>Metrónomo (Atajo: K):</strong> Elige entre el clic Clásico, Batería (Groove) o Voz contando en español/inglés.</li><li class="mt-2"><strong>Timbre y Volúmenes:</strong> Alterna entre sonido de 🎸 Guitarra o 🎹 Sintetizador y regula los volúmenes de forma independiente.</li></ul>' },
+             { id: 'startStopButton', text: '<h3><strong>10. Modos de Juego y Resumen de Atajos</strong></h3><p>Además del modo libre, reta tus habilidades con el <strong>⭐ Reto Diario</strong>, <strong>🔥 Supervivencia</strong>, <strong>🎯 Atacar Debilidades</strong> y el <strong>🎓 Modo Carrera</strong>.</p><p class="mt-2"><strong>Controles (Barra Espaciadora o Clic en Pentagrama):</strong></p><ul><li class="mt-1">Un toque para Iniciar/Pausar, doble toque para Detener. <strong>Enter, Espacio o Esc</strong> cierran el Afinador o los Resultados.</li></ul><p class="mt-2"><strong>Teclas Rápidas:</strong></p><ul class="grid grid-cols-2 sm:grid-cols-3 gap-x-2 text-sm mt-2"><li><strong>U:</strong> Usuario</li><li><strong>H:</strong> Historial</li><li><strong>L:</strong> Logros</li><li><strong>B:</strong> Mapa Calor</li><li><strong>D:</strong> Tema Claro/Osc.</li><li><strong>X/I:</strong> Export / Import</li><li><strong>E:</strong> Tipo Ejercicio</li><li><strong>C:</strong> Cambiar Clave</li><li><strong>N:</strong> Ver Nombres</li><li><strong>G:</strong> Guía Visual</li><li><strong>M:</strong> Ver Mástil</li><li><strong>S:</strong> Activar Sonido</li><li><strong>K:</strong> Metrónomo</li><li><strong>A:</strong> ♯ / ♭</li><li><strong>R:</strong> Micrófono</li><li><strong>J:</strong> MIDI</li><li><strong>T:</strong> Afinador</li><li><strong>F:</strong> Pantalla Comp.</li><li><strong>V:</strong> Ocultar Info</li><li><strong>?:</strong> Tutorial</li></ul>' }
         ];
         let currentTutorialStep = 0;
         function showTutorial() { currentTutorialStep = 0; ui.tutorialModal.classList.remove('hidden'); updateTutorialStep(); }
