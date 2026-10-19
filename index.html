@@ -1508,7 +1508,7 @@
                 selectedCustomIntervals: new Set(['2', '3', '4', '5', '6', '7']), selectedCustomTriads: new Set(['triad_fundamental', 'triad_inv1', 'triad_inv2', 'shell_voicing']), selectedCustomVoicings: new Set(['drop2', 'drop3']), selectedCustomQuadChordTypes: new Set(['maj7', 'm7', 'dom7']), selectedCustomQuadInversions: new Set(['0', '1', '2', '3']),
                 lastMelodicNote: null, showFretboard: false, soundEnabled: false, metronomeEnabled: true, noteVolume: 0.3, metronomeVolume: 0.6, metronomeSound: 'classic', displayedMeasureContent: [], enharmonicPreference: 'auto',
                 manualNotesToDisplay: null,
-                logicalMetronomeCount: 0, logicalMeasureIndex: -1, logicalIsPreRoll: false, visualIsPreRoll: false,
+                logicalMetronomeCount: 0, logicalSubBeat: 0, logicalMeasureIndex: -1, logicalIsPreRoll: false, visualIsPreRoll: false,
                 visualQueue: [], activeVisualEvent: null, currentDisplayedContent: null, drawFrameId: null,
                 currentVisualBeat: 1, totalPausedTime: 0, pauseStartTimeReal: null, showDisplayInfo: true,
                 micEnabled: false, scheduledSynthNotes: [], tunerSoundPlayed: false, tunerLastNote: null,
@@ -2704,6 +2704,9 @@
 
                 await initAudioEngine();
                 state.keySignature = ui.keySigSelect.value;
+                state.rhythmMode = ui.rhythmSelect ? ui.rhythmSelect.value : 'quarters';
+                state.chromaticMode = ui.chromaticSelect ? ui.chromaticSelect.value : 'none';
+                state.chromaticAccidentalType = ui.chromaticAccidentalSelect ? ui.chromaticAccidentalSelect.value : 'both';
                 state.measuresChangeBeat = parseInt(ui.changeBeatSelect.value, 10) || state.timeSignatureBeats;
                 state.exerciseStartTime = new Date();
                 handleMeasuresChange(); 
@@ -2724,7 +2727,7 @@
                 Object.assign(state, { 
                     exerciseStarted: true, isPlaying: true, isPaused: false, 
                     logicalIsPreRoll: true, visualIsPreRoll: true,
-                    logicalMetronomeCount: 0, logicalMeasureIndex: -1,
+                    logicalMetronomeCount: 0, logicalSubBeat: 0.5, logicalMeasureIndex: -1,
                     visualQueue: [], activeVisualEvent: null, currentDisplayedContent: null,
                     currentVisualBeat: 1
                 });
@@ -2925,7 +2928,7 @@
             Object.assign(state, { 
                 exerciseStarted: false, isPlaying: false, isPaused: false, 
                 logicalIsPreRoll: false, visualIsPreRoll: false,
-                logicalMeasureIndex: -1, logicalMetronomeCount: 0,
+                logicalMeasureIndex: -1, logicalMetronomeCount: 0, logicalSubBeat: 0,
                 currentMeasureIndex: -1, currentMetronomeCount: 0,
                 lastMelodicNote: null, currentDisplayedContent: null, exerciseStartTime: null,
                 pauseStartTimeReal: null, activeVisualEvent: null, isDailyChallenge: false,
@@ -3211,154 +3214,138 @@
         function scheduler() {
             if (!state.isPlaying || state.isPaused) return;
             while (audio.nextNoteTime < audio.context.currentTime + audio.scheduleAheadTime) {
-                const tempo = parseInt(ui.tempoInput.value, 10); 
+                const tempo = parseInt(ui.tempoInput.value, 10) || 60;
                 const beatDuration = 60.0 / tempo;
-                
-                state.logicalMetronomeCount++; 
-                if (state.logicalMetronomeCount > state.timeSignatureBeats) state.logicalMetronomeCount = 1;
-                
-                playMetronomeSound(audio.nextNoteTime, state.logicalMetronomeCount === 1, state.logicalMetronomeCount);
+                const halfBeatDuration = beatDuration * 0.5;
 
-                let playingNotes = [];
-                let rootNoteNameForFretboard = null;
-                let displayedContent = null;
+                if (state.logicalSubBeat === 0.5) {
+                    state.logicalSubBeat = 0;
+                    state.logicalMetronomeCount++;
+                    if (state.logicalMetronomeCount > state.timeSignatureBeats) state.logicalMetronomeCount = 1;
+                } else {
+                    state.logicalSubBeat = 0.5;
+                }
+
+                const isDownBeat = state.logicalSubBeat === 0;
 
                 if (state.logicalIsPreRoll) {
-                    displayedContent = state.exerciseMeasures.length > 0 ? state.exerciseMeasures[0] : [];
-                    state.visualQueue.push({
-                        time: audio.nextNoteTime, type: 'tick', isPreRoll: true,
-                        metronomeCount: state.logicalMetronomeCount, measureIndex: -1,
-                        displayedMeasureIndex: 0, isEarlyPreview: false, renderKey: '0',
-                        displayedContent: displayedContent, playingNotes: [], rootName: null
-                    });
-                    if (state.logicalMetronomeCount === state.timeSignatureBeats) state.logicalIsPreRoll = false; 
-                } else {
+                    if (isDownBeat) {
+                        playMetronomeSound(audio.nextNoteTime, state.logicalMetronomeCount === 1, state.logicalMetronomeCount);
+                        const displayedContent = state.exerciseMeasures.length > 0 ? state.exerciseMeasures[0] : [];
+                        state.visualQueue.push({
+                            time: audio.nextNoteTime, type: 'tick', isPreRoll: true,
+                            metronomeCount: state.logicalMetronomeCount, measureIndex: -1,
+                            displayedMeasureIndex: 0, isEarlyPreview: false, renderKey: '0',
+                            displayedContent: displayedContent, playingNotes: [], rootName: null
+                        });
+                    } else if (state.logicalMetronomeCount === state.timeSignatureBeats) {
+                        state.logicalIsPreRoll = false;
+                    }
+                } else if (isDownBeat) {
                     if (state.logicalMetronomeCount === 1) {
-                         if (state.logicalMeasureIndex >= 0 && (state.micEnabled || state.midiEnabled)) {
-                             const prevIdx = state.logicalMeasureIndex;
-                             let totalInMeasure = 0;
-                             let hitsInMeasure = 0;
-                             const measureKeys = Object.keys(state.score.expectedNotes).filter(k => k.startsWith(`${prevIdx}-`));
-                             measureKeys.forEach(k => {
-                                 totalInMeasure++;
-                                 const st = state.score.status[k];
-                                 const noteObj = state.score.expectedNotes[k];
-                                 if (st === 'hit' || st === 'imprecise') {
-                                     hitsInMeasure++;
-                                 } else if (st === 'waiting' && noteObj) {
-                                     const noteEndWindow = noteObj.time + Math.max(0.28, (noteObj.durationSec || beatDuration) * 0.75);
-                                     if (audio.nextNoteTime > noteEndWindow) {
-                                         state.score.status[k] = 'miss';
-                                         noteObj.status = 'miss';
-                                     }
-                                 }
-                             });
+                        if (state.logicalMeasureIndex >= 0 && (state.micEnabled || state.midiEnabled)) {
+                            const prevIdx = state.logicalMeasureIndex;
+                            let totalInMeasure = 0;
+                            let hitsInMeasure = 0;
+                            const measureKeys = Object.keys(state.score.expectedNotes).filter(k => k.startsWith(`${prevIdx}-`));
+                            measureKeys.forEach(k => {
+                                totalInMeasure++;
+                                const st = state.score.status[k];
+                                const noteObj = state.score.expectedNotes[k];
+                                if (st === 'hit' || st === 'imprecise') {
+                                    hitsInMeasure++;
+                                } else if (st === 'waiting' && noteObj) {
+                                    const noteEndWindow = noteObj.time + Math.max(0.28, (noteObj.durationSec || beatDuration) * 0.75);
+                                    if (audio.nextNoteTime > noteEndWindow) {
+                                        state.score.status[k] = 'miss';
+                                        noteObj.status = 'miss';
+                                    }
+                                }
+                            });
 
-                             if (totalInMeasure > 0 && hitsInMeasure === totalInMeasure) {
-                                 state.consecutivePerfectMeasures++;
-                                 if (state.speedTrainer && state.consecutivePerfectMeasures % 2 === 0) {
-                                     const curBpm = parseInt(ui.tempoInput.value, 10) || 60;
-                                     ui.tempoInput.value = Math.min(240, curBpm + 5);
-                                 }
-                             } else {
-                                 state.consecutivePerfectMeasures = 0;
-                             }
-                             state.logicalMeasureIndex++;
-                         } else {
-                             if (state.logicalMeasureIndex === -1) state.logicalMeasureIndex = 0; 
-                             else state.logicalMeasureIndex++; 
-                         }
-                         
-                         if (state.isSurvivalMode && state.logicalMeasureIndex + 1 >= state.measuresPerExercise) {
-                             state.exerciseMeasures.push(...generateExercise());
-                             state.measuresPerExercise = state.exerciseMeasures.length;
-                         }
-                         
-                        if (!state.isSurvivalMode && state.logicalMeasureIndex >= state.measuresPerExercise) { 
+                            if (totalInMeasure > 0 && hitsInMeasure === totalInMeasure) {
+                                state.consecutivePerfectMeasures++;
+                                if (state.speedTrainer && state.consecutivePerfectMeasures % 2 === 0) {
+                                    const curBpm = parseInt(ui.tempoInput.value, 10) || 60;
+                                    ui.tempoInput.value = Math.min(240, curBpm + 5);
+                                }
+                            } else {
+                                state.consecutivePerfectMeasures = 0;
+                            }
+                            state.logicalMeasureIndex++;
+                        } else {
+                            if (state.logicalMeasureIndex === -1) state.logicalMeasureIndex = 0;
+                            else state.logicalMeasureIndex++;
+                        }
+
+                        if (state.isSurvivalMode && state.logicalMeasureIndex + 1 >= state.measuresPerExercise) {
+                            state.exerciseMeasures.push(...generateExercise());
+                            state.measuresPerExercise = state.exerciseMeasures.length;
+                        }
+
+                        if (!state.isSurvivalMode && state.logicalMeasureIndex >= state.measuresPerExercise) {
                             state.visualQueue.push({ time: audio.nextNoteTime + 0.18, type: 'stop' });
-                            state.isPlaying = false; 
+                            state.isPlaying = false;
                             return;
                         }
                     }
 
+                    playMetronomeSound(audio.nextNoteTime, state.logicalMetronomeCount === 1, state.logicalMetronomeCount);
+
                     const contentForPlayback = state.exerciseMeasures[state.logicalMeasureIndex];
-                    const beatIndex = state.logicalMetronomeCount - 1;
+                    const currentBeat = state.logicalMetronomeCount;
+                    const beatIndex = currentBeat - 1;
                     let activeNoteIndexForVisual = beatIndex;
-                    let secondaryEighthEvent = null;
-                    
+                    let playingNotes = [];
+                    let rootNoteNameForFretboard = null;
+
                     if (state.exerciseType === 'melodia') {
-                         if (contentForPlayback && contentForPlayback.length > 0 && typeof contentForPlayback[0] === 'object' && !Array.isArray(contentForPlayback[0])) {
-                             const currentBeat = state.logicalMetronomeCount;
-                             const onBeatItem = contentForPlayback.find(it => it.beat === currentBeat && it.subBeat === 0);
-                             const offBeatItem = contentForPlayback.find(it => it.beat === currentBeat && it.subBeat === 0.5);
-
-                             if (onBeatItem) {
-                                 activeNoteIndexForVisual = onBeatItem.noteIndex;
-                                 if (!onBeatItem.isRest && onBeatItem.note) {
-                                     playingNotes.push(onBeatItem.note);
-                                     const hitKey = `${state.logicalMeasureIndex}-${onBeatItem.noteIndex + 1}`;
-                                     if (!state.score.expectedNotes[hitKey]) {
-                                         state.score.expectedNotes[hitKey] = {
-                                             notes: [onBeatItem.note],
-                                             time: audio.nextNoteTime,
-                                             durationSec: beatDuration * (onBeatItem.beats || 1),
-                                             wrongFrames: 0,
-                                             status: 'waiting'
-                                         };
-                                         state.score.status[hitKey] = 'waiting';
-                                     }
-                                 }
-                             } else {
-                                 // Sustaining a half note started on the previous beat
-                                 const sustainingItem = contentForPlayback.find(it => it.beat < currentBeat && (it.beat + it.beats) > currentBeat);
-                                 if (sustainingItem) {
-                                     activeNoteIndexForVisual = sustainingItem.noteIndex;
-                                     if (!sustainingItem.isRest && sustainingItem.note) {
-                                         playingNotes.push(sustainingItem.note);
-                                     }
-                                 }
-                             }
-
-                             if (offBeatItem && !offBeatItem.isRest && offBeatItem.note) {
-                                 const offBeatTime = audio.nextNoteTime + (beatDuration * 0.5);
-                                 const offHitKey = `${state.logicalMeasureIndex}-${offBeatItem.noteIndex + 1}`;
-                                 if (!state.score.expectedNotes[offHitKey]) {
-                                     state.score.expectedNotes[offHitKey] = {
-                                         notes: [offBeatItem.note],
-                                         time: offBeatTime,
-                                         durationSec: beatDuration * 0.5,
-                                         wrongFrames: 0,
-                                         status: 'waiting'
-                                     };
-                                     state.score.status[offHitKey] = 'waiting';
-                                 }
-                                 if (state.soundEnabled) {
-                                     playNoteSound(offBeatItem.note, offBeatTime, beatDuration * 0.45);
-                                     if (!state.scheduledSynthNotes) state.scheduledSynthNotes = [];
-                                     state.scheduledSynthNotes.push({ start: offBeatTime, end: offBeatTime + (beatDuration * 0.45) });
-                                 }
-                                 secondaryEighthEvent = {
-                                     time: offBeatTime,
-                                     playingNotes: [offBeatItem.note],
-                                     activeNoteIndex: offBeatItem.noteIndex
-                                 };
-                             }
-
-                             if (state.soundEnabled && onBeatItem && !onBeatItem.isRest && onBeatItem.note) {
-                                 const noteDurSec = Math.max(0.25, beatDuration * onBeatItem.beats * 0.9);
-                                 playNoteSound(onBeatItem.note, audio.nextNoteTime, noteDurSec);
-                                 if (!state.scheduledSynthNotes) state.scheduledSynthNotes = [];
-                                 state.scheduledSynthNotes.push({ start: audio.nextNoteTime, end: audio.nextNoteTime + Math.min(0.55, noteDurSec) });
-                             }
-                         } else if (beatIndex >= 0 && contentForPlayback && beatIndex < contentForPlayback.length) {
-                            const note = contentForPlayback[beatIndex]; 
+                        if (contentForPlayback && contentForPlayback.length > 0 && typeof contentForPlayback[0] === 'object' && !Array.isArray(contentForPlayback[0])) {
+                            const onBeatItem = contentForPlayback.find(it => it.beat === currentBeat && it.subBeat === 0);
+                            if (onBeatItem) {
+                                activeNoteIndexForVisual = onBeatItem.noteIndex;
+                                if (!onBeatItem.isRest && onBeatItem.note) {
+                                    playingNotes.push(onBeatItem.note);
+                                    const hitKey = `${state.logicalMeasureIndex}-${onBeatItem.noteIndex + 1}`;
+                                    if (!state.score.expectedNotes[hitKey]) {
+                                        state.score.expectedNotes[hitKey] = {
+                                            notes: [onBeatItem.note],
+                                            time: audio.nextNoteTime,
+                                            durationSec: beatDuration * (onBeatItem.beats || 1),
+                                            wrongFrames: 0,
+                                            status: 'waiting'
+                                        };
+                                        state.score.status[hitKey] = 'waiting';
+                                    }
+                                    if (state.soundEnabled) {
+                                        const beatsVal = onBeatItem.beats || 1;
+                                        const articulationFactor = beatsVal < 1 ? 0.88 : 0.94;
+                                        const noteDurSec = beatDuration * beatsVal * articulationFactor;
+                                        playNoteSound(onBeatItem.note, audio.nextNoteTime, noteDurSec);
+                                        if (!state.scheduledSynthNotes) state.scheduledSynthNotes = [];
+                                        state.scheduledSynthNotes.push({ start: audio.nextNoteTime, end: audio.nextNoteTime + noteDurSec });
+                                    }
+                                }
+                            } else {
+                                // Sustaining a half note started on the previous beat
+                                const sustainingItem = contentForPlayback.find(it => it.beat < currentBeat && (it.beat + it.beats) > currentBeat);
+                                if (sustainingItem) {
+                                    activeNoteIndexForVisual = sustainingItem.noteIndex;
+                                    if (!sustainingItem.isRest && sustainingItem.note) {
+                                        playingNotes.push(sustainingItem.note);
+                                    }
+                                }
+                            }
+                        } else if (beatIndex >= 0 && contentForPlayback && beatIndex < contentForPlayback.length) {
+                            const note = contentForPlayback[beatIndex];
                             playingNotes.push(note);
                             if (state.soundEnabled) {
-                                playNoteSound(note, audio.nextNoteTime);
+                                const noteDurSec = beatDuration * 0.94;
+                                playNoteSound(note, audio.nextNoteTime, noteDurSec);
                                 if (!state.scheduledSynthNotes) state.scheduledSynthNotes = [];
-                                state.scheduledSynthNotes.push({ start: audio.nextNoteTime, end: audio.nextNoteTime + 0.55 });
+                                state.scheduledSynthNotes.push({ start: audio.nextNoteTime, end: audio.nextNoteTime + noteDurSec });
                             }
-                            const hitKey = `${state.logicalMeasureIndex}-${state.logicalMetronomeCount}`;
+                            const hitKey = `${state.logicalMeasureIndex}-${currentBeat}`;
                             if (!state.score.expectedNotes[hitKey]) {
                                 state.score.expectedNotes[hitKey] = {
                                     notes: playingNotes,
@@ -3369,75 +3356,112 @@
                                 };
                                 state.score.status[hitKey] = 'waiting';
                             }
-                         }
+                        }
                     } else {
-                         let itemIndex = beatIndex; 
-                         if (state.notesPerChord === 4) itemIndex = Math.floor(beatIndex / 2);
-                         activeNoteIndexForVisual = itemIndex;
-                         if (itemIndex >= 0 && contentForPlayback && itemIndex < contentForPlayback.length) {
-                             playingNotes = contentForPlayback[itemIndex];
-                             if (playingNotes && playingNotes.length > 1) rootNoteNameForFretboard = getChordName(playingNotes).root; 
-                         }
-                         if (state.soundEnabled && playingNotes && playingNotes.length > 0) {
-                             playingNotes.forEach(note => playNoteSound(note, audio.nextNoteTime));
-                             if (!state.scheduledSynthNotes) state.scheduledSynthNotes = [];
-                             state.scheduledSynthNotes.push({ start: audio.nextNoteTime, end: audio.nextNoteTime + 0.55 });
-                         }
-                         if (playingNotes && playingNotes.length > 0) {
-                             const targetBeat = (state.notesPerChord === 4) ? (Math.floor((state.logicalMetronomeCount - 1) / 2) * 2) + 1 : state.logicalMetronomeCount;
-                             const hitKey = `${state.logicalMeasureIndex}-${targetBeat}`;
-                             if (!state.score.expectedNotes[hitKey]) {
-                                 state.score.expectedNotes[hitKey] = {
-                                     notes: playingNotes,
-                                     time: audio.nextNoteTime,
-                                     durationSec: state.notesPerChord === 4 ? beatDuration * 2 : beatDuration,
-                                     wrongFrames: 0,
-                                     status: 'waiting'
-                                 };
-                                 state.score.status[hitKey] = 'waiting';
-                             }
-                         }
+                        let itemIndex = beatIndex;
+                        if (state.notesPerChord === 4) itemIndex = Math.floor(beatIndex / 2);
+                        activeNoteIndexForVisual = itemIndex;
+                        if (itemIndex >= 0 && contentForPlayback && itemIndex < contentForPlayback.length) {
+                            playingNotes = contentForPlayback[itemIndex];
+                            if (playingNotes && playingNotes.length > 1) rootNoteNameForFretboard = getChordName(playingNotes).root;
+                        }
+                        const shouldStrikeChord = state.notesPerChord !== 4 || (currentBeat % 2 === 1);
+                        const chordBeats = state.notesPerChord === 4 ? 2 : 1;
+                        if (state.soundEnabled && shouldStrikeChord && playingNotes && playingNotes.length > 0) {
+                            const chordDurSec = beatDuration * chordBeats * 0.94;
+                            playingNotes.forEach(note => playNoteSound(note, audio.nextNoteTime, chordDurSec));
+                            if (!state.scheduledSynthNotes) state.scheduledSynthNotes = [];
+                            state.scheduledSynthNotes.push({ start: audio.nextNoteTime, end: audio.nextNoteTime + chordDurSec });
+                        }
+                        if (playingNotes && playingNotes.length > 0) {
+                            const targetBeat = (state.notesPerChord === 4) ? (Math.floor((currentBeat - 1) / 2) * 2) + 1 : currentBeat;
+                            const hitKey = `${state.logicalMeasureIndex}-${targetBeat}`;
+                            if (!state.score.expectedNotes[hitKey]) {
+                                state.score.expectedNotes[hitKey] = {
+                                    notes: playingNotes,
+                                    time: audio.nextNoteTime,
+                                    durationSec: beatDuration * chordBeats,
+                                    wrongFrames: 0,
+                                    status: 'waiting'
+                                };
+                                state.score.status[hitKey] = 'waiting';
+                            }
+                        }
                     }
 
                     const nextMeasureIndex = state.logicalMeasureIndex + 1;
                     const hasNextMeasure = nextMeasureIndex < state.measuresPerExercise && state.exerciseMeasures[nextMeasureIndex];
-
-                    // Adelanta la vista al compás siguiente en el pulso configurado (4, 3, 2 o 1) manteniendo el conteo y evaluación del compás actual
-                    const shouldAdvanceEarly = hasNextMeasure && state.logicalMetronomeCount >= state.measuresChangeBeat;
-
+                    const shouldAdvanceEarly = hasNextMeasure && currentBeat >= state.measuresChangeBeat;
                     const displayedMeasureIndex = shouldAdvanceEarly ? nextMeasureIndex : state.logicalMeasureIndex;
-                    displayedContent = shouldAdvanceEarly ? state.exerciseMeasures[nextMeasureIndex] : contentForPlayback;
-                    const renderKey = shouldAdvanceEarly
-                        ? `${nextMeasureIndex}`
-                        : `${state.logicalMeasureIndex}`;
+                    const displayedContent = shouldAdvanceEarly ? state.exerciseMeasures[nextMeasureIndex] : contentForPlayback;
+                    const renderKey = shouldAdvanceEarly ? `${nextMeasureIndex}` : `${state.logicalMeasureIndex}`;
 
                     let visualNoteIndex = activeNoteIndexForVisual;
                     if (shouldAdvanceEarly && state.exerciseType === 'melodia' && Array.isArray(displayedContent) && displayedContent.length > 0 && typeof displayedContent[0] === 'object' && !Array.isArray(displayedContent[0])) {
-                        const currentBeat = state.logicalMetronomeCount;
                         const itemOnDisplayed = displayedContent.find(it => it.beat === currentBeat && it.subBeat === 0) ||
                             displayedContent.find(it => it.beat < currentBeat && (it.beat + it.beats) > currentBeat);
                         if (itemOnDisplayed) visualNoteIndex = itemOnDisplayed.noteIndex;
                     }
-                    
+
                     state.visualQueue.push({
                         time: audio.nextNoteTime, type: 'tick', isPreRoll: false,
-                        metronomeCount: state.logicalMetronomeCount, measureIndex: state.logicalMeasureIndex,
+                        metronomeCount: currentBeat, measureIndex: state.logicalMeasureIndex,
                         displayedMeasureIndex: displayedMeasureIndex, isEarlyPreview: shouldAdvanceEarly, renderKey: renderKey,
                         displayedContent: displayedContent, playingNotes: playingNotes, rootName: rootNoteNameForFretboard,
                         activeNoteIndex: visualNoteIndex
                     });
+                } else {
+                    // Sub-pulso (contratiempo de corchea: subBeat === 0.5)
+                    const contentForPlayback = state.exerciseMeasures[state.logicalMeasureIndex];
+                    const currentBeat = state.logicalMetronomeCount;
+                    if (state.exerciseType === 'melodia' && contentForPlayback && contentForPlayback.length > 0 && typeof contentForPlayback[0] === 'object' && !Array.isArray(contentForPlayback[0])) {
+                        const offBeatItem = contentForPlayback.find(it => it.beat === currentBeat && it.subBeat === 0.5);
+                        if (offBeatItem && !offBeatItem.isRest && offBeatItem.note) {
+                            const offHitKey = `${state.logicalMeasureIndex}-${offBeatItem.noteIndex + 1}`;
+                            if (!state.score.expectedNotes[offHitKey]) {
+                                state.score.expectedNotes[offHitKey] = {
+                                    notes: [offBeatItem.note],
+                                    time: audio.nextNoteTime,
+                                    durationSec: halfBeatDuration,
+                                    wrongFrames: 0,
+                                    status: 'waiting'
+                                };
+                                state.score.status[offHitKey] = 'waiting';
+                            }
+                            if (state.soundEnabled) {
+                                const offNoteDurSec = halfBeatDuration * 0.88;
+                                playNoteSound(offBeatItem.note, audio.nextNoteTime, offNoteDurSec);
+                                if (!state.scheduledSynthNotes) state.scheduledSynthNotes = [];
+                                state.scheduledSynthNotes.push({ start: audio.nextNoteTime, end: audio.nextNoteTime + offNoteDurSec });
+                            }
 
-                    if (secondaryEighthEvent) {
-                        state.visualQueue.push({
-                            time: secondaryEighthEvent.time, type: 'tick', isPreRoll: false,
-                            metronomeCount: state.logicalMetronomeCount, measureIndex: state.logicalMeasureIndex,
-                            displayedMeasureIndex: displayedMeasureIndex, isEarlyPreview: shouldAdvanceEarly, renderKey: renderKey,
-                            displayedContent: displayedContent, playingNotes: secondaryEighthEvent.playingNotes, rootName: null,
-                            activeNoteIndex: shouldAdvanceEarly ? visualNoteIndex : secondaryEighthEvent.activeNoteIndex
-                        });
+                            const nextMeasureIndex = state.logicalMeasureIndex + 1;
+                            const hasNextMeasure = nextMeasureIndex < state.measuresPerExercise && state.exerciseMeasures[nextMeasureIndex];
+                            const shouldAdvanceEarly = hasNextMeasure && currentBeat >= state.measuresChangeBeat;
+                            const displayedMeasureIndex = shouldAdvanceEarly ? nextMeasureIndex : state.logicalMeasureIndex;
+                            const displayedContent = shouldAdvanceEarly ? state.exerciseMeasures[nextMeasureIndex] : contentForPlayback;
+                            const renderKey = shouldAdvanceEarly ? `${nextMeasureIndex}` : `${state.logicalMeasureIndex}`;
+
+                            let visualNoteIndex = offBeatItem.noteIndex;
+                            if (shouldAdvanceEarly && Array.isArray(displayedContent) && displayedContent.length > 0 && typeof displayedContent[0] === 'object' && !Array.isArray(displayedContent[0])) {
+                                const itemOnDisplayed = displayedContent.find(it => it.beat === currentBeat && it.subBeat === 0.5) ||
+                                    displayedContent.find(it => it.beat === currentBeat && it.subBeat === 0) ||
+                                    displayedContent.find(it => it.beat < currentBeat && (it.beat + it.beats) > currentBeat);
+                                if (itemOnDisplayed) visualNoteIndex = itemOnDisplayed.noteIndex;
+                            }
+
+                            state.visualQueue.push({
+                                time: audio.nextNoteTime, type: 'tick', isPreRoll: false,
+                                metronomeCount: currentBeat, measureIndex: state.logicalMeasureIndex,
+                                displayedMeasureIndex: displayedMeasureIndex, isEarlyPreview: shouldAdvanceEarly, renderKey: renderKey,
+                                displayedContent: displayedContent, playingNotes: [offBeatItem.note], rootName: null,
+                                activeNoteIndex: visualNoteIndex
+                            });
+                        }
                     }
                 }
-                audio.nextNoteTime += beatDuration;
+
+                audio.nextNoteTime += halfBeatDuration;
             }
             state.metronomeTimer = setTimeout(scheduler, audio.lookahead);
         }
@@ -3446,10 +3470,12 @@
             if (!audio.context || !note) return;
             const freq = notesData.noteToFrequency[note];
             if (!freq) return;
-            const dur = Math.max(0.2, customDuration);
+            const dur = Math.max(0.08, customDuration);
+            const vol = Math.max(0.001, state.noteVolume);
+            audio.noteGain.gain.setValueAtTime(1, time);
 
             if (state.synthType === 'guitar') {
-                // Síntesis de cuerda pulsada (Timbre cálido de guitarra con filtro pasa-bajos dinámico)
+                // Síntesis de cuerda pulsada con sostenimiento real durante toda la figura escrita
                 const osc1 = audio.context.createOscillator();
                 const osc2 = audio.context.createOscillator();
                 const filter = audio.context.createBiquadFilter();
@@ -3461,38 +3487,53 @@
                 osc2.frequency.setValueAtTime(freq, time);
                 osc2.detune.setValueAtTime(3, time);
 
+                const attackTime = Math.min(0.008, dur * 0.15);
+                const pluckDecayTime = Math.min(0.10, dur * 0.30);
+                const sustainEndTime = Math.max(pluckDecayTime + 0.01, dur * 0.90);
+
                 filter.type = 'lowpass';
                 filter.frequency.setValueAtTime(freq * 6, time);
-                filter.frequency.exponentialRampToValueAtTime(freq * 1.2, time + Math.min(0.35, dur * 0.6));
-                filter.Q.setValueAtTime(2, time);
+                filter.frequency.exponentialRampToValueAtTime(freq * 2.8, time + pluckDecayTime);
+                filter.frequency.exponentialRampToValueAtTime(freq * 2.0, time + sustainEndTime);
+                filter.Q.setValueAtTime(1.8, time);
 
-                env.gain.setValueAtTime(0.001, time);
-                env.gain.linearRampToValueAtTime(state.noteVolume * 0.9, time + 0.008);
-                env.gain.exponentialRampToValueAtTime(0.001, time + dur);
+                env.gain.setValueAtTime(0.0001, time);
+                env.gain.linearRampToValueAtTime(vol * 0.95, time + attackTime);
+                env.gain.exponentialRampToValueAtTime(vol * 0.62, time + pluckDecayTime);
+                env.gain.exponentialRampToValueAtTime(vol * 0.45, time + sustainEndTime);
+                env.gain.linearRampToValueAtTime(0.0001, time + dur);
 
                 osc1.connect(filter);
                 osc2.connect(filter);
                 filter.connect(env);
                 env.connect(audio.noteGain);
-                audio.noteGain.gain.setValueAtTime(1, time);
 
                 osc1.start(time);
                 osc2.start(time);
-                osc1.stop(time + dur + 0.02);
-                osc2.stop(time + dur + 0.02);
+                osc1.stop(time + dur + 0.015);
+                osc2.stop(time + dur + 0.015);
                 return;
             }
 
-            const osc = audio.context.createOscillator(); osc.connect(audio.noteGain); osc.frequency.value = freq;
+            const osc = audio.context.createOscillator();
+            const env = audio.context.createGain();
+            osc.frequency.setValueAtTime(freq, time);
             const currentClef = ui.clefSelect.value;
-             if (currentClef === 'F' || currentClef === 'C') {
-                osc.type = 'triangle'; audio.noteGain.gain.cancelScheduledValues(time); audio.noteGain.gain.setValueAtTime(0, time);
-                audio.noteGain.gain.linearRampToValueAtTime(state.noteVolume * 0.8, time + 0.02); audio.noteGain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
-            } else { 
-                osc.type = 'sine'; audio.noteGain.gain.cancelScheduledValues(time); audio.noteGain.gain.setValueAtTime(0, time);
-                audio.noteGain.gain.linearRampToValueAtTime(state.noteVolume, time + 0.02); audio.noteGain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
-            }
-            osc.start(time); osc.stop(time + 0.5);
+            const peakVol = (currentClef === 'F' || currentClef === 'C') ? vol * 0.85 : vol;
+            osc.type = (currentClef === 'F' || currentClef === 'C') ? 'triangle' : 'sine';
+
+            const attackTime = Math.min(0.012, dur * 0.15);
+            const sustainEndTime = Math.max(attackTime + 0.01, dur * 0.90);
+
+            env.gain.setValueAtTime(0.0001, time);
+            env.gain.linearRampToValueAtTime(peakVol, time + attackTime);
+            env.gain.exponentialRampToValueAtTime(peakVol * 0.75, time + sustainEndTime);
+            env.gain.linearRampToValueAtTime(0.0001, time + dur);
+
+            osc.connect(env);
+            env.connect(audio.noteGain);
+            osc.start(time);
+            osc.stop(time + dur + 0.015);
         }
 
         function playTunerDing() {
