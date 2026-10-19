@@ -3790,78 +3790,309 @@
             };
             let progStep = 0;
 
-            // Mapa para bloquear la ortografía enarmónica por clase de altura (0-11) en toda la línea melódica
-            const melodicEnharmonicLock = {};
-            const scaleNotesForLock = notesData.keySignatures[state.keySignature].notes;
-            scaleNotesForLock.forEach(nName => {
-                if (!FORBIDDEN_ENHARMONICS.has(nName)) {
-                    const testNote = `${nName}/4`;
-                    const midi = notesData.chromaticMap[testNote];
-                    if (midi !== undefined) melodicEnharmonicLock[midi % 12] = nName;
-                }
-            });
+            const scaleNotesForKey = notesData.keySignatures[state.keySignature].notes;
+            const scaleSet = new Set(scaleNotesForKey);
 
-            const pickMelodicPitch = (diatonicNotePool, prevPitches) => {
-                const fullRange = getNoteRangeForDifficulty().filter(n => {
-                    const base = n.split('/')[0];
-                    return !FORBIDDEN_ENHARMONICS.has(base) && !base.includes('##') && !base.includes('bb');
+            const getDiatonicStepFrom = (note, stepDir, diatonicPool) => {
+                const idx = diatonicPool.indexOf(note);
+                if (idx === -1) return null;
+                const targetIdx = idx + stepDir;
+                if (targetIdx < 0 || targetIdx >= diatonicPool.length) return null;
+                return diatonicPool[targetIdx];
+            };
+
+            const resolveMidiToNote = (targetMidi, preferredAcc, fullRange, measureLock, tempLock) => {
+                const pitchClass = ((targetMidi % 12) + 12) % 12;
+                let candidates = fullRange.filter(n => notesData.chromaticMap[n] === targetMidi);
+                if (candidates.length === 0) return null;
+
+                const lockedBase = tempLock[pitchClass] || measureLock[pitchClass];
+                if (lockedBase) {
+                    return candidates.find(n => n.split('/')[0] === lockedBase) || null;
+                }
+
+                if (state.chromaticAccidentalType === 'sharps') {
+                    candidates = candidates.filter(n => !n.split('/')[0].includes('b'));
+                } else if (state.chromaticAccidentalType === 'flats') {
+                    candidates = candidates.filter(n => !n.split('/')[0].includes('#'));
+                }
+                if (candidates.length === 0) return null;
+
+                let chosen = candidates[0];
+                if (candidates.length > 1 && preferredAcc) {
+                    const prefMatch = candidates.find(n => n.split('/')[0].includes(preferredAcc));
+                    if (prefMatch) chosen = prefMatch;
+                }
+                tempLock[pitchClass] = chosen.split('/')[0];
+                return chosen;
+            };
+
+            let lastModelCategory = null;
+
+            const buildChromaticUnit = (unitLen, diatonicPool, fullRange, prevNote, measureLock) => {
+                const isChromaticNote = (n) => !scaleSet.has(n.split('/')[0]);
+                const prevMidi = prevNote ? notesData.chromaticMap[prevNote] : null;
+
+                // Definición exacta de modelos relativos a la nota objetivo T (offset 0) o raíz R
+                const templates3 = [
+                    // 1. Notas de paso cromáticas (C -> C# -> D y D -> Db -> C)
+                    { cat: 'passing', offsets: [-2, -1, 0], prefs: [null, '#', null], reqDiatonicFirst: true, reqWholeToneSpan: true },
+                    { cat: 'passing', offsets: [2, 1, 0], prefs: [null, 'b', null], reqDiatonicFirst: true, reqWholeToneSpan: true },
+                    // 2. Doble aproximación de 2 notas hacia T (Bb -> B -> C y D -> Db -> C)
+                    { cat: 'double_approach', offsets: [-2, -1, 0], prefs: ['b', '#', null] },
+                    { cat: 'double_approach', offsets: [2, 1, 0], prefs: [null, 'b', null] },
+                    // 3. Aproximación simple / Bordadura cromática (D -> C# -> D, C -> Db -> C)
+                    { cat: 'approach', offsets: [0, -1, 0], prefs: [null, '#', null] },
+                    { cat: 'approach', offsets: [0, 1, 0], prefs: [null, 'b', null] },
+                    // 4. Encerradas de 1/2 tono - 1 tono y viceversa (B -> D -> C, D -> B -> C, Bb -> Db -> C, Db -> Bb -> C)
+                    { cat: 'enclosure_hw', offsets: [-1, 2, 0], prefs: ['#', null, null] },
+                    { cat: 'enclosure_hw', offsets: [2, -1, 0], prefs: [null, '#', null] },
+                    { cat: 'enclosure_wh', offsets: [-2, 1, 0], prefs: ['b', 'b', null] },
+                    { cat: 'enclosure_wh', offsets: [1, -2, 0], prefs: ['b', 'b', null] },
+                    // 5. Encerradas de 1/2 tono - 1/2 tono (B -> Db -> C y Db -> B -> C)
+                    { cat: 'enclosure_hh', offsets: [-1, 1, 0], prefs: ['#', 'b', null] },
+                    { cat: 'enclosure_hh', offsets: [1, -1, 0], prefs: ['b', '#', null] },
+                    // 6. Encerradas de 1 tono - 1 tono (Bb -> D -> C y D -> Bb -> C)
+                    { cat: 'enclosure_ww', offsets: [-2, 2, 0], prefs: ['b', null, null] },
+                    { cat: 'enclosure_ww', offsets: [2, -2, 0], prefs: [null, 'b', null] },
+                    // 7. Arpegios de Tríada con nota cromática
+                    { cat: 'arpeggio', offsets: [0, 4, 7], prefs: [null, '#', null], isRootBased: true },
+                    { cat: 'arpeggio', offsets: [0, 3, 7], prefs: [null, 'b', null], isRootBased: true },
+                    { cat: 'arpeggio', offsets: [7, 3, 0], prefs: [null, 'b', null], isRootBased: true },
+                    { cat: 'arpeggio', offsets: [0, 3, 6], prefs: [null, 'b', 'b'], isRootBased: true },
+                    { cat: 'arpeggio', offsets: [0, 4, 8], prefs: [null, null, '#'], isRootBased: true }
+                ];
+
+                const templates4 = [
+                    // 1. Doble aproximación cromática de 4 notas (A -> Bb -> B -> C y Eb -> D -> Db -> C)
+                    { cat: 'double_approach', offsets: [-3, -2, -1, 0], prefs: [null, 'b', null, null], reqDiatonicFirst: true },
+                    { cat: 'double_approach', offsets: [3, 2, 1, 0], prefs: ['b', null, 'b', null] },
+                    // 2. Doble encerrada / Combinadas de 4 notas (D -> Db -> B -> C, B -> D -> Db -> C, Bb -> B -> Db -> C, etc.)
+                    { cat: 'double_enclosure', offsets: [2, 1, -1, 0], prefs: [null, 'b', '#', null] },
+                    { cat: 'double_enclosure', offsets: [-1, 2, 1, 0], prefs: ['#', null, 'b', null] },
+                    { cat: 'double_enclosure', offsets: [-2, -1, 1, 0], prefs: ['b', null, 'b', null] },
+                    { cat: 'double_enclosure', offsets: [1, -2, -1, 0], prefs: ['b', 'b', null, null] },
+                    { cat: 'double_enclosure', offsets: [-2, -1, 2, 0], prefs: ['b', null, null, null] },
+                    { cat: 'double_enclosure', offsets: [2, -2, -1, 0], prefs: [null, 'b', null, null] },
+                    // 3. Arpegios de Tétrada con nota cromática y Aproximación + Tríada
+                    { cat: 'arpeggio', offsets: [0, 4, 7, 10], prefs: [null, '#', null, 'b'], isRootBased: true },
+                    { cat: 'arpeggio', offsets: [10, 7, 4, 0], prefs: ['b', null, '#', null], isRootBased: true },
+                    { cat: 'arpeggio', offsets: [0, 3, 7, 10], prefs: [null, 'b', null, 'b'], isRootBased: true },
+                    { cat: 'arpeggio', offsets: [0, 3, 6, 10], prefs: [null, 'b', 'b', 'b'], isRootBased: true },
+                    { cat: 'arpeggio', offsets: [0, 3, 6, 9], prefs: [null, null, null, 'b'], isRootBased: true },
+                    { cat: 'arpeggio', offsets: [-1, 0, 4, 7], prefs: ['#', null, null, null], isRootBased: true },
+                    { cat: 'arpeggio', offsets: [-1, 0, 3, 7], prefs: ['#', null, null, null], isRootBased: true },
+                    { cat: 'arpeggio', offsets: [0, 4, 8, 9], prefs: [null, null, '#', null], isRootBased: true }
+                ];
+
+                const candidates = [];
+
+                const evaluateCell = (notes, cat, tempLock) => {
+                    if (!notes || notes.length !== unitLen) return;
+                    if (!notes.some(isChromaticNote)) return;
+
+                    let score = randomFloat() * 1.5;
+                    if (cat === lastModelCategory) score += 4;
+
+                    if (prevMidi !== null) {
+                        const entryDist = Math.abs(notesData.chromaticMap[notes[0]] - prevMidi);
+                        if (entryDist === 0) score += 6;
+                        else if (entryDist <= 2) score += 0;
+                        else if (entryDist <= 4) score += 1.5;
+                        else score += entryDist * 2.5;
+                    }
+                    candidates.push({ notes, cat, tempLock, score });
+                };
+
+                for (const anchorNote of diatonicPool) {
+                    const anchorMidi = notesData.chromaticMap[anchorNote];
+
+                    if (unitLen === 2) {
+                        for (const [off, pref] of [[-1, '#'], [1, 'b']]) {
+                            const tempLock = {};
+                            const n1 = resolveMidiToNote(anchorMidi + off, pref, fullRange, measureLock, tempLock);
+                            if (n1 && isChromaticNote(n1)) {
+                                evaluateCell([n1, anchorNote], 'approach', tempLock);
+                            }
+                        }
+                        continue;
+                    }
+
+                    if (unitLen === 3 || unitLen === 4) {
+                        for (const tpl of templates3) {
+                            const tempLock = {};
+                            const cell3 = [];
+                            let ok = true;
+                            for (let k = 0; k < 3; k++) {
+                                const off = tpl.offsets[k];
+                                const n = off === 0
+                                    ? anchorNote
+                                    : resolveMidiToNote(anchorMidi + off, tpl.prefs[k], fullRange, measureLock, tempLock);
+                                if (!n) { ok = false; break; }
+                                if (k === 0 && tpl.reqDiatonicFirst && !scaleSet.has(n.split('/')[0])) { ok = false; break; }
+                                cell3.push(n);
+                            }
+                            if (!ok) continue;
+
+                            if (unitLen === 3) {
+                                evaluateCell(cell3, tpl.cat, tempLock);
+                            } else {
+                                // Extender el modelo de 3 notas a 4 notas con 1 grado conjunto diatónico antes o después
+                                const stepAfterUp = getDiatonicStepFrom(cell3[2], 1, diatonicPool);
+                                const stepAfterDown = getDiatonicStepFrom(cell3[2], -1, diatonicPool);
+                                if (stepAfterUp && stepAfterUp !== cell3[1]) {
+                                    evaluateCell([...cell3, stepAfterUp], tpl.cat, { ...tempLock });
+                                }
+                                if (stepAfterDown && stepAfterDown !== cell3[1]) {
+                                    evaluateCell([...cell3, stepAfterDown], tpl.cat, { ...tempLock });
+                                }
+                                const firstDiatonicIdx = diatonicPool.indexOf(cell3[0]);
+                                if (firstDiatonicIdx !== -1) {
+                                    for (const dir of [-1, 1]) {
+                                        const stepBefore = getDiatonicStepFrom(cell3[0], dir, diatonicPool);
+                                        if (stepBefore && stepBefore !== cell3[1]) {
+                                            evaluateCell([stepBefore, ...cell3], tpl.cat, { ...tempLock });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (unitLen === 4) {
+                        for (const tpl of templates4) {
+                            const tempLock = {};
+                            const cell4 = [];
+                            let ok = true;
+                            for (let k = 0; k < 4; k++) {
+                                const off = tpl.offsets[k];
+                                const n = off === 0
+                                    ? anchorNote
+                                    : resolveMidiToNote(anchorMidi + off, tpl.prefs[k], fullRange, measureLock, tempLock);
+                                if (!n) { ok = false; break; }
+                                if (k === 0 && tpl.reqDiatonicFirst && !scaleSet.has(n.split('/')[0])) { ok = false; break; }
+                                cell4.push(n);
+                            }
+                            if (ok) evaluateCell(cell4, tpl.cat, tempLock);
+                        }
+                    }
+                }
+
+                if (candidates.length === 0) return null;
+                candidates.sort((a, b) => a.score - b.score);
+                const topPool = candidates.slice(0, Math.min(6, candidates.length));
+                const picked = topPool[Math.floor(randomFloat() * topPool.length)];
+                Object.assign(measureLock, picked.tempLock);
+                lastModelCategory = picked.cat;
+                return picked.notes;
+            };
+
+            const buildStepwiseDiatonicUnit = (unitLen, diatonicPool, prevNote) => {
+                const res = [];
+                let cur = prevNote;
+                for (let k = 0; k < unitLen; k++) {
+                    let next = null;
+                    if (cur) {
+                        const curMidi = notesData.chromaticMap[cur];
+                        const nearby = diatonicPool.filter(n => {
+                            const d = Math.abs(notesData.chromaticMap[n] - curMidi);
+                            return d >= 1 && d <= 2;
+                        });
+                        if (nearby.length > 0) {
+                            next = nearby[Math.floor(randomFloat() * nearby.length)];
+                        }
+                    }
+                    if (!next) {
+                        next = generateMelodicNote(diatonicPool, cur, res.length > 1 ? res[res.length - 2] : null);
+                    }
+                    res.push(next);
+                    cur = next;
+                }
+                return res;
+            };
+
+            const buildPitchesForMeasureBlock = (blockLen, diatonicPool, fullRange, recentPitches, measureLock) => {
+                if (state.chromaticMode === 'none') {
+                    const out = [];
+                    for (let k = 0; k < blockLen; k++) {
+                        const lastN = recentPitches.length > 0 ? recentPitches[recentPitches.length - 1] : null;
+                        const prevN = recentPitches.length > 1 ? recentPitches[recentPitches.length - 2] : null;
+                        let pitch;
+                        if (state.isWeaknessMode && weakNotePool.length > 0 && randomFloat() < 0.7) {
+                            const validWeak = weakNotePool.filter(wn => diatonicPool.includes(wn));
+                            pitch = validWeak.length > 0
+                                ? validWeak[Math.floor(randomFloat() * validWeak.length)]
+                                : generateMelodicNote(diatonicPool, lastN, prevN);
+                        } else {
+                            pitch = generateMelodicNote(diatonicPool, lastN, prevN);
+                        }
+                        recentPitches.push(pitch);
+                        out.push(pitch);
+                    }
+                    return out;
+                }
+
+                // Particionar el bloque del compás en sub-unidades de 2, 3 o 4 notas para que ningún modelo quede cortado
+                const subLengths = [];
+                let rem = blockLen;
+                while (rem > 0) {
+                    if (rem === 4 || rem === 3 || rem === 2 || rem === 1) {
+                        subLengths.push(rem);
+                        rem = 0;
+                    } else if (rem === 5) {
+                        subLengths.push(3, 2);
+                        rem = 0;
+                    } else if (rem === 6) {
+                        subLengths.push(3, 3);
+                        rem = 0;
+                    } else if (rem === 7) {
+                        subLengths.push(4, 3);
+                        rem = 0;
+                    } else {
+                        subLengths.push(4);
+                        rem -= 4;
+                    }
+                }
+
+                const out = [];
+                subLengths.forEach((uLen, idx) => {
+                    const prevNote = recentPitches.length > 0 ? recentPitches[recentPitches.length - 1] : null;
+                    const useChromatic = state.chromaticMode === 'heavy' ? (uLen >= 2) : (idx === 0 && uLen >= 2);
+                    let unitNotes = null;
+                    if (useChromatic) {
+                        unitNotes = buildChromaticUnit(uLen, diatonicPool, fullRange, prevNote, measureLock);
+                    }
+                    if (!unitNotes) {
+                        unitNotes = buildStepwiseDiatonicUnit(uLen, diatonicPool, prevNote);
+                    }
+                    unitNotes.forEach(n => {
+                        recentPitches.push(n);
+                        out.push(n);
+                    });
                 });
-                const cleanDiatonicPool = diatonicNotePool.filter(n => !FORBIDDEN_ENHARMONICS.has(n.split('/')[0]));
-                const activePool = cleanDiatonicPool.length > 0 ? cleanDiatonicPool : fullRange;
-
-                if (state.isWeaknessMode && weakNotePool.length > 0 && randomFloat() < 0.7) {
-                    const validWeak = weakNotePool.filter(wn => activePool.includes(wn));
-                    if (validWeak.length > 0) return validWeak[Math.floor(randomFloat() * validWeak.length)];
-                }
-                const lastNote = prevPitches.length > 0 ? prevPitches[prevPitches.length - 1] : null;
-                const previousNote = prevPitches.length > 1 ? prevPitches[prevPitches.length - 2] : null;
-                const baseNote = generateMelodicNote(activePool, lastNote, previousNote);
-
-                const chromChance = state.chromaticMode === 'heavy' ? 0.4 : (state.chromaticMode === 'light' ? 0.2 : 0);
-                if (chromChance > 0 && randomFloat() < chromChance) {
-                    const semitoneShift = randomFloat() < 0.5 ? 1 : -1;
-                    const targetMidi = notesData.chromaticMap[baseNote] + semitoneShift;
-                    const pitchClass = ((targetMidi % 12) + 12) % 12;
-
-                    // Candidatos válidos en el rango que no sean Fb, B#, E#, Cb ni dobles alteraciones
-                    let candidates = fullRange.filter(n => notesData.chromaticMap[n] === targetMidi);
-
-                    // Filtrar según preferencia de sostenidos, bemoles o ambas
-                    if (state.chromaticAccidentalType === 'sharps') {
-                        candidates = candidates.filter(n => !n.split('/')[0].includes('b'));
-                    } else if (state.chromaticAccidentalType === 'flats') {
-                        candidates = candidates.filter(n => !n.split('/')[0].includes('#'));
-                    }
-
-                    // Si esta clase de altura ya apareció en la línea melódica, obligar al mismo nombre enarmónico (evita C# y Db juntos)
-                    if (melodicEnharmonicLock[pitchClass]) {
-                        const lockedBase = melodicEnharmonicLock[pitchClass];
-                        const lockedMatch = candidates.find(n => n.split('/')[0] === lockedBase);
-                        if (lockedMatch) return lockedMatch;
-                        return baseNote;
-                    }
-
-                    if (candidates.length > 0) {
-                        const chosen = candidates[Math.floor(randomFloat() * candidates.length)];
-                        melodicEnharmonicLock[pitchClass] = chosen.split('/')[0];
-                        return chosen;
-                    }
-                }
-
-                const baseMidi = notesData.chromaticMap[baseNote];
-                if (baseMidi !== undefined) {
-                    melodicEnharmonicLock[baseMidi % 12] = baseNote.split('/')[0];
-                }
-                return baseNote;
+                return out;
             };
 
             const recentPitches = [];
             
             for (let i = 0; i < state.measuresPerExercise; i++) {
                 if (state.exerciseType === 'melodia') {
-                    const noteRange = getNoteRangeForDifficulty(); 
-                    const scaleNotes = notesData.keySignatures[state.keySignature].notes;
-                    const diatonicNotePool = noteRange.filter(note => scaleNotes.includes(note.split('/')[0]));
+                    const fullRange = getNoteRangeForDifficulty().filter(n => {
+                        const base = n.split('/')[0];
+                        return !FORBIDDEN_ENHARMONICS.has(base) && !base.includes('##') && !base.includes('bb');
+                    });
+                    const diatonicNotePool = fullRange.filter(note => scaleSet.has(note.split('/')[0]));
+                    const activeDiatonicPool = diatonicNotePool.length > 0 ? diatonicNotePool : fullRange;
+
+                    const measureLock = {};
+                    scaleNotesForKey.forEach(nName => {
+                        if (!FORBIDDEN_ENHARMONICS.has(nName)) {
+                            const midi = notesData.chromaticMap[`${nName}/4`];
+                            if (midi !== undefined) measureLock[midi % 12] = nName;
+                        }
+                    });
+
+                    // 1. Generar primero la estructura rítmica del compás
                     const measureContent = [];
                     let currentBeat = 1;
                     let noteIndex = 0;
@@ -3889,27 +4120,21 @@
                         }
 
                         if (fig === 'h') {
-                            const pitch = pickMelodicPitch(diatonicNotePool, recentPitches);
-                            recentPitches.push(pitch);
                             hasAtLeastOnePlayableNote = true;
                             measureContent.push({
-                                note: pitch, duration: 'h', beat: currentBeat, subBeat: 0,
+                                note: null, duration: 'h', beat: currentBeat, subBeat: 0,
                                 beats: 2, isRest: false, noteIndex: noteIndex++
                             });
                             currentBeat += 2;
                         } else if (fig === '8_pair') {
-                            const pitch1 = pickMelodicPitch(diatonicNotePool, recentPitches);
-                            recentPitches.push(pitch1);
-                            const pitch2 = pickMelodicPitch(diatonicNotePool, recentPitches);
-                            recentPitches.push(pitch2);
                             hasAtLeastOnePlayableNote = true;
                             const beamId = `${i}-${currentBeat}`;
                             measureContent.push({
-                                note: pitch1, duration: '8', beat: currentBeat, subBeat: 0,
+                                note: null, duration: '8', beat: currentBeat, subBeat: 0,
                                 beats: 0.5, isRest: false, beamGroup: beamId, noteIndex: noteIndex++
                             });
                             measureContent.push({
-                                note: pitch2, duration: '8', beat: currentBeat, subBeat: 0.5,
+                                note: null, duration: '8', beat: currentBeat, subBeat: 0.5,
                                 beats: 0.5, isRest: false, beamGroup: beamId, noteIndex: noteIndex++
                             });
                             currentBeat += 1;
@@ -3920,16 +4145,40 @@
                             });
                             currentBeat += 1;
                         } else {
-                            const pitch = pickMelodicPitch(diatonicNotePool, recentPitches);
-                            recentPitches.push(pitch);
                             hasAtLeastOnePlayableNote = true;
                             measureContent.push({
-                                note: pitch, duration: 'q', beat: currentBeat, subBeat: 0,
+                                note: null, duration: 'q', beat: currentBeat, subBeat: 0,
                                 beats: 1, isRest: false, noteIndex: noteIndex++
                             });
                             currentBeat += 1;
                         }
                     }
+
+                    // 2. Asignar las alturas por bloques contiguos dentro del compás para preservar cada modelo completo
+                    let idx = 0;
+                    while (idx < measureContent.length) {
+                        if (measureContent[idx].isRest) {
+                            idx++;
+                            continue;
+                        }
+                        let endIdx = idx;
+                        while (endIdx < measureContent.length && !measureContent[endIdx].isRest) {
+                            endIdx++;
+                        }
+                        const blockLength = endIdx - idx;
+                        const blockPitches = buildPitchesForMeasureBlock(
+                            blockLength,
+                            activeDiatonicPool,
+                            fullRange,
+                            recentPitches,
+                            measureLock
+                        );
+                        for (let k = 0; k < blockLength; k++) {
+                            measureContent[idx + k].note = blockPitches[k];
+                        }
+                        idx = endIdx;
+                    }
+
                     allMeasures.push(measureContent);
                 } else {
                     const measureContent = []; let measureTries = 0;
@@ -4466,7 +4715,7 @@
 
                     if (state.exerciseType === 'armonia' || accidental !== currentAccidentalInMeasure) {
                         if (accidental) staveNote.addModifier(new VF.Accidental(accidental), keyIndex);
-                        else if (state.exerciseType !== 'armonia' && keyAccidental !== '') staveNote.addModifier(new VF.Accidental("n"), keyIndex);
+                        else if (state.exerciseType !== 'armonia') staveNote.addModifier(new VF.Accidental("n"), keyIndex);
                         activeAccidentals[noteLetter] = accidental;
                     }
                 });
