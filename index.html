@@ -1745,6 +1745,10 @@
 
         function startSessionRecording() {
             state.recordedChunks = [];
+            if (ui.sessionAudioPlayer) {
+                ui.sessionAudioPlayer.pause();
+                ui.sessionAudioPlayer.currentTime = 0;
+            }
             if (state.micEnabled && audio.micStream && typeof MediaRecorder !== 'undefined') {
                 try {
                     state.mediaRecorder = new MediaRecorder(audio.micStream);
@@ -1827,10 +1831,19 @@
             ui.campaignModal.classList.remove('hidden');
         }
 
-        function startCampaignStage(stage) {
+        async function startCampaignStage(stage) {
             if (!stage) return;
             ui.campaignModal.classList.add('hidden');
             if (state.exerciseStarted) stopExercise(false);
+
+            if (!state.micEnabled) {
+                ui.enableMicToggle.checked = true;
+                await toggleMicrophone(true);
+            }
+            if (!state.micEnabled) {
+                showTemporaryMessage("El Modo Carrera requiere el micrófono activo para evaluar tu lectura.", true);
+                return;
+            }
 
             seededRNG = null;
             state.isDailyChallenge = false;
@@ -1882,7 +1895,7 @@
             let maxDb = -Infinity;
             let sumDb = 0;
             let validBins = 0;
-            const minBin = Math.max(2, Math.floor((72 / nyquist) * binCount));
+            const minBin = Math.max(2, Math.floor((75 / nyquist) * binCount));
             const maxBin = Math.min(binCount - 2, Math.ceil((1350 / nyquist) * binCount));
 
             for (let i = minBin; i <= maxBin; i++) {
@@ -1891,11 +1904,11 @@
                 if (isFinite(val)) { sumDb += val; validBins++; }
             }
             const avgDb = validBins > 0 ? (sumDb / validBins) : -100;
-            if (maxDb < -56 || (maxDb - avgDb) < 11) {
+            if (maxDb < -48 || (maxDb - avgDb) < 15) {
                 return { hit: false, wrong: false, dominantMidi: -1 };
             }
 
-            const threshold = Math.max(avgDb + 9, maxDb - 18);
+            const threshold = Math.max(avgDb + 12, maxDb - 16);
             const chroma = new Float32Array(12);
             let dominantMidi = -1;
             let dominantDb = -Infinity;
@@ -1917,13 +1930,17 @@
                     const nearestMidi = Math.round(midiFloat);
                     const centsDiff = Math.abs(midiFloat - nearestMidi) * 100;
 
-                    if (centsDiff <= 42 && nearestMidi >= 38 && nearestMidi <= 88) {
-                        const linearMag = Math.pow(10, (v - maxDb) / 20);
-                        const pc = ((nearestMidi % 12) + 12) % 12;
-                        chroma[pc] = Math.max(chroma[pc], linearMag);
-                        if (v > dominantDb) {
-                            dominantDb = v;
-                            dominantMidi = nearestMidi;
+                    if (centsDiff <= 30 && nearestMidi >= 40 && nearestMidi <= 88) {
+                        const harmonic2Bin = Math.round(refinedBin * 2);
+                        const hasHarmonicSupport = harmonic2Bin < binCount ? (audio.micFreqArray[harmonic2Bin] > avgDb + 5) : true;
+                        if (hasHarmonicSupport) {
+                            const linearMag = Math.pow(10, (v - maxDb) / 20);
+                            const pc = ((nearestMidi % 12) + 12) % 12;
+                            chroma[pc] = Math.max(chroma[pc], linearMag);
+                            if (v > dominantDb) {
+                                dominantDb = v;
+                                dominantMidi = nearestMidi;
+                            }
                         }
                     }
                 }
@@ -1937,15 +1954,15 @@
             for (let pc = 0; pc < 12; pc++) {
                 if (expectedClasses.includes(pc)) {
                     chordEnergy += chroma[pc];
-                    if (chroma[pc] >= 0.20) matchedClasses++;
+                    if (chroma[pc] >= 0.25) matchedClasses++;
                 } else {
                     nonChordEnergy += chroma[pc];
                 }
             }
 
             const requiredCount = expectedClasses.length <= 2 ? expectedClasses.length : (expectedClasses.length - 1);
-            const isHit = matchedClasses >= requiredCount && chordEnergy >= nonChordEnergy * 0.85;
-            const isWrong = !isHit && dominantMidi > 0 && nonChordEnergy > chordEnergy * 1.15;
+            const isHit = matchedClasses >= requiredCount && chordEnergy >= nonChordEnergy * 1.1;
+            const isWrong = !isHit && dominantMidi > 0 && nonChordEnergy > chordEnergy * 1.35;
 
             return { hit: isHit, wrong: isWrong, dominantMidi };
         }
@@ -1965,11 +1982,23 @@
             mean /= analysisLen;
 
             let rms = 0;
+            let zeroCrossings = 0;
             for (let i = offset; i < SIZE; i++) {
                 const v = buf[i] - mean;
                 rms += v * v;
+                if (i > offset) {
+                    const prevV = buf[i - 1] - mean;
+                    if ((v >= 0 && prevV < 0) || (v < 0 && prevV >= 0)) zeroCrossings++;
+                }
             }
             rms = Math.sqrt(rms / analysisLen);
+
+            // Descartar ruido blanco/fricción de alta frecuencia por exceso de cruces por cero
+            const zcrFreqApprox = (zeroCrossings * sampleRate) / (2 * analysisLen);
+            if (zcrFreqApprox > 1600) {
+                state.pitchHistory = [];
+                return -1;
+            }
 
             // Seguimiento adaptativo del piso de ruido ambiental
             if (rms < audio.noiseFloorRms * 1.35) {
@@ -1977,9 +2006,9 @@
             } else {
                 audio.noiseFloorRms = (0.995 * audio.noiseFloorRms) + (0.005 * rms);
             }
-            audio.noiseFloorRms = Math.max(0.0018, Math.min(0.022, audio.noiseFloorRms));
+            audio.noiseFloorRms = Math.max(0.0025, Math.min(0.025, audio.noiseFloorRms));
 
-            const dynamicRmsThreshold = Math.max(0.0032, audio.noiseFloorRms * 1.42);
+            const dynamicRmsThreshold = Math.max(0.0055, audio.noiseFloorRms * 2.1);
             const prevRms = audio.prevRms || 0;
             audio.prevRms = rms;
             audio.lastRms = rms;
@@ -2054,13 +2083,13 @@
                 if (peaks[i].val > highestPeak) highestPeak = peaks[i].val;
             }
 
-            // Puerta de claridad armónica
-            if (highestPeak < 0.50) {
+            // Puerta estricta de claridad armónica: solo acepta notas periódicas limpias (instrumento o voz cantada)
+            if (highestPeak < 0.68) {
                 state.pitchHistory = [];
                 return -1;
             }
 
-            const clarityThreshold = Math.max(0.50, 0.90 * highestPeak);
+            const clarityThreshold = Math.max(0.66, 0.91 * highestPeak);
             let chosenPeak = peaks[0];
             for (let i = 0; i < peaks.length; i++) {
                 if (peaks[i].val >= clarityThreshold) {
@@ -2069,13 +2098,13 @@
                 }
             }
 
-            // Prevención de salto al 2º o 3er armónico: si en 2x o 3x el periodo hay un pico más fuerte, ese es el fundamental real
+            // Prevención de salto al 2º o 3er armónico: si en 2x o 3x el periodo hay un pico fuerte, ese es el fundamental real
             for (let i = 0; i < peaks.length; i++) {
                 const candidate = peaks[i];
                 if (candidate.lag <= chosenPeak.lag) continue;
                 const ratio = candidate.lag / chosenPeak.lag;
-                const isMultiple = Math.abs(ratio - 2.0) < 0.12 || Math.abs(ratio - 3.0) < 0.12;
-                if (isMultiple && candidate.val >= chosenPeak.val * 0.96) {
+                const isMultiple = Math.abs(ratio - 2.0) < 0.10 || Math.abs(ratio - 3.0) < 0.10;
+                if (isMultiple && candidate.val >= chosenPeak.val * 0.94) {
                     chosenPeak = candidate;
                     break;
                 }
@@ -2093,22 +2122,49 @@
             }
 
             let pitch = sampleRate / refinedLag;
-            if (pitch < 72 || pitch > 1350) return -1;
+            if (pitch < 72 || pitch > 1350) {
+                state.pitchHistory = [];
+                return -1;
+            }
 
-            // Filtro de mediana de 3 cuadros para estabilizar transitorios de ataque
+            // Validación espectral: comprobar que exista energía fundamental/armónica real y no sea ruido
+            if (audio.micFreqArray) {
+                audio.micAnalyser.getFloatFrequencyData(audio.micFreqArray);
+                const binCount = audio.micAnalyser.frequencyBinCount;
+                const nyquist = sampleRate / 2;
+                const f1Bin = Math.round((pitch / nyquist) * binCount);
+                const f2Bin = Math.round(((pitch * 2) / nyquist) * binCount);
+                if (f1Bin > 1 && f1Bin < binCount - 1) {
+                    const f1Db = Math.max(audio.micFreqArray[f1Bin - 1], audio.micFreqArray[f1Bin], audio.micFreqArray[f1Bin + 1]);
+                    const f2Db = (f2Bin < binCount - 1) ? Math.max(audio.micFreqArray[f2Bin - 1], audio.micFreqArray[f2Bin], audio.micFreqArray[f2Bin + 1]) : -100;
+                    if (f1Db < -62 && f2Db < -62) {
+                        state.pitchHistory = [];
+                        return -1;
+                    }
+                }
+            }
+
+            // Exigir estabilidad tonal en muestras consecutivas (filtra habla y ruidos transitorios)
             if (!state.pitchHistory) state.pitchHistory = [];
             state.pitchHistory.push(pitch);
             if (state.pitchHistory.length > 3) state.pitchHistory.shift();
 
-            if (state.pitchHistory.length === 3) {
-                const sorted = [...state.pitchHistory].sort((a, b) => a - b);
-                const median = sorted[1];
-                if (Math.abs(12 * Math.log2(pitch / median)) <= 0.8) {
-                    return median;
-                }
+            if (state.pitchHistory.length < 2) {
+                return -1;
             }
 
-            return pitch;
+            const prevPitch = state.pitchHistory[state.pitchHistory.length - 2];
+            const semitoneJump = Math.abs(12 * Math.log2(pitch / prevPitch));
+            if (semitoneJump > 0.22) {
+                return -1;
+            }
+
+            if (state.pitchHistory.length === 3) {
+                const sorted = [...state.pitchHistory].sort((a, b) => a - b);
+                return sorted[1];
+            }
+
+            return (pitch + prevPitch) * 0.5;
         }
 
         function noteFromPitch(frequency) {
@@ -2136,15 +2192,12 @@
             if (!state.micEnabled) stopMicStream();
         }
 
-        function playTunerDing() {
-            if (!audio.context) return;
-            const time = audio.context.currentTime;
-            const osc = audio.context.createOscillator();
-            const gain = audio.context.createGain();
-            osc.connect(gain); gain.connect(audio.context.destination);
-            osc.type = 'sine'; osc.frequency.setValueAtTime(1046.50, time);
-            gain.gain.setValueAtTime(0, time); gain.gain.linearRampToValueAtTime(0.1, time + 0.05); gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
-            osc.start(time); osc.stop(time + 0.3);
+        function closeResultsModal() {
+            if (ui.sessionAudioPlayer) {
+                ui.sessionAudioPlayer.pause();
+                ui.sessionAudioPlayer.currentTime = 0;
+            }
+            ui.resultsModal.classList.add('hidden');
         }
 
         function tunerLoop() {
@@ -2289,7 +2342,7 @@
             ui.cancelQuadInversionSelectionBtn.addEventListener('click', () => hideCustomSelectionModal('quadInversion'));
             ui.saveQuadInversionSelectionBtn.addEventListener('click', () => { saveCustomSelection('quadInversion'); if(state.exerciseStarted) stopExercise(false); });
 
-            ui.closeResultsBtn.addEventListener('click', () => ui.resultsModal.classList.add('hidden'));
+            ui.closeResultsBtn.addEventListener('click', closeResultsModal);
 
             function toggleDisplayInfo() {
                 state.showDisplayInfo = !state.showDisplayInfo;
@@ -2332,6 +2385,11 @@
             ui.enableMetronome.addEventListener('change', (e) => state.metronomeEnabled = e.target.checked);
             
             ui.enableMicToggle.addEventListener('change', async (e) => {
+                if (state.exerciseStarted && state.activeCampaignStage && !e.target.checked) {
+                    e.target.checked = true;
+                    showTemporaryMessage("El micrófono debe permanecer activo durante el Modo Carrera.", true);
+                    return;
+                }
                 if (e.target.checked) {
                     try { await initAudioEngine(); } catch(err) { console.error(err); }
                 }
@@ -2433,9 +2491,9 @@
                 }
 
                 if (!ui.resultsModal.classList.contains('hidden')) {
-                    if (key === 'enter' || key === ' ') {
+                    if (key === 'enter' || key === ' ' || key === 'escape') {
                         e.preventDefault();
-                        ui.resultsModal.classList.add('hidden');
+                        closeResultsModal();
                         return; 
                     }
                 }
@@ -2635,6 +2693,15 @@
 
         async function startExercise() {
             try {
+                if (state.activeCampaignStage && !state.micEnabled) {
+                    ui.enableMicToggle.checked = true;
+                    await toggleMicrophone(true);
+                    if (!state.micEnabled) {
+                        showTemporaryMessage("El Modo Carrera requiere el Micrófono activo para evaluar tu lectura.", true);
+                        return;
+                    }
+                }
+
                 await initAudioEngine();
                 state.keySignature = ui.keySigSelect.value;
                 state.measuresChangeBeat = parseInt(ui.changeBeatSelect.value, 10) || state.timeSignatureBeats;
@@ -2753,7 +2820,7 @@
                         
                         xpEarnedThisRound = Math.floor(correctCount * 10 * multiplier);
 
-                        if (completedSuccessfully && state.activeCampaignStage && percentage >= 75) {
+                        if (completedSuccessfully && state.activeCampaignStage && state.micEnabled && percentage >= 75) {
                             if (!userData.stats.completedCampaignStages) userData.stats.completedCampaignStages = [];
                             if (!userData.stats.completedCampaignStages.includes(state.activeCampaignStage)) {
                                 userData.stats.completedCampaignStages.push(state.activeCampaignStage);
@@ -2813,15 +2880,6 @@
                     score: scoreStr
                 };
                 userData.practiceHistory.push(historyEntry);
-
-                if (completedSuccessfully && state.activeCampaignStage && !inputEvaluationActive) {
-                    if (!userData.stats.completedCampaignStages) userData.stats.completedCampaignStages = [];
-                    if (!userData.stats.completedCampaignStages.includes(state.activeCampaignStage)) {
-                        userData.stats.completedCampaignStages.push(state.activeCampaignStage);
-                        userData.stats.xp = (userData.stats.xp || 0) + 250;
-                        updateXPDisplay();
-                    }
-                }
 
                 const todayStr = getLocalISODate();
                 if (userData.stats.lastPracticeDate !== todayStr) { 
@@ -3033,7 +3091,7 @@
                             wrongNotePlayed = !hit;
                         } else if (state.micEnabled) {
                             if (state.exerciseType === 'melodia') {
-                                if (detectedPitch > 0 && centsOff <= 46) {
+                                if (detectedPitch > 0 && centsOff <= 32) {
                                     const detectedClass = ((detectedMidi % 12) + 12) % 12;
                                     const hasFreshOnset = (state.lastOnsetTime || 0) >= (target.time - 0.12);
                                     const isSameAsPrevHit = !state.micSilenceSinceLastHit &&
@@ -3048,14 +3106,14 @@
                                     if (!isRepeatedCarryover) {
                                         const matchesPitch = expectedMidis.some(em => {
                                             const emClass = ((em % 12) + 12) % 12;
-                                            const validOctave = detectedMidi >= 36 && detectedMidi <= 92;
+                                            const validOctave = detectedMidi >= 38 && detectedMidi <= 90;
                                             return detectedClass === emClass && validOctave;
                                         });
 
                                         if (matchesPitch) {
                                             target.hitFrames = (target.hitFrames || 0) + 1;
                                             target.wrongFrames = 0;
-                                            if (target.hitFrames >= 2 || hasFreshOnset) {
+                                            if (target.hitFrames >= 2) {
                                                 hit = true;
                                             }
                                         } else {
@@ -3064,7 +3122,7 @@
                                                 !hasFreshOnset &&
                                                 (currentTime - target.time) < Math.min(0.32, beatDur * 0.48);
 
-                                            if (!isPrevNoteTail && currentTime >= target.time + 0.06 && centsOff <= 40) {
+                                            if (!isPrevNoteTail && currentTime >= target.time + 0.08 && centsOff <= 28) {
                                                 if (target.lastWrongClass === detectedClass) {
                                                     target.wrongFrames = (target.wrongFrames || 0) + 1;
                                                 } else {
@@ -3435,6 +3493,22 @@
                 audio.noteGain.gain.linearRampToValueAtTime(state.noteVolume, time + 0.02); audio.noteGain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
             }
             osc.start(time); osc.stop(time + 0.5);
+        }
+
+        function playTunerDing() {
+            if (!audio.context) return;
+            const time = audio.context.currentTime;
+            const osc = audio.context.createOscillator();
+            const gain = audio.context.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, time); // A5 chord confirmation ding
+            gain.gain.setValueAtTime(0.001, time);
+            gain.gain.linearRampToValueAtTime(0.2, time + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+            osc.connect(gain);
+            gain.connect(audio.noteGain);
+            osc.start(time);
+            osc.stop(time + 0.35);
         }
 
         function playMetronomeSound(time, isAccent, beatNumber = 1) {
