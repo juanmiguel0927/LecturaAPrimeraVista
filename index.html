@@ -1201,7 +1201,15 @@
             startExercise();
         }
 
-        function startSurvivalMode() {
+        async function startSurvivalMode() {
+            if (!state.micEnabled && !state.midiEnabled) {
+                ui.enableMicToggle.checked = true;
+                await toggleMicrophone(true);
+                if (!state.micEnabled) {
+                    showTemporaryMessage("El Modo Supervivencia requiere el Micrófono o MIDI activo.", true);
+                    return;
+                }
+            }
             seededRNG = null;
             state.isDailyChallenge = false;
             state.isSurvivalMode = true;
@@ -1514,6 +1522,7 @@
                 micEnabled: false, scheduledSynthNotes: [], tunerSoundPlayed: false, tunerLastNote: null,
                 tunerSilenceFrames: 0, tunerStableFrames: 0, tunerSmoothedCents: 0, tunerSmoothedHz: 0,
                 lastHitPitchClass: null, lastHitKey: null, micSilenceSinceLastHit: true,
+                silenceFramesCount: 0, lastEvaluatedPitchClass: null,
                 score: { total: 0, hits: new Set(), status: {}, expectedNotes: {} },
                 isDailyChallenge: false, isSurvivalMode: false, survivalHearts: 3,
                 fretPosition: 'all', rhythmMode: 'quarters', chromaticMode: 'none', chromaticAccidentalType: 'both', tapTimes: [],
@@ -2008,18 +2017,24 @@
             }
             audio.noiseFloorRms = Math.max(0.0025, Math.min(0.025, audio.noiseFloorRms));
 
-            const dynamicRmsThreshold = Math.max(0.0055, audio.noiseFloorRms * 2.1);
+            const dynamicRmsThreshold = Math.max(0.006, audio.noiseFloorRms * 2.2);
             const prevRms = audio.prevRms || 0;
             audio.prevRms = rms;
             audio.lastRms = rms;
 
-            if (rms > dynamicRmsThreshold * 1.35 && rms > prevRms * 1.28) {
+            if (rms > dynamicRmsThreshold * 1.5 && rms > prevRms * 1.35) {
                 state.lastOnsetTime = audio.context.currentTime;
                 state.micSilenceSinceLastHit = true;
+                state.silenceFramesCount = 0;
             }
 
             if (rms < dynamicRmsThreshold) {
                 state.pitchHistory = [];
+                state.silenceFramesCount = (state.silenceFramesCount || 0) + 1;
+                if (state.silenceFramesCount >= 6) {
+                    state.micSilenceSinceLastHit = true;
+                    state.lastEvaluatedPitchClass = null;
+                }
                 return -1;
             }
 
@@ -2083,29 +2098,19 @@
                 if (peaks[i].val > highestPeak) highestPeak = peaks[i].val;
             }
 
-            // Puerta estricta de claridad armónica: solo acepta notas periódicas limpias (instrumento o voz cantada)
-            if (highestPeak < 0.68) {
+            // Puerta estricta de claridad armónica: solo acepta notas periódicas limpias
+            if (highestPeak < 0.72) {
                 state.pitchHistory = [];
                 return -1;
             }
 
-            const clarityThreshold = Math.max(0.66, 0.91 * highestPeak);
+            // En MPM (McLeod Pitch Method), el primer pico que supera el umbral relativo al máximo global es la fundamental real T0.
+            // No se debe saltar a 3*T0 porque en autocorrelación toda señal periódica repite en 2*T0 y 3*T0 (subarmónicos).
+            const clarityThreshold = Math.max(0.70, 0.90 * highestPeak);
             let chosenPeak = peaks[0];
             for (let i = 0; i < peaks.length; i++) {
                 if (peaks[i].val >= clarityThreshold) {
                     chosenPeak = peaks[i];
-                    break;
-                }
-            }
-
-            // Prevención de salto al 2º o 3er armónico: si en 2x o 3x el periodo hay un pico fuerte, ese es el fundamental real
-            for (let i = 0; i < peaks.length; i++) {
-                const candidate = peaks[i];
-                if (candidate.lag <= chosenPeak.lag) continue;
-                const ratio = candidate.lag / chosenPeak.lag;
-                const isMultiple = Math.abs(ratio - 2.0) < 0.10 || Math.abs(ratio - 3.0) < 0.10;
-                if (isMultiple && candidate.val >= chosenPeak.val * 0.94) {
-                    chosenPeak = candidate;
                     break;
                 }
             }
@@ -2127,7 +2132,7 @@
                 return -1;
             }
 
-            // Validación espectral: comprobar que exista energía fundamental/armónica real y no sea ruido
+            // Validación espectral y corrección de octava si el 2º armónico dominó en el dominio del tiempo
             if (audio.micFreqArray) {
                 audio.micAnalyser.getFloatFrequencyData(audio.micFreqArray);
                 const binCount = audio.micAnalyser.frequencyBinCount;
@@ -2137,34 +2142,48 @@
                 if (f1Bin > 1 && f1Bin < binCount - 1) {
                     const f1Db = Math.max(audio.micFreqArray[f1Bin - 1], audio.micFreqArray[f1Bin], audio.micFreqArray[f1Bin + 1]);
                     const f2Db = (f2Bin < binCount - 1) ? Math.max(audio.micFreqArray[f2Bin - 1], audio.micFreqArray[f2Bin], audio.micFreqArray[f2Bin + 1]) : -100;
-                    if (f1Db < -62 && f2Db < -62) {
+                    if (f1Db < -60 && f2Db < -60) {
                         state.pitchHistory = [];
                         return -1;
+                    }
+                    // Si la frecuencia detectada fue el 2º armónico (octava arriba), verificar si en pitch/2 existe el pico fundamental real
+                    const halfPitch = pitch * 0.5;
+                    const halfLag = refinedLag * 2;
+                    if (halfPitch >= 75 && halfLag <= maxLag) {
+                        const fHalfBin = Math.round((halfPitch / nyquist) * binCount);
+                        if (fHalfBin > 1 && fHalfBin < binCount - 1) {
+                            const fHalfDb = Math.max(audio.micFreqArray[fHalfBin - 1], audio.micFreqArray[fHalfBin], audio.micFreqArray[fHalfBin + 1]);
+                            const nsdfAtHalf = nsdf[Math.round(halfLag)] || 0;
+                            if (fHalfDb > f1Db - 6 && fHalfDb > -52 && nsdfAtHalf > chosenPeak.val * 1.02) {
+                                pitch = halfPitch;
+                            }
+                        }
                     }
                 }
             }
 
-            // Exigir estabilidad tonal en muestras consecutivas (filtra habla y ruidos transitorios)
+            state.silenceFramesCount = 0;
+
+            // Exigir estabilidad tonal en 3 muestras consecutivas
             if (!state.pitchHistory) state.pitchHistory = [];
             state.pitchHistory.push(pitch);
             if (state.pitchHistory.length > 3) state.pitchHistory.shift();
 
-            if (state.pitchHistory.length < 2) {
+            if (state.pitchHistory.length < 3) {
                 return -1;
             }
 
-            const prevPitch = state.pitchHistory[state.pitchHistory.length - 2];
-            const semitoneJump = Math.abs(12 * Math.log2(pitch / prevPitch));
-            if (semitoneJump > 0.22) {
+            const p0 = state.pitchHistory[0];
+            const p1 = state.pitchHistory[1];
+            const p2 = state.pitchHistory[2];
+            const jump1 = Math.abs(12 * Math.log2(p1 / p0));
+            const jump2 = Math.abs(12 * Math.log2(p2 / p1));
+            if (jump1 > 0.18 || jump2 > 0.18) {
                 return -1;
             }
 
-            if (state.pitchHistory.length === 3) {
-                const sorted = [...state.pitchHistory].sort((a, b) => a - b);
-                return sorted[1];
-            }
-
-            return (pitch + prevPitch) * 0.5;
+            const sorted = [p0, p1, p2].sort((a, b) => a - b);
+            return sorted[1];
         }
 
         function noteFromPitch(frequency) {
@@ -2722,6 +2741,8 @@
                 state.lastHitPitchClass = null;
                 state.lastHitKey = null;
                 state.micSilenceSinceLastHit = true;
+                state.silenceFramesCount = 0;
+                state.lastEvaluatedPitchClass = null;
                 startSessionRecording();
 
                 Object.assign(state, { 
@@ -3029,8 +3050,8 @@
                     const noteData = state.score.expectedNotes[hitKey];
                     const status = state.score.status[hitKey];
                     const noteDur = noteData.durationSec || beatDur;
-                    const lateWindow = Math.min(noteDur * 0.94, Math.max(0.35, beatDur * 0.86));
-                    const earlyWindow = Math.min(0.13, noteDur * 0.25);
+                    const lateWindow = Math.min(noteDur * 0.92, Math.max(0.32, beatDur * 0.88));
+                    const earlyWindow = Math.min(0.07, noteDur * 0.15);
 
                     if (status === 'waiting') {
                         const timeDiff = currentTime - noteData.time;
@@ -3053,10 +3074,17 @@
                 }
 
                 let isSynthBleed = false;
-                if (state.soundEnabled && state.scheduledSynthNotes && !state.midiEnabled) {
+                if (!state.midiEnabled) {
                     const now = audio.context.currentTime;
-                    state.scheduledSynthNotes = state.scheduledSynthNotes.filter(n => n.end > now);
-                    if (state.scheduledSynthNotes.some(n => now >= n.start && now <= n.end)) isSynthBleed = true;
+                    if (state.soundEnabled && state.scheduledSynthNotes) {
+                        state.scheduledSynthNotes = state.scheduledSynthNotes.filter(n => n.end + 0.08 > now);
+                        if (state.scheduledSynthNotes.some(n => now >= n.start - 0.01 && now <= n.end + 0.08)) {
+                            isSynthBleed = true;
+                        }
+                    }
+                    if (state.metronomeEnabled && state.metronomeSound === 'classic' && audio.lastMetronomeClickEnd && now <= audio.lastMetronomeClickEnd) {
+                        isSynthBleed = true;
+                    }
                 }
 
                 if (!isSynthBleed) {
@@ -3070,8 +3098,6 @@
                             const exactNoteFloat = 12 * (Math.log(detectedPitch / 440) / Math.log(2)) + 69;
                             detectedMidi = Math.round(exactNoteFloat);
                             centsOff = Math.abs((exactNoteFloat - detectedMidi) * 100);
-                        } else {
-                            state.micSilenceSinceLastHit = true;
                         }
                     }
 
@@ -3094,46 +3120,54 @@
                             wrongNotePlayed = !hit;
                         } else if (state.micEnabled) {
                             if (state.exerciseType === 'melodia') {
-                                if (detectedPitch > 0 && centsOff <= 32) {
+                                if (detectedPitch > 0 && centsOff <= 26) {
                                     const detectedClass = ((detectedMidi % 12) + 12) % 12;
-                                    const hasFreshOnset = (state.lastOnsetTime || 0) >= (target.time - 0.12);
-                                    const isSameAsPrevHit = !state.micSilenceSinceLastHit &&
+                                    const hasFreshOnset = (state.lastOnsetTime || 0) >= (target.time - 0.08);
+                                    const isCarryoverFromPrevNote = !state.micSilenceSinceLastHit &&
                                         state.lastHitKey !== targetKey &&
-                                        state.lastHitPitchClass === detectedClass;
+                                        (state.lastHitPitchClass === detectedClass || state.lastEvaluatedPitchClass === detectedClass);
 
-                                    // Si es una nota repetida idéntica a la anterior, exigir nuevo ataque, pausa de silencio o sostén intencional avanzado en el pulso
-                                    const isRepeatedCarryover = isSameAsPrevHit &&
-                                        !hasFreshOnset &&
-                                        (currentTime - target.time) < Math.min(0.24, beatDur * 0.40);
+                                    const matchesPitch = expectedMidis.some(em => {
+                                        const emClass = ((em % 12) + 12) % 12;
+                                        // Permite altura real escrita o transposición natural de guitarra (1 octava abajo) / voz dentro de 2 octavas
+                                        const octaveDiff = Math.abs(detectedMidi - em);
+                                        const validOctave = detectedMidi >= 38 && detectedMidi <= 88 && octaveDiff <= 24;
+                                        return detectedClass === emClass && validOctave;
+                                    });
 
-                                    if (!isRepeatedCarryover) {
-                                        const matchesPitch = expectedMidis.some(em => {
-                                            const emClass = ((em % 12) + 12) % 12;
-                                            const validOctave = detectedMidi >= 38 && detectedMidi <= 90;
-                                            return detectedClass === emClass && validOctave;
-                                        });
+                                    if (matchesPitch) {
+                                        // Si es la misma nota que el pulso anterior, exigir nuevo ataque, pausa de silencio o sostén deliberado pasado el inicio del pulso
+                                        const isRepeatedWithoutAttack = isCarryoverFromPrevNote &&
+                                            !hasFreshOnset &&
+                                            (currentTime - target.time) < Math.min(0.28, beatDur * 0.45);
 
-                                        if (matchesPitch) {
-                                            target.hitFrames = (target.hitFrames || 0) + 1;
+                                        if (!isRepeatedWithoutAttack) {
+                                            if (target.lastCandidateClass === detectedClass) {
+                                                target.hitFrames = (target.hitFrames || 0) + 1;
+                                            } else {
+                                                target.lastCandidateClass = detectedClass;
+                                                target.hitFrames = 1;
+                                            }
                                             target.wrongFrames = 0;
-                                            if (target.hitFrames >= 2) {
+                                            if (target.hitFrames >= 3) {
                                                 hit = true;
                                             }
-                                        } else {
-                                            target.hitFrames = 0;
-                                            const isPrevNoteTail = isSameAsPrevHit &&
-                                                !hasFreshOnset &&
-                                                (currentTime - target.time) < Math.min(0.32, beatDur * 0.48);
+                                        }
+                                    } else {
+                                        target.hitFrames = 0;
+                                        // Ignorar la cola de resonancia de la nota anterior mientras el músico cambia de posición en el nuevo pulso
+                                        const isPrevNoteTail = isCarryoverFromPrevNote &&
+                                            !hasFreshOnset &&
+                                            (currentTime - target.time) < Math.min(0.45, beatDur * 0.58);
 
-                                            if (!isPrevNoteTail && currentTime >= target.time + 0.08 && centsOff <= 28) {
-                                                if (target.lastWrongClass === detectedClass) {
-                                                    target.wrongFrames = (target.wrongFrames || 0) + 1;
-                                                } else {
-                                                    target.lastWrongClass = detectedClass;
-                                                    target.wrongFrames = 1;
-                                                }
-                                                wrongNotePlayed = true;
+                                        if (!isPrevNoteTail && currentTime >= target.time + 0.14 && centsOff <= 25) {
+                                            if (target.lastWrongClass === detectedClass) {
+                                                target.wrongFrames = (target.wrongFrames || 0) + 1;
+                                            } else {
+                                                target.lastWrongClass = detectedClass;
+                                                target.wrongFrames = 1;
                                             }
+                                            wrongNotePlayed = true;
                                         }
                                     }
                                 } else {
@@ -3144,8 +3178,8 @@
                                 if (chordEval.hit) {
                                     target.hitFrames = (target.hitFrames || 0) + 1;
                                     target.wrongFrames = 0;
-                                    if (target.hitFrames >= 2) hit = true;
-                                } else if (chordEval.wrong && currentTime >= target.time + 0.08) {
+                                    if (target.hitFrames >= 3) hit = true;
+                                } else if (chordEval.wrong && currentTime >= target.time + 0.16) {
                                     target.wrongFrames = (target.wrongFrames || 0) + 1;
                                     if (chordEval.dominantMidi > 0) detectedMidi = chordEval.dominantMidi;
                                     wrongNotePlayed = true;
@@ -3155,11 +3189,13 @@
 
                         if (hit) {
                             const timeDiff = Math.abs(currentTime - target.time);
-                            const newStatus = timeDiff <= Math.max(0.30, beatDur * 0.52) ? 'hit' : 'imprecise';
+                            const newStatus = timeDiff <= Math.max(0.32, beatDur * 0.55) ? 'hit' : 'imprecise';
                             state.score.status[targetKey] = newStatus;
                             target.status = newStatus;
                             if (detectedMidi > 0) {
-                                state.lastHitPitchClass = ((detectedMidi % 12) + 12) % 12;
+                                const pc = ((detectedMidi % 12) + 12) % 12;
+                                state.lastHitPitchClass = pc;
+                                state.lastEvaluatedPitchClass = pc;
                             }
                             state.lastHitKey = targetKey;
                             state.micSilenceSinceLastHit = false;
@@ -3172,11 +3208,14 @@
                                 ui.micDetectedNote.textContent = getEnharmonicName(detectedMidi);
                                 ui.micDetectedNote.className = 'ml-1 text-xs font-bold text-red-400 w-10 truncate text-center';
                             }
-                            // Si se mantiene una nota claramente equivocada durante >= 5 cuadros (~85 ms), se marca inmediatamente como error (rojo)
-                            if ((target.wrongFrames || 0) >= 5 || state.midiEnabled) {
+                            // Exigir 8 cuadros estables (~135 ms) de nota equivocada clara para marcar el error sin falsos negativos por cambio de traste
+                            if ((target.wrongFrames || 0) >= 8 || state.midiEnabled) {
                                 state.score.status[targetKey] = 'miss';
                                 target.status = 'miss';
-                                state.lastHitPitchClass = detectedMidi > 0 ? ((detectedMidi % 12) + 12) % 12 : null;
+                                if (detectedMidi > 0) {
+                                    const pc = ((detectedMidi % 12) + 12) % 12;
+                                    state.lastEvaluatedPitchClass = pc;
+                                }
                                 state.lastHitKey = targetKey;
                                 state.micSilenceSinceLastHit = false;
 
@@ -3613,6 +3652,7 @@
             osc.connect(clickGain);
             clickGain.connect(audio.metronomeGain);
             audio.metronomeGain.gain.setValueAtTime(1, time);
+            audio.lastMetronomeClickEnd = time + 0.075;
             osc.start(time);
             osc.stop(time + 0.06);
         }
