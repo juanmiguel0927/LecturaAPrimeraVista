@@ -1071,7 +1071,7 @@
         }
 
         function updateXPDisplay() {
-            if (!userData || !userData.stats) return;
+            if (!userData || !userData.stats || !ui || !ui.currentXp) return;
             const xp = userData.stats.xp || 0;
             ui.currentXp.textContent = xp;
             
