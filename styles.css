@@ -1,0 +1,103 @@
+/* ==========================================================================
+   Lectura a Primera Vista - Estilos Principales
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css?family=Inter:wght@400;600;700;900&display=swap');
+
+body { font-family: 'Inter', sans-serif; background-color: #111827; transition: background-color 0.3s, color 0.3s; overscroll-behavior: none; }
+
+#loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1000; background-color: #1f2937; color: white; padding: 2rem; border-radius: 0.75rem; font-size: 1.5rem; font-weight: bold; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; transition: opacity 0.3s ease-in-out; }
+.modal-content { background-color: #374151; color: #d1d5db; padding: 2rem; border-radius: 1rem; max-width: 90%; width: 500px; max-height: 90%; overflow-y: auto; position: relative; transition: background-color 0.3s; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+.modal-content h2, .modal-content h3 { margin-bottom: 1.5rem; }
+.modal-content p, .modal-content ul { line-height: 1.6; }
+.modal-content strong { color: #34d399; }
+.modal-content ul { list-style-position: inside; padding-left: 1rem; }
+.modal-close { position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem; cursor: pointer; transition: color 0.2s; }
+.modal-close:hover { color: #fff; }
+.stave-container { position: relative; overflow: hidden; width: 100%; }
+
+.tutorial-highlight-overlay { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 999; transition: all 0.5s ease-in-out; box-shadow: 0 0 0 0 transparent; border-radius: 1rem; }
+
+.pre-roll-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; display: flex; align-items: center; justify-content: center; flex-direction: column; color: #34d399; font-size: 3rem; font-weight: 800; text-shadow: 0 4px 8px rgba(0,0,0,0.4); }
+.pre-roll-message-count { font-size: 6rem; line-height: 1; }
+.tutorial-step.active { color: #d1d5db; }
+
+.radio-label { display: inline-block; background-color: #4b5563; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s ease-in-out; border: 2px solid transparent; }
+input[type="radio"]:checked + .radio-label { background-color: #374151; color: #34d399; border-color: #34d399; }
+.control-item { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+@media (min-width: 640px) { .control-item { flex-direction: row; align-items: center; justify-content: space-between; width: 100%;} }
+
+/* Fullscreen Layout Handling */
+#main-display-area:-webkit-full-screen { display: flex; background-color: #111827; padding: 0; width: 100%; height: 100%; gap: 0; flex-direction: column; }
+#main-display-area:fullscreen { display: flex; background-color: #111827; padding: 0; width: 100%; height: 100%; gap: 0; flex-direction: column; }
+#main-display-area:-webkit-full-screen #fretboard-container.hidden { display: none; }
+#main-display-area:fullscreen #fretboard-container.hidden { display: none; }
+#main-display-area:-webkit-full-screen #stave-viewer { flex: 1 1 40%; height: 0; background-color: #ffffff; display: flex; flex-direction: column; justify-content: center; border-radius: 0; margin-bottom: 0; padding: 0; }
+#main-display-area:fullscreen #stave-viewer { flex: 1 1 40%; height: 0; background-color: #ffffff; display: flex; flex-direction: column; justify-content: center; border-radius: 0; margin-bottom: 0; padding: 0; }
+#main-display-area:-webkit-full-screen #stave-container { flex-grow: 1; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; }
+#main-display-area:fullscreen #stave-container { flex-grow: 1; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; }
+#main-display-area:-webkit-full-screen #fretboard-container { flex: 1 1 60%; height: 0; display: flex; align-items: center; justify-content: center; padding: 0.5rem; box-sizing: border-box; margin-top: 0; }
+#main-display-area:fullscreen #fretboard-container { flex: 1 1 60%; height: 0; display: flex; align-items: center; justify-content: center; padding: 0.5rem; box-sizing: border-box; margin-top: 0; }
+#main-display-area:-webkit-full-screen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; }
+#main-display-area:fullscreen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; }
+
+@media (orientation: landscape) {
+     #main-display-area:-webkit-full-screen { flex-direction: row; align-items: stretch; }
+     #main-display-area:fullscreen { flex-direction: row; align-items: stretch; }
+     #main-display-area:-webkit-full-screen #stave-viewer { flex: 1 1 50%; width: 0; height: 100%; }
+     #main-display-area:fullscreen #stave-viewer { flex: 1 1 50%; width: 0; height: 100%; }
+     #main-display-area:-webkit-full-screen #fretboard-container { flex: 1 1 50%; width: 0; height: 100%; padding: 1rem; }
+     #main-display-area:fullscreen #fretboard-container { flex: 1 1 50%; width: 0; height: 100%; padding: 1rem; }
+     #main-display-area:-webkit-full-screen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; width: 100%; }
+     #main-display-area:fullscreen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; width: 100%; }
+}
+
+#fretboard-svg { width: 100%; height: auto; font-family: monospace; }
+.note-marker { transition: none; }
+.note-text { font-size: 10px; font-weight: bold; fill: white; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.static-note-text { font-size: 10px; font-weight: bold; fill: white; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+
+.tooltip { position: relative; display: inline-block; }
+.tooltip .tooltiptext { visibility: hidden; width: max-content; max-width: 200px; background-color: #27272a; color: #fff; text-align: center; border-radius: 6px; padding: 5px 10px; position: absolute; z-index: 100; bottom: 125%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.15s; font-size: 0.75rem; pointer-events: none; }
+.tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+
+/* Estabilidad total en SVG: Sin animaciones ni destellos para lectura fluida */
+.note-hit-anim path, .note-hit-anim rect { 
+    transition: none;
+}
+
+.stave-scroll-wrapper { 
+    overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; 
+    width: 100%; height: 100%; scrollbar-width: thin; scrollbar-color: #10b981 transparent;
+}
+.stave-scroll-wrapper::-webkit-scrollbar { height: 8px; }
+.stave-scroll-wrapper::-webkit-scrollbar-thumb { background-color: #10b981; border-radius: 10px; }
+
+/* Light Mode Styles */
+body.light-mode { background-color: #f3f4f6; color: #1f2937; }
+body.light-mode .bg-zinc-800, body.light-mode .bg-zinc-900 { background-color: #ffffff; border-color: #d1d5db; }
+body.light-mode .bg-zinc-700 { background-color: #e5e7eb; color: #1f2937; border-color: #d1d5db; }
+body.light-mode .text-zinc-300, body.light-mode .text-zinc-400, body.light-mode .text-zinc-500 { color: #4b5563; }
+body.light-mode .text-white { color: #111827; }
+body.light-mode .border-zinc-600 { border-color: #d1d5db; }
+body.light-mode #fretboard-container { background-color: #e5e7eb; }
+body.light-mode input[type="radio"]:not(:checked) + .radio-label { background-color: #d1d5db; color: #4b5563; }
+
+.achievement-card { transition: all 0.3s ease; }
+.achievement-card.locked { opacity: 0.4; filter: grayscale(100%); }
+.achievement-card.unlocked { filter: drop-shadow(0 4px 6px rgba(16, 185, 129, 0.2)); border-color: #10b981; }
+
+/* Survival Mode Hearts */
+.heart-icon { transition: all 0.3s ease; }
+.heart-icon.lost { filter: grayscale(100%); opacity: 0.3; transform: scale(0.8); }
+
+/* Mic Calibration Panel & Config Toggle Light Mode */
+body.light-mode #mic-settings-panel, body.light-mode #config-toggle-bar { background-color: #f3f4f6; border-color: #10b981; }
+body.light-mode #mic-settings-panel select { background-color: #ffffff; color: #111827; border-color: #d1d5db; }
+body.light-mode #mic-level-status, body.light-mode #config-summary-pill { background-color: #e5e7eb; color: #374151; }
+body.light-mode #mic-headphones-warning { background-color: #fef3c7; color: #92400e; border-color: #f59e0b; }
+
+/* Ajuste tipográfico en diapasón para notación latina (Do, Sol♯, etc.) */
+body.latin-notation .note-text,
+body.latin-notation .static-note-text { font-size: 7.5px; }
