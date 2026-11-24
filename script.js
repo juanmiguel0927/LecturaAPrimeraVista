@@ -533,35 +533,56 @@ function initializeApp() {
 
 // Motor de audio Web Audio API, micrófono, MIDI, grabación, detección de tono y síntesis
 
+function isAppleMobileDevice() {
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua);
+    // iPadOS moderno (incluyendo iPad A16 / iPadOS 26) se identifica como "Macintosh" con pantalla táctil
+    const isIPadOSDesktopUA = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    return isIOS || isIPadOSDesktopUA;
+}
+
 async function initAudioEngine() {
     if (!audio.context) {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
-        audio.context = new AudioContext();
+        audio.context = new AudioContext({ latencyHint: 'interactive' });
         audio.noteGain = audio.context.createGain();
         audio.metronomeGain = audio.context.createGain();
         audio.noteGain.connect(audio.context.destination);
         audio.metronomeGain.connect(audio.context.destination);
+
+        // En iOS/iPadOS, el AudioContext puede pasar a 'interrupted' o 'suspended' al activar el micrófono
+        audio.context.onstatechange = () => {
+            if (audio.context && (audio.context.state === 'suspended' || audio.context.state === 'interrupted') && (state.micEnabled || state.exerciseStarted)) {
+                audio.context.resume().catch(() => {});
+            }
+        };
     }
-    if (audio.context.state === 'suspended') {
-        await audio.context.resume();
+    if (audio.context.state !== 'running') {
+        try { await audio.context.resume(); } catch (e) {}
     }
     return true;
 }
 
 async function getMicStream(deviceId = '') {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Permiso denegado o conexión no segura (usa HTTPS o localhost).");
+        throw new Error("Permiso denegado o conexión no segura. En iPad/Safari debes abrir la app por HTTPS (ej. GitHub Pages).");
     }
+    const isApple = isAppleMobileDevice();
     const audioConstraints = {
         echoCancellation: !!state.micEchoCancel,
-        autoGainControl: false,
+        autoGainControl: isApple ? true : false,
         noiseSuppression: false
     };
     if (deviceId) {
-        audioConstraints.deviceId = { exact: deviceId };
+        // Usar 'ideal' en lugar de 'exact' evita OverconstrainedError en iPadOS cuando WebKit rota IDs
+        audioConstraints.deviceId = { ideal: deviceId };
     }
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
-    return stream;
+    try {
+        return await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+    } catch (err) {
+        console.warn("Reintentando getUserMedia con configuración básica compatible con iPadOS/Safari:", err);
+        return await navigator.mediaDevices.getUserMedia({ audio: true });
+    }
 }
 
 async function populateMicDevices() {
@@ -800,7 +821,15 @@ function stopMicStream() {
 }
 
 async function ensureMicAnalyser(forceRestart = false) {
-    await initAudioEngine();
+    // Crear AudioContext sincrónicamente dentro del gesto del usuario (crítico en iPadOS/Safari)
+    if (!audio.context) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audio.context = new AudioContext({ latencyHint: 'interactive' });
+        audio.noteGain = audio.context.createGain();
+        audio.metronomeGain = audio.context.createGain();
+        audio.noteGain.connect(audio.context.destination);
+        audio.metronomeGain.connect(audio.context.destination);
+    }
     if (forceRestart) {
         if (audio.micStream) {
             audio.micStream.getTracks().forEach(t => t.stop());
@@ -820,15 +849,28 @@ async function ensureMicAnalyser(forceRestart = false) {
         }
         audio.micSource = null;
     }
+
+    // Crítico en iPadOS/iOS: reanudar el AudioContext DESPUÉS de getUserMedia porque Apple cambia la sesión de audio a PlayAndRecord
+    if (audio.context.state !== 'running') {
+        try { await audio.context.resume(); } catch (e) {}
+    }
+
+    const isApple = isAppleMobileDevice();
     if (!audio.micAnalyser) {
         audio.micAnalyser = audio.context.createAnalyser();
     }
-    audio.micAnalyser.fftSize = 8192;
+    // En iPadOS/iOS, fftSize 4096 reduce la latencia a la mitad (~85 ms) y evita cortes de buffer en WebKit
+    audio.micAnalyser.fftSize = isApple ? 4096 : 8192;
     audio.micAnalyser.smoothingTimeConstant = 0.12;
+    audio.micAnalyser.minDecibels = -100;
+    audio.micAnalyser.maxDecibels = -10;
 
-    // Cadena de filtros DSP calibrada dinámicamente (62 Hz guitarra / 34 Hz bajo; 2800 Hz para preservar 2º armónico en acordes agudos)
+    // Cadena de filtros DSP + preamplificador de entrada (compensa ganancia baja en Safari/iPadOS) + sumidero silencioso (fuerza a WebKit a procesar el grafo)
     const isBassClef = ui.clefSelect && ui.clefSelect.value === 'F';
     if (!audio.micFilterHP) {
+        audio.micInputGain = audio.context.createGain();
+        audio.micInputGain.gain.value = isApple ? 2.2 : 1.0;
+
         audio.micFilterHP = audio.context.createBiquadFilter();
         audio.micFilterHP.type = 'highpass';
         audio.micFilterHP.frequency.value = isBassClef ? 34 : 62;
@@ -845,9 +887,16 @@ async function ensureMicAnalyser(forceRestart = false) {
         audio.micFilterLP.frequency.value = 2800; // Preserva 2º armónico de notas agudas (>700 Hz) y corta siseo
         audio.micFilterLP.Q.value = 0.707;
 
+        // Sumidero silencioso (gain = 0) conectado a destination: OBLIGATORIO en iOS/iPadOS WebKit para que AnalyserNode reciba audio real
+        audio.micSilentSink = audio.context.createGain();
+        audio.micSilentSink.gain.value = 0;
+
+        audio.micInputGain.connect(audio.micFilterHP);
         audio.micFilterHP.connect(audio.micFilterMid);
         audio.micFilterMid.connect(audio.micFilterLP);
         audio.micFilterLP.connect(audio.micAnalyser);
+        audio.micAnalyser.connect(audio.micSilentSink);
+        audio.micSilentSink.connect(audio.context.destination);
     } else {
         updateMicFilterForClef();
     }
@@ -860,7 +909,7 @@ async function ensureMicAnalyser(forceRestart = false) {
     }
     if (!audio.micSource && audio.micStream) {
         audio.micSource = audio.context.createMediaStreamSource(audio.micStream);
-        audio.micSource.connect(audio.micFilterHP);
+        audio.micSource.connect(audio.micInputGain || audio.micFilterHP);
     }
     audio.prevRms = 0;
 }
@@ -4691,15 +4740,13 @@ function attachEventListeners() {
     ui.enableSoundToggle.addEventListener('change', (e) => { state.soundEnabled = e.target.checked; updateHeadphonesWarning(); });
     ui.enableMetronome.addEventListener('change', (e) => { state.metronomeEnabled = e.target.checked; updateHeadphonesWarning(); });
     
-    ui.enableMicToggle.addEventListener('change', async (e) => {
+    ui.enableMicToggle.addEventListener('change', (e) => {
         if (state.exerciseStarted && state.activeCampaignStage && !e.target.checked) {
             e.target.checked = true;
             showTemporaryMessage("El micrófono debe permanecer activo durante el Modo Carrera.", true);
             return;
         }
-        if (e.target.checked) {
-            try { await initAudioEngine(); } catch(err) { console.error(err); }
-        }
+        // Llamar directamente dentro del gesto del usuario sin awaits previos (requerido por Safari en iPadOS/iOS)
         toggleMicrophone(e.target.checked);
     });
     
