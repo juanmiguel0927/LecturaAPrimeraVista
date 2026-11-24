@@ -161,7 +161,7 @@ function initializeAppState() {
         waitStepTransitioning: false, waitStepTimer: null,
         lastFramePerfTime: 0, lastAudioFrameTime: 0, lastHitChordClasses: null
     };
-    audio = { context: null, noteGain: null, metronomeGain: null, lookahead: 25.0, scheduleAheadTime: 0.1, nextNoteTime: 0.0, pauseStartTime: 0.0, micStream: null, micAnalyser: null, micDataArray: null, micFreqArray: null, micSource: null, micFilterHP: null, micFilterMid: null, micFilterLP: null, noiseFloorRms: 0.004 };
+    audio = { context: null, micContext: null, noteGain: null, metronomeGain: null, lookahead: 25.0, scheduleAheadTime: 0.15, nextNoteTime: 0.0, pauseStartTime: 0.0, micStream: null, micAnalyser: null, micDataArray: null, micFreqArray: null, micSource: null, micInputGain: null, micFilterHP: null, micFilterMid: null, micFilterLP: null, micSilentSink: null, noiseFloorRms: 0.004, lastPitchCalcMs: 0, cachedPitch: -1 };
     notesData = {
         all: [], natural: [], noteToLatin: {'C':'Do','D':'Re','E':'Mi','F':'Fa','G':'Sol','A':'La','B':'Si'}, letterToDiatonic: {'C':0,'D':1,'E':2,'F':3,'G':4,'A':5,'B':6},
         diatonicTriads: { 'C': ['C', 'E', 'G'], 'D': ['D', 'F', 'A'], 'E': ['E', 'G', 'B'], 'F': ['F', 'A', 'C'], 'G': ['G', 'B', 'D'], 'A': ['A', 'C', 'E'], 'B': ['B', 'D', 'F'] },
@@ -541,10 +541,17 @@ function isAppleMobileDevice() {
     return isIOS || isIPadOSDesktopUA;
 }
 
+function isMobileOrAndroidApp() {
+    if (window.AndroidApp) return true;
+    const ua = navigator.userAgent || '';
+    return isAppleMobileDevice() || /Android|Mobile/i.test(ua);
+}
+
 async function initAudioEngine() {
     if (!audio.context) {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
-        audio.context = new AudioContext({ latencyHint: 'interactive' });
+        // 'playback' usa un buffer de salida estable en Android/iOS para evitar cortes y chasquidos ("ripeo")
+        audio.context = new AudioContext({ latencyHint: 'playback' });
         audio.noteGain = audio.context.createGain();
         audio.metronomeGain = audio.context.createGain();
         audio.noteGain.connect(audio.context.destination);
@@ -606,8 +613,9 @@ async function populateMicDevices() {
 
 function updateMicFilterForClef() {
     const isBassClef = ui.clefSelect && ui.clefSelect.value === 'F';
-    if (audio.micFilterHP && audio.context) {
-        audio.micFilterHP.frequency.setValueAtTime(isBassClef ? 34 : 62, audio.context.currentTime);
+    const micCtx = audio.micContext || audio.context;
+    if (audio.micFilterHP && micCtx) {
+        audio.micFilterHP.frequency.setValueAtTime(isBassClef ? 34 : 62, micCtx.currentTime);
     }
     if (ui.micBassModeBadge) {
         ui.micBassModeBadge.classList.toggle('hidden', !isBassClef);
@@ -821,14 +829,23 @@ function stopMicStream() {
 }
 
 async function ensureMicAnalyser(forceRestart = false) {
-    // Crear AudioContext sincrónicamente dentro del gesto del usuario (crítico en iPadOS/Safari)
+    // 1. Mantener el AudioContext de reproducción (metrónomo y sintetizador) totalmente aislado y con buffer estable
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!audio.context) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        audio.context = new AudioContext({ latencyHint: 'interactive' });
+        audio.context = new AudioContextClass({ latencyHint: 'playback' });
         audio.noteGain = audio.context.createGain();
         audio.metronomeGain = audio.context.createGain();
         audio.noteGain.connect(audio.context.destination);
         audio.metronomeGain.connect(audio.context.destination);
+    }
+    // 2. Usar un AudioContext dedicado SOLO para el micrófono con buffer balanceado (cero cortes en Android WebView)
+    if (!audio.micContext) {
+        audio.micContext = new AudioContextClass({ latencyHint: 'balanced' });
+        audio.micContext.onstatechange = () => {
+            if (audio.micContext && (audio.micContext.state === 'suspended' || audio.micContext.state === 'interrupted') && state.micEnabled) {
+                audio.micContext.resume().catch(() => {});
+            }
+        };
     }
     if (forceRestart) {
         if (audio.micStream) {
@@ -850,45 +867,52 @@ async function ensureMicAnalyser(forceRestart = false) {
         audio.micSource = null;
     }
 
-    // Crítico en iPadOS/iOS: reanudar el AudioContext DESPUÉS de getUserMedia porque Apple cambia la sesión de audio a PlayAndRecord
+    // Reanudar AMBOS contextos tras getUserMedia (crítico en Android WebView e iPadOS)
     if (audio.context.state !== 'running') {
         try { await audio.context.resume(); } catch (e) {}
     }
-
-    const isApple = isAppleMobileDevice();
-    if (!audio.micAnalyser) {
-        audio.micAnalyser = audio.context.createAnalyser();
+    if (audio.micContext.state !== 'running') {
+        try { await audio.micContext.resume(); } catch (e) {}
     }
-    // En iPadOS/iOS, fftSize 4096 reduce la latencia a la mitad (~85 ms) y evita cortes de buffer en WebKit
-    audio.micAnalyser.fftSize = isApple ? 4096 : 8192;
+    if (window.AndroidApp && typeof window.AndroidApp.ensureSpeakerAudio === 'function') {
+        try { window.AndroidApp.ensureSpeakerAudio(); } catch (e) {}
+    }
+
+    const micCtx = audio.micContext;
+    const isApple = isAppleMobileDevice();
+    const isMobile = isMobileOrAndroidApp();
+    if (!audio.micAnalyser) {
+        audio.micAnalyser = micCtx.createAnalyser();
+    }
+    // En móviles (Android e iPadOS), fftSize 4096 evita sobrecarga del hilo de audio y cortes del sonido
+    audio.micAnalyser.fftSize = isMobile ? 4096 : 8192;
     audio.micAnalyser.smoothingTimeConstant = 0.12;
     audio.micAnalyser.minDecibels = -100;
     audio.micAnalyser.maxDecibels = -10;
 
-    // Cadena de filtros DSP + preamplificador de entrada (compensa ganancia baja en Safari/iPadOS) + sumidero silencioso (fuerza a WebKit a procesar el grafo)
+    // Cadena de filtros DSP + preamplificador de entrada + sumidero silencioso (WebKit) en micContext aislado
     const isBassClef = ui.clefSelect && ui.clefSelect.value === 'F';
     if (!audio.micFilterHP) {
-        audio.micInputGain = audio.context.createGain();
+        audio.micInputGain = micCtx.createGain();
         audio.micInputGain.gain.value = isApple ? 2.2 : 1.0;
 
-        audio.micFilterHP = audio.context.createBiquadFilter();
+        audio.micFilterHP = micCtx.createBiquadFilter();
         audio.micFilterHP.type = 'highpass';
         audio.micFilterHP.frequency.value = isBassClef ? 34 : 62;
         audio.micFilterHP.Q.value = 0.707;
 
-        audio.micFilterMid = audio.context.createBiquadFilter();
+        audio.micFilterMid = micCtx.createBiquadFilter();
         audio.micFilterMid.type = 'peaking';
-        audio.micFilterMid.frequency.value = 240; // Realza fundamentales del cuerpo de la guitarra
+        audio.micFilterMid.frequency.value = 240;
         audio.micFilterMid.Q.value = 0.8;
         audio.micFilterMid.gain.value = 3.5;
 
-        audio.micFilterLP = audio.context.createBiquadFilter();
+        audio.micFilterLP = micCtx.createBiquadFilter();
         audio.micFilterLP.type = 'lowpass';
-        audio.micFilterLP.frequency.value = 2800; // Preserva 2º armónico de notas agudas (>700 Hz) y corta siseo
+        audio.micFilterLP.frequency.value = 2800;
         audio.micFilterLP.Q.value = 0.707;
 
-        // Sumidero silencioso (gain = 0) conectado a destination: OBLIGATORIO en iOS/iPadOS WebKit para que AnalyserNode reciba audio real
-        audio.micSilentSink = audio.context.createGain();
+        audio.micSilentSink = micCtx.createGain();
         audio.micSilentSink.gain.value = 0;
 
         audio.micInputGain.connect(audio.micFilterHP);
@@ -896,7 +920,7 @@ async function ensureMicAnalyser(forceRestart = false) {
         audio.micFilterMid.connect(audio.micFilterLP);
         audio.micFilterLP.connect(audio.micAnalyser);
         audio.micAnalyser.connect(audio.micSilentSink);
-        audio.micSilentSink.connect(audio.context.destination);
+        audio.micSilentSink.connect(micCtx.destination);
     } else {
         updateMicFilterForClef();
     }
@@ -908,7 +932,7 @@ async function ensureMicAnalyser(forceRestart = false) {
         audio.micFreqArray = new Float32Array(audio.micAnalyser.frequencyBinCount);
     }
     if (!audio.micSource && audio.micStream) {
-        audio.micSource = audio.context.createMediaStreamSource(audio.micStream);
+        audio.micSource = micCtx.createMediaStreamSource(audio.micStream);
         audio.micSource.connect(audio.micInputGain || audio.micFilterHP);
     }
     audio.prevRms = 0;
@@ -1025,11 +1049,12 @@ function stopSessionRecording() {
 }
 
 function verifyChord(expectedMidis) {
-    if (!audio.micAnalyser || !audio.context || !audio.micFreqArray) {
+    const micCtx = audio.micContext || audio.context;
+    if (!audio.micAnalyser || !micCtx || !audio.micFreqArray) {
         return { hit: false, wrong: false, dominantMidi: -1, detectedClasses: [] };
     }
     audio.micAnalyser.getFloatFrequencyData(audio.micFreqArray);
-    const sampleRate = audio.context.sampleRate;
+    const sampleRate = micCtx.sampleRate;
     const binCount = audio.micAnalyser.frequencyBinCount;
     const nyquist = sampleRate / 2;
     const isBassClef = ui.clefSelect && ui.clefSelect.value === 'F';
@@ -1120,11 +1145,21 @@ function verifyChord(expectedMidis) {
 }
 
 function detectPitch() {
-    if (!audio.micAnalyser || !audio.micDataArray || !audio.context) return -1;
+    const micCtx = audio.micContext || audio.context;
+    if (!audio.micAnalyser || !audio.micDataArray || !micCtx) return -1;
+    // En móviles (pantallas 60-120 Hz), limitar el análisis a ~35 Hz evita saturar la CPU/audio y elimina el "ripeo"
+    if (isMobileOrAndroidApp()) {
+        const nowMs = performance.now();
+        if (nowMs - (audio.lastPitchCalcMs || 0) < 28) {
+            return audio.cachedPitch !== undefined ? audio.cachedPitch : -1;
+        }
+        audio.lastPitchCalcMs = nowMs;
+    }
+    audio.cachedPitch = -1;
     audio.micAnalyser.getFloatTimeDomainData(audio.micDataArray);
     const buf = audio.micDataArray;
     const SIZE = buf.length;
-    const sampleRate = audio.context.sampleRate;
+    const sampleRate = micCtx.sampleRate;
     const isBassClef = ui.clefSelect && ui.clefSelect.value === 'F';
     const minFreq = isBassClef ? 38 : 72;
     const maxFreq = 1650;
@@ -1357,7 +1392,9 @@ function detectPitch() {
         return -1;
     }
 
-    return (p0 + p1) * 0.5;
+    const resultPitch = (p0 + p1) * 0.5;
+    audio.cachedPitch = resultPitch;
+    return resultPitch;
 }
 
 function noteFromPitch(frequency) {
@@ -1367,6 +1404,7 @@ function noteFromPitch(frequency) {
 
 function playNoteSound(note, time, customDuration = 0.85) {
     if (!audio.context || !note) return;
+    if (audio.context.state !== 'running') { audio.context.resume().catch(() => {}); }
     const baseFreq = notesData.noteToFrequency[note];
     if (!baseFreq) return;
     const soundingOffset = getInstrumentSoundingOffset();
@@ -1455,6 +1493,7 @@ function playTunerDing() {
 
 function playMetronomeSound(time, isAccent, beatNumber = 1) {
     if (!audio.context || !state.metronomeEnabled) return;
+    if (audio.context.state !== 'running') { audio.context.resume().catch(() => {}); }
 
     if (state.metronomeSound === 'drums') {
         if (isAccent || beatNumber === 3) {
@@ -3001,6 +3040,10 @@ async function startExercise() {
             setConfigPanelCollapsed(true);
         }
         if (ui.mainDisplayArea) ui.mainDisplayArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        if (window.AndroidApp && typeof window.AndroidApp.ensureSpeakerAudio === 'function') {
+            try { window.AndroidApp.ensureSpeakerAudio(); } catch (e) {}
+        }
 
         audio.nextNoteTime = audio.context.currentTime + 0.1;
         scheduler(); 
