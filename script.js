@@ -5148,5 +5148,17 @@ function renderBeatLeds(activeBeat = 0) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    const webSplash = document.getElementById('web-splash-screen');
+    if (webSplash) {
+        // Si corre dentro del APK nativo, el SplashActivity ya mostró los 5 segundos; ocultar el splash web para no duplicarlo
+        if (window.AndroidApp) {
+            webSplash.remove();
+        } else {
+            setTimeout(() => {
+                webSplash.classList.add('splash-fade-out');
+                setTimeout(() => webSplash.remove(), 550);
+            }, 5000);
+        }
+    }
     initializeLogin();
 });
