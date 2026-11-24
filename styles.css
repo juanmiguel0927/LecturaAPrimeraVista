@@ -28,29 +28,147 @@ input[type="radio"]:checked + .radio-label { background-color: #374151; color: #
 .control-item { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
 @media (min-width: 640px) { .control-item { flex-direction: row; align-items: center; justify-content: space-between; width: 100%;} }
 
-/* Fullscreen Layout Handling */
-#main-display-area:-webkit-full-screen { display: flex; background-color: #111827; padding: 0; width: 100%; height: 100%; gap: 0; flex-direction: column; }
-#main-display-area:fullscreen { display: flex; background-color: #111827; padding: 0; width: 100%; height: 100%; gap: 0; flex-direction: column; }
-#main-display-area:-webkit-full-screen #fretboard-container.hidden { display: none; }
-#main-display-area:fullscreen #fretboard-container.hidden { display: none; }
-#main-display-area:-webkit-full-screen #stave-viewer { flex: 1 1 40%; height: 0; background-color: #ffffff; display: flex; flex-direction: column; justify-content: center; border-radius: 0; margin-bottom: 0; padding: 0; }
-#main-display-area:fullscreen #stave-viewer { flex: 1 1 40%; height: 0; background-color: #ffffff; display: flex; flex-direction: column; justify-content: center; border-radius: 0; margin-bottom: 0; padding: 0; }
-#main-display-area:-webkit-full-screen #stave-container { flex-grow: 1; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; }
-#main-display-area:fullscreen #stave-container { flex-grow: 1; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; }
-#main-display-area:-webkit-full-screen #fretboard-container { flex: 1 1 60%; height: 0; display: flex; align-items: center; justify-content: center; padding: 0.5rem; box-sizing: border-box; margin-top: 0; }
-#main-display-area:fullscreen #fretboard-container { flex: 1 1 60%; height: 0; display: flex; align-items: center; justify-content: center; padding: 0.5rem; box-sizing: border-box; margin-top: 0; }
-#main-display-area:-webkit-full-screen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; }
-#main-display-area:fullscreen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; }
+/* Fullscreen Layout Handling (nativo y fallback .app-fullscreen-mode) */
+#main-display-area:-webkit-full-screen,
+#main-display-area:fullscreen,
+#main-display-area.app-fullscreen-mode {
+    display: flex;
+    background-color: #111827;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    gap: 0;
+    flex-direction: column;
+    position: fixed;
+    inset: 0;
+    z-index: 950;
+}
+#main-display-area:-webkit-full-screen #fretboard-container.hidden,
+#main-display-area:fullscreen #fretboard-container.hidden,
+#main-display-area.app-fullscreen-mode #fretboard-container.hidden { display: none; }
 
-@media (orientation: landscape) {
-     #main-display-area:-webkit-full-screen { flex-direction: row; align-items: stretch; }
-     #main-display-area:fullscreen { flex-direction: row; align-items: stretch; }
-     #main-display-area:-webkit-full-screen #stave-viewer { flex: 1 1 50%; width: 0; height: 100%; }
-     #main-display-area:fullscreen #stave-viewer { flex: 1 1 50%; width: 0; height: 100%; }
-     #main-display-area:-webkit-full-screen #fretboard-container { flex: 1 1 50%; width: 0; height: 100%; padding: 1rem; }
-     #main-display-area:fullscreen #fretboard-container { flex: 1 1 50%; width: 0; height: 100%; padding: 1rem; }
-     #main-display-area:-webkit-full-screen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; width: 100%; }
-     #main-display-area:fullscreen:has(#fretboard-container.hidden) #stave-viewer { flex-basis: 100%; width: 100%; }
+#main-display-area:-webkit-full-screen #stave-viewer,
+#main-display-area:fullscreen #stave-viewer,
+#main-display-area.app-fullscreen-mode #stave-viewer {
+    flex: 1 1 54%;
+    height: 0;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-radius: 0;
+    margin-bottom: 0;
+    padding: 0.25rem;
+}
+#main-display-area:-webkit-full-screen #stave-container,
+#main-display-area:fullscreen #stave-container,
+#main-display-area.app-fullscreen-mode #stave-container {
+    flex-grow: 1;
+    height: 100%;
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 0;
+}
+#main-display-area:-webkit-full-screen #fretboard-container,
+#main-display-area:fullscreen #fretboard-container,
+#main-display-area.app-fullscreen-mode #fretboard-container {
+    flex: 1 1 46%;
+    height: 0;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.75rem;
+    box-sizing: border-box;
+    margin-top: 0;
+    border-radius: 0;
+}
+#main-display-area:-webkit-full-screen:has(#fretboard-container.hidden) #stave-viewer,
+#main-display-area:fullscreen:has(#fretboard-container.hidden) #stave-viewer,
+#main-display-area.app-fullscreen-mode:has(#fretboard-container.hidden) #stave-viewer {
+    flex-basis: 100%;
+}
+
+/* Optimización visual para celulares (vertical y horizontal) */
+#stave-container svg {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+}
+#fretboard-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+@media (hover: none) {
+    .tooltip .tooltiptext { display: none !important; }
+}
+@media (max-width: 640px) {
+    .modal-content {
+        width: calc(100vw - 1.25rem) !important;
+        max-width: calc(100vw - 1.25rem) !important;
+        padding: 1.15rem !important;
+        border-radius: 0.85rem;
+    }
+    #displayArea {
+        position: static !important;
+        transform: none !important;
+        width: 100%;
+        margin-bottom: 0.5rem;
+        padding: 0.4rem 0.75rem !important;
+        border-radius: 0.75rem;
+    }
+    #displayArea > div:first-child {
+        gap: 0.5rem !important;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+    #displayArea > div:first-child > * {
+        margin-left: 0 !important;
+    }
+    #main-display-area:fullscreen #displayArea,
+    #main-display-area:-webkit-full-screen #displayArea,
+    #main-display-area.app-fullscreen-mode #displayArea {
+        position: absolute !important;
+        top: 0.35rem;
+        left: 50%;
+        transform: translateX(-50%) !important;
+        width: auto;
+        max-width: 96vw;
+        padding: 0.25rem 0.85rem !important;
+        margin-bottom: 0;
+        border-radius: 9999px;
+    }
+    #stave-viewer {
+        height: 210px !important;
+    }
+    #fullscreen-toggle, #toggle-info-btn {
+        padding: 0.55rem !important;
+        bottom: 0.5rem !important;
+    }
+    #fullscreen-toggle { right: 0.5rem !important; }
+    #toggle-info-btn { left: 0.5rem !important; }
+    #fretboard-svg {
+        min-width: 540px;
+    }
+}
+@media (orientation: landscape) and (max-height: 540px) {
+    #stave-viewer {
+        height: 56vh !important;
+    }
+    #fretboard-svg {
+        min-width: 0;
+        width: 100%;
+    }
+    #displayArea {
+        top: 0.35rem !important;
+        padding: 0.25rem 0.85rem !important;
+    }
 }
 
 #fretboard-svg { width: 100%; height: auto; font-family: monospace; }
