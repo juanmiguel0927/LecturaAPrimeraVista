@@ -4817,14 +4817,54 @@ function attachEventListeners() {
     ui.fullscreenToggle.addEventListener('click', toggleFullscreen);
 
     function updateFullscreenIcons() {
-        const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        const isNativeFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        const isCssFs = ui.mainDisplayArea.classList.contains('app-fullscreen-mode');
+        const isFullscreen = isNativeFs || isCssFs;
         ui.enterFullscreenIcon.classList.toggle('hidden', isFullscreen);
         ui.exitFullscreenIcon.classList.toggle('hidden', !isFullscreen);
         ui.fretboardContainer.classList.toggle('hidden', !state.showFretboard);
-        setTimeout(() => renderStave(state.exerciseStarted ? state.currentDisplayedContent : state.manualNotesToDisplay), 50);
+
+        // Sincronizar orientación horizontal automática en Android APK y navegadores móviles
+        if (window.AndroidApp && typeof window.AndroidApp.setFullscreenLandscape === 'function') {
+            try { window.AndroidApp.setFullscreenLandscape(isFullscreen); } catch (e) {}
+        }
+        if (screen.orientation) {
+            if (isFullscreen && typeof screen.orientation.lock === 'function') {
+                screen.orientation.lock('landscape').catch(() => {});
+            } else if (!isFullscreen && typeof screen.orientation.unlock === 'function') {
+                try { screen.orientation.unlock(); } catch (e) {}
+            }
+        }
+
+        const rerender = () => {
+            renderStave(state.exerciseStarted ? state.currentDisplayedContent : state.manualNotesToDisplay);
+            if (state.exerciseStarted) updateGuidePosition(state.activeVisualEvent);
+        };
+        setTimeout(rerender, 80);
+        setTimeout(rerender, 350);
     }
     document.addEventListener('fullscreenchange', updateFullscreenIcons);
     document.addEventListener('webkitfullscreenchange', updateFullscreenIcons);
+    window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+            renderStave(state.exerciseStarted ? state.currentDisplayedContent : state.manualNotesToDisplay);
+            if (state.exerciseStarted) updateGuidePosition(state.activeVisualEvent);
+        }, 250);
+    });
+    window.__exitAppFullscreen = () => {
+        if (ui.mainDisplayArea.classList.contains('app-fullscreen-mode')) {
+            ui.mainDisplayArea.classList.remove('app-fullscreen-mode');
+            document.body.classList.remove('overflow-hidden');
+            updateFullscreenIcons();
+            return true;
+        }
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+            if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            return true;
+        }
+        return false;
+    };
     window.addEventListener('resize', () => { 
         clearTimeout(window.resizeTimeout); 
         window.resizeTimeout = setTimeout(() => {
@@ -4923,12 +4963,51 @@ function attachEventListeners() {
 
 function toggleFullscreen() {
     const el = ui.mainDisplayArea;
-    if (!document.fullscreenElement && !document.webkitFullscreenElement) { 
-        if (el.requestFullscreen) el.requestFullscreen().catch(err => console.warn(`Fullscreen error: ${err.message}`));
-        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    } else { 
-        if (document.exitFullscreen) document.exitFullscreen().catch(err => console.warn(`Exit fullscreen error: ${err.message}`)); 
-        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    const isNativeFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    const isCssFs = el.classList.contains('app-fullscreen-mode');
+
+    // En Android APK, usar modo CSS fullscreen + orientación horizontal nativa garantiza 100% de compatibilidad y fluidez
+    if (window.AndroidApp && typeof window.AndroidApp.setFullscreenLandscape === 'function') {
+        const enter = !isCssFs;
+        el.classList.toggle('app-fullscreen-mode', enter);
+        document.body.classList.toggle('overflow-hidden', enter);
+        try { window.AndroidApp.setFullscreenLandscape(enter); } catch (e) {}
+        ui.enterFullscreenIcon.classList.toggle('hidden', enter);
+        ui.exitFullscreenIcon.classList.toggle('hidden', !enter);
+        ui.fretboardContainer.classList.toggle('hidden', !state.showFretboard);
+        const rerender = () => {
+            renderStave(state.exerciseStarted ? state.currentDisplayedContent : state.manualNotesToDisplay);
+            if (state.exerciseStarted) updateGuidePosition(state.activeVisualEvent);
+        };
+        setTimeout(rerender, 120);
+        setTimeout(rerender, 380);
+        return;
+    }
+
+    if (!isNativeFs && !isCssFs) {
+        if (el.requestFullscreen) {
+            el.requestFullscreen().catch(() => {
+                el.classList.add('app-fullscreen-mode');
+                document.body.classList.add('overflow-hidden');
+                document.dispatchEvent(new Event('fullscreenchange'));
+            });
+        } else if (el.webkitRequestFullscreen) {
+            el.webkitRequestFullscreen();
+        } else {
+            el.classList.add('app-fullscreen-mode');
+            document.body.classList.add('overflow-hidden');
+            document.dispatchEvent(new Event('fullscreenchange'));
+        }
+    } else {
+        if (isCssFs) {
+            el.classList.remove('app-fullscreen-mode');
+            document.body.classList.remove('overflow-hidden');
+            document.dispatchEvent(new Event('fullscreenchange'));
+        } else if (document.exitFullscreen) {
+            document.exitFullscreen().catch(err => console.warn(`Exit fullscreen error: ${err.message}`));
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        }
     }
 }
 
