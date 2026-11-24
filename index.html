@@ -10,10 +10,26 @@
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
     <meta name="description" content="Aplicación interactiva de lectura a primera vista para guitarra y otros instrumentos.">
     <meta name="theme-color" content="#10b981">
+    <link rel="icon" type="image/jpeg" href="ICO.jpg">
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body class="bg-zinc-900 text-white flex flex-col items-center p-2 sm:p-4 min-h-screen">
+    <!-- Presentación de entrada (Splash 5 segundos, igual al APK) -->
+    <div id="web-splash-screen" class="web-splash-overlay" aria-label="Pantalla de inicio">
+        <div class="web-splash-spacer"></div>
+        <div class="web-splash-icon-ring">
+            <img src="ICO.jpg" alt="Lectura a primera vista" class="web-splash-icon" />
+        </div>
+        <h1 class="web-splash-title">Lectura a primera vista</h1>
+        <p class="web-splash-subtitle">Guitarra • Requinto Puntero • Armonía</p>
+        <div class="web-splash-progress-track">
+            <div class="web-splash-progress-fill"></div>
+        </div>
+        <div class="web-splash-spacer"></div>
+        <p class="web-splash-author">Por Juan Miguel Rios Redondo</p>
+    </div>
+
     <!-- Welcome Modal -->
     <div id="welcome-modal" class="modal-overlay">
         <div class="modal-content text-center bg-zinc-800 border-2 border-emerald-500 shadow-2xl">
